@@ -1,4 +1,7 @@
 htm-visualizer
 ==============
 
-HTM Cortical Learning Algorithm visualizer in JAVA
+Visualization of Hiearchical temporal memory (HTM) cortical learning algorithms (CLA) in JAVA
+Implementation is based on Numenta's CLA white paper:
+https://www.groksolutions.com/htm-overview/education/HTM_CorticalLearningAlgorithms.pdf
+

@@ -1,0 +1,28 @@
+<assembly>
+  <id>dist</id>
+  <includeBaseDirectory>false</includeBaseDirectory>
+  <formats>
+    <format>zip</format>
+  </formats>
+  <files>
+    <file>
+      <source>target/${project.build.finalName}.jar</source>
+      <destName>htm-visualizer.jar</destName>
+      <fileMode>0644</fileMode>
+    </file>
+    <file>
+      <source>run.bat</source>
+      <destName>run.bat</destName>
+      <filtered>true</filtered>
+      <fileMode>0644</fileMode>
+    </file>
+  </files>
+  <dependencySets>
+    <dependencySet>
+      <outputDirectory>/lib</outputDirectory>
+      <excludes>
+        <exclude>htm:htm-visualizer</exclude>
+      </excludes>
+    </dependencySet>
+  </dependencySets>
+</assembly>
