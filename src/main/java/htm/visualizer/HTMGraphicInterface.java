@@ -13,6 +13,7 @@ import htm.model.Column;
 import htm.model.Region;
 import htm.visualizer.surface.BaseSurface;
 import htm.visualizer.surface.ColumnCellsByIndexSurface;
+import htm.visualizer.surface.ColumnSDRSurface;
 import htm.visualizer.surface.SensoryInputSurface;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -30,11 +31,11 @@ import java.util.Observer;
 public class HTMGraphicInterface extends JPanel {
   private static final Log LOG = LogFactory.getLog(HTMGraphicInterface.class);
   /*
-  Global HTM Parameters
+  Global HTM Region Parameters
    */
-  private static final int HORIZONTAL_COLUMN_NUMBER = 14;
+  private static final int HORIZONTAL_COLUMN_NUMBER = 12;
   private static final int VERTICAL_COLUMN_NUMBER = 12;
-  private static final int CELLS_PER_COLUMN = 4;
+  private static final int CELLS_PER_COLUMN = 3;
 
   //TODO move them to region
   /*
@@ -58,7 +59,7 @@ public class HTMGraphicInterface extends JPanel {
 
   private ArrayList<boolean[]> patterns = new ArrayList<boolean[]>();
 
-  private Region region = new Region(new Point(HORIZONTAL_COLUMN_NUMBER, VERTICAL_COLUMN_NUMBER));
+  private Region region = new Region(HORIZONTAL_COLUMN_NUMBER, VERTICAL_COLUMN_NUMBER);
   private HTMProcess process;
 
   /*
@@ -115,8 +116,8 @@ public class HTMGraphicInterface extends JPanel {
   private final SensoryInputSurface sensoryInput =  new SensoryInputSurface(HORIZONTAL_COLUMN_NUMBER,
                                                                                               VERTICAL_COLUMN_NUMBER);
 
-  final SensoryInputSurface sdrInput = new SensoryInputSurface(HORIZONTAL_COLUMN_NUMBER,
-                                                                                  VERTICAL_COLUMN_NUMBER);
+  private final ColumnSDRSurface sdrInput = new ColumnSDRSurface(HORIZONTAL_COLUMN_NUMBER,
+                                                                                  VERTICAL_COLUMN_NUMBER, region.getColumns());
 
 
   public HTMGraphicInterface() {
@@ -215,12 +216,13 @@ public class HTMGraphicInterface extends JPanel {
     public ControlPanel() {
       setBorder(BorderFactory.createCompoundBorder(
               BorderFactory.createTitledBorder("Controls"),
-              BorderFactory.createEmptyBorder(5, 5, 5, 5)));
+              DEFAULT_BORDER));
       add(new JButton(addPatternAction));
       add(new JButton(resetPatternsAction));
       add(new JButton(runAction));
       add(new JButton(stepAction));
       add(new JButton(stopAction));
+
 
     }
 

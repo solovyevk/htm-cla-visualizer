@@ -1,32 +1,32 @@
-/**
- * Copyright (c) 2011, Peace Technology, Inc.
- * $Author:$
- * $Revision:$
- * $Date:$
- * $NoKeywords$
- */
-
 package htm.model;
 
 import java.awt.*;
 
 public class Region {
-  private final Point dimension;
+  private final Dimension dimension;
   private final Column[] columns;
 
-  public Region(Point dimension) {
+  public Region(Dimension dimension) {
     this.dimension = dimension;
-    this.columns = new Column[dimension.x * dimension.y];
+    this.columns = new Column[dimension.width * dimension.height];
     int index = -1;
-    for (int y = 0; y < dimension.y; y++) {
-      for (int x = 0; x < dimension.x; x++) {
+    for (int y = 0; y < dimension.height; y++) {
+      for (int x = 0; x < dimension.width; x++) {
         index++;
-        columns[index] = new Column(index);
+        columns[index] = new Column(this, index, new Point(x, y));
       }
     }
   }
 
+  public Region(int xSize, int ySize){
+    this(new Dimension(xSize, ySize));
+  }
+
   public Column[] getColumns() {
     return columns;
+  }
+
+  public Dimension getDimension() {
+    return dimension;
   }
 }

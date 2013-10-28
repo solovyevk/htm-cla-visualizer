@@ -22,13 +22,12 @@ public class ColumnSDRSurface extends BaseSurface.CircleElementsSurface {
     this.columns = region;
   }
 
-  @Override
-   protected void drawElement(Graphics2D g2d, int index, int x, int y, int width, int height) {
-     g2d.setColor(getColumn(index).isActive() ? activeColor : this.getBackground());
-     g2d.fillRect(x, y, width, height);
-     g2d.setColor(activeColor);
-     g2d.drawRect(x, y, width, height);
-   }
+  @Override protected void drawElement(Graphics2D g2d, int index, int x, int y, int width, int height) {
+    g2d.setColor(getColumn(index).isActive() ? activeColor : this.getBackground());
+    g2d.fillOval(x, y, width, height);
+    super.drawElement(g2d, index, x, y, width,
+                      height);
+  }
 
   public Column getColumn(int columnIndex) {
     return columns[columnIndex];

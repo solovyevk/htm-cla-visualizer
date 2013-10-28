@@ -17,23 +17,15 @@ public abstract class BaseSurface extends JPanel {
   public static final Color DEFAULT_ACTIVE_COLOR = Color.BLACK;
 
   protected Color activeColor = DEFAULT_ACTIVE_COLOR;
+  protected final Dimension dimension; 
   /**
-   * the amount of elements over x
-   */
-  protected final int xSize;
-  /**
-   * the amount of elements over y
-   */
-  protected final int ySize;
-  /*
   need two following parameters to buffer input on mouse drag event
   */
   private int lastVisitedInputIndex = -1;
   private boolean mouseDragged = false;
 
   protected BaseSurface(int xSize, int ySize) {
-    this.xSize = xSize;
-    this.ySize = ySize;
+    this.dimension = new Dimension(xSize, ySize);
     setBackground(DEFAULT_BACKGROUND_COLOR);
     addMouseListener(new MouseAdapter() {
 
@@ -58,14 +50,14 @@ public abstract class BaseSurface extends JPanel {
 
   protected int getElementSpaceAllocation() {
     Dimension size = this.getSize();
-    double result = MathUtils.findMin((size.getHeight() - 2) / ySize, (size.getWidth() - 2) / xSize);
+    double result = MathUtils.findMin((size.getHeight() - 2) / dimension.height, (size.getWidth() - 2) / dimension.width);
     return result < 1 ? 1 : (int)result - 1;
   }
 
   protected Point getElementStartPoint(int elementSpaceAllocation) {
     Dimension size = this.getSize();
-    int startX = (int)(size.getWidth() - elementSpaceAllocation * this.xSize) / 2;
-    int startY = (int)(size.getHeight() - elementSpaceAllocation * this.ySize) / 2;
+    int startX = (int)(size.getWidth() - elementSpaceAllocation * this.dimension.width) / 2;
+    int startY = (int)(size.getHeight() - elementSpaceAllocation * this.dimension.height) / 2;
     return new Point(startX, startY);
   }
 
@@ -74,8 +66,8 @@ public abstract class BaseSurface extends JPanel {
     Point startPoint = getElementStartPoint(elementSpaceAllocation);
     Graphics2D g2d = (Graphics2D)g;
     int index = -1;
-    for (int y = 0; y < ySize; y++) {
-      for (int x = 0; x < xSize; x++) {
+    for (int y = 0; y < dimension.height; y++) {
+      for (int x = 0; x < dimension.width; x++) {
         index++;
         drawElement(g2d, index, elementSpaceAllocation * x + startPoint.x, elementSpaceAllocation * y + startPoint.y,
                     elementSpaceAllocation - SPACE_BETWEEN_ELEMENTS, elementSpaceAllocation - SPACE_BETWEEN_ELEMENTS);
@@ -88,8 +80,8 @@ public abstract class BaseSurface extends JPanel {
     Point startPoint = getElementStartPoint(elementSpaceAllocation);
     int index = -1;
     outer:
-    for (int y = 0; y < ySize; y++) {
-      for (int x = 0; x < xSize; x++) {
+    for (int y = 0; y < dimension.height; y++) {
+      for (int x = 0; x < dimension.width; x++) {
         index++;
         int elementCenterX = elementSpaceAllocation * x + startPoint.x + elementWidth / 2;
         int elementCenterY = elementSpaceAllocation * y + startPoint.y + elementWidth / 2;
@@ -107,8 +99,8 @@ public abstract class BaseSurface extends JPanel {
     int elementSpaceAllocation = getElementSpaceAllocation(), elementWidth = (elementSpaceAllocation - BaseSurface.SPACE_BETWEEN_ELEMENTS);
     Point startPoint = getElementStartPoint(elementSpaceAllocation);
     int index = -1;
-    for (int y = 0; y < ySize; y++) {
-      for (int x = 0; x < xSize; x++) {
+    for (int y = 0; y < dimension.height; y++) {
+      for (int x = 0; x < dimension.width; x++) {
         index++;
         if (byIndex == index) {
           return new Rectangle(elementSpaceAllocation * x + startPoint.x, elementSpaceAllocation * y + startPoint.y,
@@ -154,6 +146,20 @@ public abstract class BaseSurface extends JPanel {
     }
   }
 
+  /**
+   * the amount of elements over x
+   */
+  public int getXSize() {
+    return dimension.width;
+  }
+
+  /**
+   * the amount of elements over y
+   */
+  public int getYSize() {
+    return dimension.height;
+  }
+
   public static class ElementMouseEnterEvent extends java.util.EventObject {
     private final int index;
 
@@ -172,9 +178,17 @@ public abstract class BaseSurface extends JPanel {
     public void onElementMouseEnter(ElementMouseEnterEvent e);
   }
 
-  public abstract static class CircleElementsSurface extends BaseSurface {
+  public static class CircleElementsSurface extends BaseSurface {
     protected CircleElementsSurface(int xSize, int ySize) {
       super(xSize, ySize);
+    }
+
+    /*
+    Just draw empty circle.
+     */
+    @Override protected void drawElement(Graphics2D g2d, int index, int x, int y, int width, int height) {
+      g2d.setColor(activeColor);
+      g2d.drawOval(x, y, width, height);
     }
 
     @Override
@@ -186,9 +200,15 @@ public abstract class BaseSurface extends JPanel {
     }
   }
 
-  public abstract static class SquareElementsSurface extends BaseSurface {
+  public static class SquareElementsSurface extends BaseSurface {
     protected SquareElementsSurface(int xSize, int ySize) {
       super(xSize, ySize);
+    }
+
+    /*draw empty square*/
+    @Override protected void drawElement(Graphics2D g2d, int index, int x, int y, int width, int height) {
+      g2d.setColor(activeColor);
+      g2d.drawRect(x, y, width, height);
     }
 
     @Override
