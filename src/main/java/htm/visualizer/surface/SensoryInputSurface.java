@@ -1,6 +1,6 @@
 package htm.visualizer.surface;
 
-import htm.model.InputSpace;
+import htm.model.space.InputSpace;
 
 import java.awt.*;
 
@@ -32,33 +32,36 @@ public class SensoryInputSurface extends BaseSurface.SquareElementsSurface {
 
 
   public void setInputValue(int index, boolean value) {
-    sensoryInput.setInput(index, value);
+    sensoryInput.setInputValue(index, value);
     repaint(this.getElementAreaByIndex(index));
   }
 
   public boolean getInputValue(int index) {
-    return sensoryInput.getInput(index);
+    return sensoryInput.getInputValue(index);
   }
 
-  public void setSensoryInput(boolean[] source) {
+  public void setSensoryInputValues(boolean[] source) {
     for (int i = 0; i < source.length; i++) {
-      sensoryInput.setInput(i, source[i]);
+      sensoryInput.setInputValue(i, source[i]);
 
     }
     repaint();
   }
 
-  public boolean[] getSensoryInput() {
+  public boolean[] getSensoryInputValues() {
     boolean[] result = new boolean[dimension.width * dimension.height];
     for (int i = 0; i < result.length; i++) {
-      result[i] = sensoryInput.getInput(i);
+      result[i] = sensoryInput.getInputValue(i);
 
     }
     return result;
   }
 
   public void reset() {
-    setSensoryInput(new boolean[dimension.width * dimension.height]);
+    setSensoryInputValues(new boolean[dimension.width * dimension.height]);
   }
 
+  public InputSpace getSensoryInput() {
+    return sensoryInput;
+  }
 }

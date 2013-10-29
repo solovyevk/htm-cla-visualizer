@@ -1,5 +1,7 @@
 package htm.model;
 
+import htm.model.space.InputSpace;
+
 public class Synapse {
   private double permanence;
 
@@ -29,14 +31,14 @@ public class Synapse {
   }
 
   public static class ProximalSynapse extends Synapse {
-    private final InputSpace connectedSensoryInput;
-    public ProximalSynapse(double initPermanence, InputSpace connectedSensoryInput) {
+    private final InputSpace.Input connectedSensoryInput;
+    public ProximalSynapse(double initPermanence, InputSpace.Input connectedSensoryInput) {
       super(initPermanence);
       this.connectedSensoryInput = connectedSensoryInput;
     }
 
 
-    public InputSpace getConnectedSensoryInput() {
+    public InputSpace.Input getConnectedSensoryInput() {
       return connectedSensoryInput;
     }
   }

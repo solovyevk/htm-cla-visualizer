@@ -11,6 +11,7 @@ package htm.visualizer;
 import htm.model.Cell;
 import htm.model.Column;
 import htm.model.Region;
+import htm.model.space.InputSpace;
 import htm.visualizer.surface.BaseSurface;
 import htm.visualizer.surface.ColumnCellsByIndexSurface;
 import htm.visualizer.surface.ColumnSDRSurface;
@@ -24,7 +25,9 @@ import javax.swing.plaf.basic.BasicSplitPaneDivider;
 import javax.swing.plaf.basic.BasicSplitPaneUI;
 import java.awt.*;
 import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Observable;
 import java.util.Observer;
 
@@ -35,6 +38,8 @@ public class HTMGraphicInterface extends JPanel {
    */
   private static final int HORIZONTAL_COLUMN_NUMBER = 12;
   private static final int VERTICAL_COLUMN_NUMBER = 12;
+  private static final int SENSORY_INPUT_WIDTH = 12;
+  private static final int SENSORY_INPUT_HEIGHT = 12;
   private static final int CELLS_PER_COLUMN = 3;
 
   //TODO move them to region
@@ -113,8 +118,8 @@ public class HTMGraphicInterface extends JPanel {
   private final JComponent slicedView = new HTMRegionSlicedView();
   private final ControlPanel control = new ControlPanel();
   private final SelectedCellsAndDetails details = new SelectedCellsAndDetails();
-  private final SensoryInputSurface sensoryInput =  new SensoryInputSurface(HORIZONTAL_COLUMN_NUMBER,
-                                                                                              VERTICAL_COLUMN_NUMBER);
+  private final SensoryInputSurface sensoryInputSurface =  new SensoryInputSurface(SENSORY_INPUT_WIDTH,
+                                                                                   SENSORY_INPUT_HEIGHT);
 
   private final ColumnSDRSurface sdrInput = new ColumnSDRSurface(HORIZONTAL_COLUMN_NUMBER,
                                                                                   VERTICAL_COLUMN_NUMBER, region.getColumns());
@@ -125,6 +130,17 @@ public class HTMGraphicInterface extends JPanel {
     initLayout();
     initProcess();
     LOG.debug("Finish initialization");
+    //TODO REMOVE
+    sdrInput.addElementMouseEnterListener(new BaseSurface.ElementMouseEnterListener() {
+      @Override public void onElementMouseEnter(BaseSurface.ElementMouseEnterEvent e) {
+        int index = e.getIndex();
+        Column column = sdrInput.getColumn(index);
+        column.setActive(true);
+        sdrInput.repaint(sdrInput.getElementAreaByIndex(index));
+        InputSpace.Input inp = sensoryInputSurface.getSensoryInput().getElementByPosition(column.getInputSpacePosition(sensoryInputSurface.getSensoryInput()));
+        sensoryInputSurface.setInputValue(inp.getIndex(), true);
+      }
+    });
   }
 
   private void initProcess() {
@@ -160,8 +176,8 @@ public class HTMGraphicInterface extends JPanel {
                         BorderFactory.createTitledBorder("Sensory Input & SD Representation"),
                         DEFAULT_BORDER));
 
-                sensoryInput.setBorder(LIGHT_GRAY_BORDER);
-                add(sensoryInput);
+                sensoryInputSurface.setBorder(LIGHT_GRAY_BORDER);
+                add(sensoryInputSurface);
                 sdrInput.setBorder(LIGHT_GRAY_BORDER);
                 add(sdrInput);
                 return this;
@@ -222,6 +238,18 @@ public class HTMGraphicInterface extends JPanel {
       add(new JButton(runAction));
       add(new JButton(stepAction));
       add(new JButton(stopAction));
+      //TODO remove
+      JButton test = new JButton("test");
+      test.addActionListener(new ActionListener() {
+        @Override public void actionPerformed(ActionEvent e) {
+          Collection<InputSpace.Input> r = sensoryInputSurface.getSensoryInput().getAllWithinRadius(new Point(5,5),3);
+          for (InputSpace.Input input : r) {
+            sensoryInputSurface.getSensoryInput().setInputValue(input.getIndex(), true);
+          }
+          sensoryInputSurface.repaint();
+        }
+      });
+      add(test);
 
 
     }
@@ -286,13 +314,13 @@ public class HTMGraphicInterface extends JPanel {
 
   /*Control Methods*/
   private void addPattern() {
-    patterns.add(sensoryInput.getSensoryInput());
-    sensoryInput.reset();
+    patterns.add(sensoryInputSurface.getSensoryInputValues());
+    sensoryInputSurface.reset();
   }
 
   private void resetPatterns() {
     patterns.clear();
-    sensoryInput.reset();
+    sensoryInputSurface.reset();
     process.reset();
     addPatternAction.putValue(Action.NAME, "Add Pattern");
     stepAction.putValue(Action.NAME, "Step");
@@ -304,7 +332,7 @@ public class HTMGraphicInterface extends JPanel {
 
     public boolean step() {
       if (patterns.size() != 0) {
-        sensoryInput.setSensoryInput(patterns.get(currentPatternIndex));
+        sensoryInputSurface.setSensoryInputValues(patterns.get(currentPatternIndex));
         try {
           Thread.sleep(500);
         } catch (Exception e) {

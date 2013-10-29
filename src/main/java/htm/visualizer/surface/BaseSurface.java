@@ -95,7 +95,7 @@ public abstract class BaseSurface extends JPanel {
     }
   }
 
-  protected Rectangle getElementAreaByIndex(int byIndex) {
+  public Rectangle getElementAreaByIndex(int byIndex) {
     int elementSpaceAllocation = getElementSpaceAllocation(), elementWidth = (elementSpaceAllocation - BaseSurface.SPACE_BETWEEN_ELEMENTS);
     Point startPoint = getElementStartPoint(elementSpaceAllocation);
     int index = -1;
