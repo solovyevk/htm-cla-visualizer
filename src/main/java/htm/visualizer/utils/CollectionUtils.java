@@ -10,14 +10,15 @@ package htm.visualizer.utils;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 
 public class CollectionUtils {
 
   private CollectionUtils() {
   }
 
-  public static <T> Collection<T> filter(Collection<T> target, Predicate<T> predicate) {
-       Collection<T> result = new ArrayList<T>();
+  public static <T> List<T> filter(Collection<T> target, Predicate<T> predicate) {
+       List<T> result = new ArrayList<T>();
        for (T element: target) {
            if (predicate.apply(element)) {
                result.add(element);

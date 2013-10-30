@@ -1,6 +1,7 @@
 package htm.model;
 
 import htm.model.space.ColumnSpace;
+import htm.model.space.InputSpace;
 
 import java.awt.*;
 
@@ -13,7 +14,16 @@ public class Region extends ColumnSpace {
     super(dimension);
   }
 
-  public Column[] getColumns() {
-    return elementList.toArray(new Column[elementList.size()]);
+  public Region(int xSize, int ySize, InputSpace source, double inputRadius) {
+    super(xSize, ySize);
+    connectToInputSpace(source, inputRadius);
   }
+
+  public void connectToInputSpace(InputSpace source, double inputRadius){
+    Column[] columns = this.getColumns();
+    for (Column column : columns) {
+      column.createProximalSegment(source, inputRadius);
+    }
+  }
+
 }

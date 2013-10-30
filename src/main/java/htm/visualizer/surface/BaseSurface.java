@@ -61,10 +61,10 @@ public abstract class BaseSurface extends JPanel {
     return new Point(startX, startY);
   }
 
-  protected void doDrawing(Graphics g) {
+  protected void doDrawing(Graphics2D g2d) {
     int elementSpaceAllocation = getElementSpaceAllocation();
     Point startPoint = getElementStartPoint(elementSpaceAllocation);
-    Graphics2D g2d = (Graphics2D)g;
+
     int index = -1;
     for (int y = 0; y < dimension.height; y++) {
       for (int x = 0; x < dimension.width; x++) {
@@ -124,7 +124,8 @@ public abstract class BaseSurface extends JPanel {
   @Override
   protected void paintComponent(Graphics g) {
     super.paintComponent(g);
-    doDrawing(g);
+    Graphics2D g2d = (Graphics2D)g;
+    doDrawing(g2d);
   }
 
   /*Custom events implementation*/

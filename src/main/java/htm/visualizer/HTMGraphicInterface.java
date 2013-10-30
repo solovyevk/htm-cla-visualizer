@@ -38,8 +38,8 @@ public class HTMGraphicInterface extends JPanel {
    */
   private static final int HORIZONTAL_COLUMN_NUMBER = 12;
   private static final int VERTICAL_COLUMN_NUMBER = 12;
-  private static final int SENSORY_INPUT_WIDTH = 12;
-  private static final int SENSORY_INPUT_HEIGHT = 12;
+  private static final int SENSORY_INPUT_WIDTH = 24;
+  private static final int SENSORY_INPUT_HEIGHT = 24;
   private static final int CELLS_PER_COLUMN = 3;
 
   //TODO move them to region
@@ -51,8 +51,9 @@ public class HTMGraphicInterface extends JPanel {
   private static final int SP_MINIMAL_OVERLAP = 2;
   private static final double SP_PERMANENCE_DEC = 0.05;
   private static final double SP_PERMANENCE_INC = 0.05;
-  private static final int SP_AMOUNT_OF_SYNAPSES = 60;
+  private static final int SP_AMOUNT_OF_SYNAPSES = 30;
   private static final double SP_INHIBITION_RADIUS = 5.0;
+  private static final double SP_INPUT_RADIUS = 5.5;
 
 
   private static Border DEFAULT_BORDER = BorderFactory.createEmptyBorder(0, 4, 0, 4);
@@ -60,11 +61,13 @@ public class HTMGraphicInterface extends JPanel {
 
   static {
     Column.CELLS_PER_COLUMN = CELLS_PER_COLUMN;
+    Column.AMOUNT_OF_PROXIMAL_SYNAPSES = SP_AMOUNT_OF_SYNAPSES;
   }
 
   private ArrayList<boolean[]> patterns = new ArrayList<boolean[]>();
 
-  private Region region = new Region(HORIZONTAL_COLUMN_NUMBER, VERTICAL_COLUMN_NUMBER);
+  private InputSpace sensoryInput = new InputSpace(SENSORY_INPUT_WIDTH, SENSORY_INPUT_HEIGHT);
+  private Region region = new Region(HORIZONTAL_COLUMN_NUMBER, VERTICAL_COLUMN_NUMBER, sensoryInput, SP_INPUT_RADIUS);
   private HTMProcess process;
 
   /*
@@ -118,8 +121,7 @@ public class HTMGraphicInterface extends JPanel {
   private final JComponent slicedView = new HTMRegionSlicedView();
   private final ControlPanel control = new ControlPanel();
   private final SelectedCellsAndDetails details = new SelectedCellsAndDetails();
-  private final SensoryInputSurface sensoryInputSurface =  new SensoryInputSurface(SENSORY_INPUT_WIDTH,
-                                                                                   SENSORY_INPUT_HEIGHT);
+  private final SensoryInputSurface sensoryInputSurface =  new SensoryInputSurface(sensoryInput);
 
   private final ColumnSDRSurface sdrInput = new ColumnSDRSurface(HORIZONTAL_COLUMN_NUMBER,
                                                                                   VERTICAL_COLUMN_NUMBER, region.getColumns());
@@ -134,11 +136,16 @@ public class HTMGraphicInterface extends JPanel {
     sdrInput.addElementMouseEnterListener(new BaseSurface.ElementMouseEnterListener() {
       @Override public void onElementMouseEnter(BaseSurface.ElementMouseEnterEvent e) {
         int index = e.getIndex();
-        Column column = sdrInput.getColumn(index);
+       /* Column column = sdrInput.getColumn(index);
         column.setActive(true);
         sdrInput.repaint(sdrInput.getElementAreaByIndex(index));
         InputSpace.Input inp = sensoryInputSurface.getSensoryInput().getElementByPosition(column.getInputSpacePosition(sensoryInputSurface.getSensoryInput()));
+        sensoryInputSurface.setInputValue(inp.getIndex(), true);*/
+        Column column = sdrInput.getColumn(index);
+        InputSpace.Input inp = sensoryInputSurface.getSensoryInput().getElementByPosition(column.getInputSpacePosition(sensoryInputSurface.getSensoryInput()));
         sensoryInputSurface.setInputValue(inp.getIndex(), true);
+        sensoryInputSurface.setCurrentColumn(column);
+        sensoryInputSurface.repaint();
       }
     });
   }

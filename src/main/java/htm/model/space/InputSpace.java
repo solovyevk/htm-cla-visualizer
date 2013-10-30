@@ -8,7 +8,9 @@
 
 package htm.model.space;
 
-import java.awt.*;
+
+import java.awt.Dimension;
+import java.awt.Point;
 
 public class InputSpace extends BaseSpace<InputSpace.Input> {
   public InputSpace(int xSize, int ySize) {

@@ -3,6 +3,8 @@ package htm.model;
 import htm.model.space.BaseSpace;
 import htm.model.space.InputSpace;
 import htm.visualizer.utils.CircularArrayList;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 
 import java.awt.*;
 import java.util.ArrayList;
@@ -10,10 +12,14 @@ import java.util.Collections;
 import java.util.List;
 
 public class Column extends BaseSpace.Element {
+  private static final Log LOG = LogFactory.getLog(Column.class);
   public static int CELLS_PER_COLUMN = 3;
+  public static int AMOUNT_OF_PROXIMAL_SYNAPSES = 30;
   private static final int COLUMN_MAX_ACTIVE = 1000;
+
   private final Region region;
   private final List<Cell> cells = new ArrayList<Cell>();
+  private final List<Synapse.ProximalSynapse> proximalSynapses = new ArrayList<Synapse.ProximalSynapse>();
   private ArrayList<Boolean> activeList = new CircularArrayList<Boolean>(COLUMN_MAX_ACTIVE);
 
   /**
@@ -38,21 +44,28 @@ public class Column extends BaseSpace.Element {
   **/
 
   public Point getInputSpacePosition(InputSpace sensoryInput){
-    double xSpace = sensoryInput.getDimension().width/region.getDimension().width;
-    double ySpace = sensoryInput.getDimension().height/region.getDimension().height;
-    Point result = new Point();
-    result.setLocation(position.getX() * xSpace, position.getY() * ySpace);
-    return result;
+    double xScale = sensoryInput.getDimension().getWidth()/region.getDimension().getWidth();
+    double yScale = sensoryInput.getDimension().getHeight()/region.getDimension().getHeight();
+    int inputSpaceX = Math.min((int) Math.ceil(position.getX() * xScale + (xScale > 1 ? xScale/2: 0)), sensoryInput.getDimension().width -1);
+    int inputSpaceY = Math.min((int) Math.ceil(position.getY() * yScale + (yScale > 1 ? yScale/2: 0)),  sensoryInput.getDimension().height -1);
+    LOG.debug("Column X In Region Grid:" + position.x +"; In Input Space:" + inputSpaceX);
+    LOG.debug("Column Y In Region Grid:" + position.y +"; In Input Space:" + inputSpaceY);
+    return new Point(inputSpaceX, inputSpaceY);
   }
 
-  public void createProximalSegments(InputSpace sensoryInput, int inputRadius){
-    int maxInputRadius = (int)Math.sqrt(Math.pow(sensoryInput.getDimension().width, 2) + Math.pow(sensoryInput.getDimension().height, 2));
-    if(maxInputRadius < inputRadius){
-      throw new IllegalArgumentException("Input Radius is bigger than maximum allowed: " + maxInputRadius);
+  public void createProximalSegment(InputSpace sensoryInput, double inputRadius){
+    Point inputSpacePosition = this.getInputSpacePosition(sensoryInput);
+    List<InputSpace.Input> potentialProximalInputs = sensoryInput.getAllWithinRadius(inputSpacePosition, inputRadius);
+    Collections.shuffle(potentialProximalInputs);
+    if(potentialProximalInputs.size() < AMOUNT_OF_PROXIMAL_SYNAPSES){
+      throw new IllegalArgumentException("Amount of potential synapses:" +  AMOUNT_OF_PROXIMAL_SYNAPSES
+                                         + " is bigger than number of inputs:" + potentialProximalInputs.size() +", increase input radius");
     }
-    double xSpace = sensoryInput.getDimension().width/region.getDimension().width;
-    double ySpace = sensoryInput.getDimension().height/region.getDimension().height;
-    //columnGridPosition.getX()
+    for (int j = 0; j < AMOUNT_OF_PROXIMAL_SYNAPSES; j++) {
+      InputSpace.Input input = potentialProximalInputs.get(j);
+      double permanence = .5;
+      proximalSynapses.add(new Synapse.ProximalSynapse(permanence,input));
+    }
 
     /*
     for (int i = 0; i < numSamples; i++)
@@ -120,5 +133,9 @@ public class Column extends BaseSpace.Element {
 
   public boolean isActive() {
     return this.activeList.size() > 0 ? activeList.get(0) : false;
+  }
+
+  public List<Synapse.ProximalSynapse> getProximalSynapses() {
+    return Collections.unmodifiableList(proximalSynapses);
   }
 }

@@ -17,4 +17,8 @@ public class ColumnSpace extends BaseSpace<Column> {
   @Override protected Column createElement(BaseSpace<Column> space, int index, Point position) {
     return new Column((Region)space, index, position);
   }
+
+  public Column[] getColumns() {
+    return elementList.toArray(new Column[elementList.size()]);
+  }
 }

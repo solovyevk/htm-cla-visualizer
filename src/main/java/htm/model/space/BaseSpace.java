@@ -12,7 +12,6 @@ import htm.visualizer.utils.CollectionUtils;
 
 import java.awt.*;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
@@ -52,16 +51,17 @@ public abstract class BaseSpace<E extends BaseSpace.Element> {
     return elementList.get(index);
   }
 
-  public List<E> getElementsAsList(){
+  public List<E> getElements(){
      return Collections.unmodifiableList(elementList);
   }
 
 
-  public Collection<E> getAllWithinRadius(final Point center, final double radius) {
+  public List<E> getAllWithinRadius(final Point center, final double radius) {
+    final double adjustedRadius = radius < 1 ? Math.sqrt(Math.pow(this.getDimension().height, 2) + Math.pow(this.getDimension().width, 2)) : radius;
     CollectionUtils.Predicate<E> withinRadius = new CollectionUtils.Predicate<E>() {
       @Override public boolean apply(E element) {
         return Math.pow(center.x - element.getPosition().x, 2) + Math.pow(center.y - element.getPosition().y,
-                                                                          2) <= Math.pow(radius, 2);
+                                                                          2) <= Math.pow(adjustedRadius, 2);
       }
     };
     return CollectionUtils.filter(elementList, withinRadius);
