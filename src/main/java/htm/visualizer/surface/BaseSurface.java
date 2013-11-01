@@ -17,10 +17,10 @@ public abstract class BaseSurface extends JPanel {
   public static final Color DEFAULT_ACTIVE_COLOR = Color.BLACK;
 
   protected Color activeColor = DEFAULT_ACTIVE_COLOR;
-  protected final Dimension dimension; 
+  protected final Dimension dimension;
   /**
-  need two following parameters to buffer input on mouse drag event
-  */
+   * need two following parameters to buffer input on mouse drag event
+   */
   private int lastVisitedInputIndex = -1;
   private boolean mouseDragged = false;
 
@@ -50,7 +50,8 @@ public abstract class BaseSurface extends JPanel {
 
   protected int getElementSpaceAllocation() {
     Dimension size = this.getSize();
-    double result = MathUtils.findMin((size.getHeight() - 2) / dimension.height, (size.getWidth() - 2) / dimension.width);
+    double result = MathUtils.findMin((size.getHeight() - 2) / dimension.height,
+                                      (size.getWidth() - 2) / dimension.width);
     return result < 1 ? 1 : (int)result - 1;
   }
 
@@ -65,12 +66,12 @@ public abstract class BaseSurface extends JPanel {
     int elementSpaceAllocation = getElementSpaceAllocation();
     Point startPoint = getElementStartPoint(elementSpaceAllocation);
 
-    int index = -1;
+    int index = 0;
     for (int y = 0; y < dimension.height; y++) {
       for (int x = 0; x < dimension.width; x++) {
-        index++;
         drawElement(g2d, index, elementSpaceAllocation * x + startPoint.x, elementSpaceAllocation * y + startPoint.y,
                     elementSpaceAllocation - SPACE_BETWEEN_ELEMENTS, elementSpaceAllocation - SPACE_BETWEEN_ELEMENTS);
+        index++;
       }
     }
   }
@@ -78,11 +79,10 @@ public abstract class BaseSurface extends JPanel {
   private void mouseOver(int mouseX, int mouseY) {
     int elementSpaceAllocation = getElementSpaceAllocation(), elementWidth = (elementSpaceAllocation - BaseSurface.SPACE_BETWEEN_ELEMENTS);
     Point startPoint = getElementStartPoint(elementSpaceAllocation);
-    int index = -1;
+    int index = 0;
     outer:
     for (int y = 0; y < dimension.height; y++) {
       for (int x = 0; x < dimension.width; x++) {
-        index++;
         int elementCenterX = elementSpaceAllocation * x + startPoint.x + elementWidth / 2;
         int elementCenterY = elementSpaceAllocation * y + startPoint.y + elementWidth / 2;
         if (lastVisitedInputIndex != index && isMouseOverElement(mouseX, mouseY, elementCenterX, elementCenterY,
@@ -91,27 +91,54 @@ public abstract class BaseSurface extends JPanel {
           lastVisitedInputIndex = index;
           break outer;
         }
+        index++;
       }
     }
   }
 
-  public Rectangle getElementAreaByIndex(int byIndex) {
-    int elementSpaceAllocation = getElementSpaceAllocation(), elementWidth = (elementSpaceAllocation - BaseSurface.SPACE_BETWEEN_ELEMENTS);
-    Point startPoint = getElementStartPoint(elementSpaceAllocation);
-    int index = -1;
+  public Point getElementPositionByIndex(int byIndex) {
+    int index = 0;
     for (int y = 0; y < dimension.height; y++) {
       for (int x = 0; x < dimension.width; x++) {
-        index++;
         if (byIndex == index) {
-          return new Rectangle(elementSpaceAllocation * x + startPoint.x, elementSpaceAllocation * y + startPoint.y,
-                               elementSpaceAllocation - BaseSurface.SPACE_BETWEEN_ELEMENTS,
-                               elementSpaceAllocation - BaseSurface.SPACE_BETWEEN_ELEMENTS);
-
-
+          return new Point(x, y);
         }
+        index++;
       }
     }
     throw new IllegalArgumentException("No Element found by Index:" + byIndex);
+  }
+
+  public Rectangle getElementAreaByIndex(int byIndex) {
+    return getElementArea(getElementPositionByIndex(byIndex));
+  }
+
+  public Rectangle getElementArea(Point position) {
+    int elementSpaceAllocation = getElementSpaceAllocation();
+    Point startPoint = getElementStartPoint(elementSpaceAllocation);
+    return new Rectangle(elementSpaceAllocation * position.x + startPoint.x,
+                         elementSpaceAllocation * position.y + startPoint.y,
+                         elementSpaceAllocation - BaseSurface.SPACE_BETWEEN_ELEMENTS +1,
+                         elementSpaceAllocation - BaseSurface.SPACE_BETWEEN_ELEMENTS +1);
+
+
+  }
+
+
+
+  /**
+   * Return element area scaled by scaleFactor parameter
+   *
+   * @param position
+   * @param scaleFactor
+   * @return
+   */
+
+  public Rectangle getElementAreaWithScale(Point position, double scaleFactor) {
+    Rectangle outsideArea = getElementArea(position);
+    double newWidth = outsideArea.getWidth() * scaleFactor, newHeight = outsideArea.getHeight() * scaleFactor,
+            newX = outsideArea.getX() - (newWidth - outsideArea.getWidth()) / 2, newY = outsideArea.getY() - (newHeight - outsideArea.getHeight()) / 2;
+    return new Rectangle((int)newX, (int)newY, (int)newWidth, (int)newHeight);
   }
 
 
@@ -206,7 +233,7 @@ public abstract class BaseSurface extends JPanel {
       super(xSize, ySize);
     }
 
-    /*draw empty square*/
+    /*Just draw empty square*/
     @Override protected void drawElement(Graphics2D g2d, int index, int x, int y, int width, int height) {
       g2d.setColor(activeColor);
       g2d.drawRect(x, y, width, height);

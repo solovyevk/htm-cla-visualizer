@@ -10,11 +10,20 @@ import java.awt.*;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Random;
 
 public class Column extends BaseSpace.Element {
   private static final Log LOG = LogFactory.getLog(Column.class);
   public static int CELLS_PER_COLUMN = 3;
   public static int AMOUNT_OF_PROXIMAL_SYNAPSES = 30;
+  /*
+  *ProximalSynapse Parameters
+   */
+  public static double CONNECTED_PERMANENCE = 0.2;
+  public static double PERMANENCE_INCREASE = 0.015;
+  public static double PERMANENCE_DECREASE = 0.01;
+
+
   private static final int COLUMN_MAX_ACTIVE = 1000;
 
   private final Region region;
@@ -48,56 +57,31 @@ public class Column extends BaseSpace.Element {
     double yScale = sensoryInput.getDimension().getHeight()/region.getDimension().getHeight();
     int inputSpaceX = Math.min((int) Math.ceil(position.getX() * xScale + (xScale > 1 ? xScale/2: 0)), sensoryInput.getDimension().width -1);
     int inputSpaceY = Math.min((int) Math.ceil(position.getY() * yScale + (yScale > 1 ? yScale/2: 0)),  sensoryInput.getDimension().height -1);
-    LOG.debug("Column X In Region Grid:" + position.x +"; In Input Space:" + inputSpaceX);
-    LOG.debug("Column Y In Region Grid:" + position.y +"; In Input Space:" + inputSpaceY);
     return new Point(inputSpaceX, inputSpaceY);
   }
 
   public void createProximalSegment(InputSpace sensoryInput, double inputRadius){
     Point inputSpacePosition = this.getInputSpacePosition(sensoryInput);
     List<InputSpace.Input> potentialProximalInputs = sensoryInput.getAllWithinRadius(inputSpacePosition, inputRadius);
-    Collections.shuffle(potentialProximalInputs);
     if(potentialProximalInputs.size() < AMOUNT_OF_PROXIMAL_SYNAPSES){
-      throw new IllegalArgumentException("Amount of potential synapses:" +  AMOUNT_OF_PROXIMAL_SYNAPSES
-                                         + " is bigger than number of inputs:" + potentialProximalInputs.size() +", increase input radius");
-    }
+        throw new IllegalArgumentException("Amount of potential synapses:" +  AMOUNT_OF_PROXIMAL_SYNAPSES
+                                           + " is bigger than number of inputs:" + potentialProximalInputs.size() +", increase input radius");
+      }
+    Collections.shuffle(potentialProximalInputs);
+    // Tie the random seed to this Column's position for reproducibility
+    Random randomGenerator = new Random(this.getLocationSeed());
     for (int j = 0; j < AMOUNT_OF_PROXIMAL_SYNAPSES; j++) {
       InputSpace.Input input = potentialProximalInputs.get(j);
-      double permanence = .5;
-      proximalSynapses.add(new Synapse.ProximalSynapse(permanence,input));
+      //Permanence value is based on Gaussian distribution around the ConnectedPerm value, biased by distance from this Column.
+      double distanceToInput = BaseSpace.getDistance(inputSpacePosition, input.getPosition()),
+              initPermanence = PERMANENCE_INCREASE * randomGenerator.nextGaussian() + CONNECTED_PERMANENCE,
+      radiusBiasDeviation = 0.1f, //1.1 t to 0.9
+      radiusBiasScale = 1 + radiusBiasDeviation - radiusBiasDeviation/inputRadius * 2 * distanceToInput,
+      radiusBiasPermanence =  initPermanence * radiusBiasScale;
+      LOG.debug("PERMANENCE INITIALIZATION: init permanence" + initPermanence
+                + " ,distanceToInput:" + distanceToInput + ", radiusBiasScale:" + radiusBiasScale + " , radiusBiasPermanence:" + radiusBiasPermanence);
+      proximalSynapses.add(new Synapse.ProximalSynapse(radiusBiasPermanence,input));
     }
-
-    /*
-    for (int i = 0; i < numSamples; i++)
-    		{
-    			// Get the current sample DataPoint.
-    			inputPoint = InputSpaceArray[i];
-
-    			double permanence = gausianNormalDistribution(generator);
-
-    			// Distance from this column to the input bit, in the input space's coordinates.
-    			dX = (Position.X * XSpace) - inputPoint.X;
-    			dY = (Position.Y * YSpace) - inputPoint.Y;
-    			distanceToInput_InputSpace = sqrt(dX * dX + dY * dY);
-
-    			// Distance from this column to the input bit, in this Region's coordinates (used by Region::AverageReceptiveFieldSize()).
-    			dX = Position.X - (inputPoint.X / XSpace);
-    			dY = Position.Y - (inputPoint.Y / YSpace);
-    			distanceToInput_RegionSpace = sqrt(dX * dX + dY * dY);
-
-    			// Original
-    			//double localityBias = RadiusBiasPeak / 2.0f * exp(pow(distanceToInput_InputSpace / (longerSide * RadiusBiasStandardDeviation), 2) / -2);
-    			//double permanenceBias = Min(1.0f, permanence * localityBias);
-
-    			// My version
-    			double localityBias = pow(1.0 - Min(1.0, distanceToInput_InputSpace / (double)localityRadius), 0.001);
-    			double permanenceBias = permanence * localityBias;
-
-    			// Create the proximal synapse for the current sample.
-    			ProximalSegment->CreateProximalSynapse(&(region->ProximalSynapseParams), curInput, inputPoint, permanenceBias, distanceToInput_RegionSpace);
-    		}
-     */
-
   }
 
   public List<Cell> getCells() {
@@ -137,5 +121,9 @@ public class Column extends BaseSpace.Element {
 
   public List<Synapse.ProximalSynapse> getProximalSynapses() {
     return Collections.unmodifiableList(proximalSynapses);
+  }
+
+  public Region getRegion() {
+    return region;
   }
 }

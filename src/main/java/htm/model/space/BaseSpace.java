@@ -36,6 +36,14 @@ public abstract class BaseSpace<E extends BaseSpace.Element> {
     this(dimension.width, dimension.height);
   }
 
+  public int getLongSide(){
+    return  Math.max(dimension.width, dimension.height);
+  }
+
+  public int getShortSide(){
+     return  Math.min(dimension.width, dimension.height);
+   }
+
   protected abstract E createElement(BaseSpace<E> space, int index, Point position);
 
   public E getElementByPosition(Point position) {
@@ -71,6 +79,15 @@ public abstract class BaseSpace<E extends BaseSpace.Element> {
     return dimension;
   }
 
+  /*
+  helpers
+   */
+  public static double getDistance(Point pointOne, Point pointTwo){
+    int dX = pointOne.x - pointTwo.x;
+    int dY = pointOne.y - pointTwo.y;
+    return Math.sqrt(Math.pow(dX, 2) + Math.pow(dY, 2));
+  }
+
 
   public static class Element {
     protected final Point position;
@@ -87,6 +104,17 @@ public abstract class BaseSpace<E extends BaseSpace.Element> {
 
     public int getIndex() {
       return index;
+    }
+    /**
+    *Kind unique identifier for position
+    */
+    public int getLocationSeed(){
+      int length = position.y == 0 ? 1 : (int)(Math.log10(position.y)+1);
+      return (position.x + 1) * (int)Math.pow(10, length)  + position.y;
+    }
+
+    @Override public String toString() {
+      return "locationSeed:" + getLocationSeed() +", X:" + getPosition().x +", Y:"  + getPosition().y +", index:" + getIndex();
     }
   }
 

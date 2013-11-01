@@ -53,7 +53,7 @@ public class HTMGraphicInterface extends JPanel {
   private static final double SP_PERMANENCE_INC = 0.05;
   private static final int SP_AMOUNT_OF_SYNAPSES = 30;
   private static final double SP_INHIBITION_RADIUS = 5.0;
-  private static final double SP_INPUT_RADIUS = 5.5;
+  private static final double SP_INPUT_RADIUS = 8;
 
 
   private static Border DEFAULT_BORDER = BorderFactory.createEmptyBorder(0, 4, 0, 4);
@@ -121,38 +121,42 @@ public class HTMGraphicInterface extends JPanel {
   private final JComponent slicedView = new HTMRegionSlicedView();
   private final ControlPanel control = new ControlPanel();
   private final SelectedCellsAndDetails details = new SelectedCellsAndDetails();
-  private final SensoryInputSurface sensoryInputSurface =  new SensoryInputSurface(sensoryInput);
+  private final SensoryInputSurface sensoryInputSurface = new SensoryInputSurface(sensoryInput);
 
   private final ColumnSDRSurface sdrInput = new ColumnSDRSurface(HORIZONTAL_COLUMN_NUMBER,
-                                                                                  VERTICAL_COLUMN_NUMBER, region.getColumns());
+                                                                 VERTICAL_COLUMN_NUMBER, region.getColumns());
 
 
   public HTMGraphicInterface() {
     super(new BorderLayout(0, 0));
     initLayout();
     initProcess();
+    initListeners();
     LOG.debug("Finish initialization");
-    //TODO REMOVE
-    sdrInput.addElementMouseEnterListener(new BaseSurface.ElementMouseEnterListener() {
-      @Override public void onElementMouseEnter(BaseSurface.ElementMouseEnterEvent e) {
-        int index = e.getIndex();
-       /* Column column = sdrInput.getColumn(index);
-        column.setActive(true);
-        sdrInput.repaint(sdrInput.getElementAreaByIndex(index));
-        InputSpace.Input inp = sensoryInputSurface.getSensoryInput().getElementByPosition(column.getInputSpacePosition(sensoryInputSurface.getSensoryInput()));
-        sensoryInputSurface.setInputValue(inp.getIndex(), true);*/
-        Column column = sdrInput.getColumn(index);
-        InputSpace.Input inp = sensoryInputSurface.getSensoryInput().getElementByPosition(column.getInputSpacePosition(sensoryInputSurface.getSensoryInput()));
-        sensoryInputSurface.setInputValue(inp.getIndex(), true);
-        sensoryInputSurface.setCurrentColumn(column);
-        sensoryInputSurface.repaint();
-      }
-    });
+
   }
+
 
   private void initProcess() {
     process = new HTMProcess();
     process.addObserver(stepAction);
+  }
+
+  private void initListeners() {
+    //TODO REMOVE
+    sdrInput.addElementMouseEnterListener(new BaseSurface.ElementMouseEnterListener() {
+      @Override public void onElementMouseEnter(BaseSurface.ElementMouseEnterEvent e) {
+        int index = e.getIndex();
+           /* Column column = sdrInput.getColumn(index);
+            column.setActive(true);
+            sdrInput.repaint(sdrInput.getElementAreaByIndex(index));
+            InputSpace.Input inp = sensoryInputSurface.getSensoryInput().getElementByPosition(column.getInputSpacePosition(sensoryInputSurface.getSensoryInput()));
+            sensoryInputSurface.setInputValue(inp.getIndex(), true);*/
+        Column column = sdrInput.getColumn(index);
+        sensoryInputSurface.setCurrentColumn(column);
+        sensoryInputSurface.repaint();
+      }
+    });
   }
 
   private void initLayout() {
@@ -249,7 +253,7 @@ public class HTMGraphicInterface extends JPanel {
       JButton test = new JButton("test");
       test.addActionListener(new ActionListener() {
         @Override public void actionPerformed(ActionEvent e) {
-          Collection<InputSpace.Input> r = sensoryInputSurface.getSensoryInput().getAllWithinRadius(new Point(5,5),3);
+          Collection<InputSpace.Input> r = sensoryInputSurface.getSensoryInput().getAllWithinRadius(new Point(5, 5), 3);
           for (InputSpace.Input input : r) {
             sensoryInputSurface.getSensoryInput().setInputValue(input.getIndex(), true);
           }

@@ -2,10 +2,14 @@ package htm.model;
 
 import htm.model.space.ColumnSpace;
 import htm.model.space.InputSpace;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 
 import java.awt.*;
 
+
 public class Region extends ColumnSpace {
+  private static final Log LOG = LogFactory.getLog(Region.class);
   public Region(int xSize, int ySize) {
     super(xSize, ySize);
   }
@@ -17,6 +21,10 @@ public class Region extends ColumnSpace {
   public Region(int xSize, int ySize, InputSpace source, double inputRadius) {
     super(xSize, ySize);
     connectToInputSpace(source, inputRadius);
+  }
+
+  public Region(int xSize, int ySize, InputSpace source) {
+    this(xSize, ySize, source, -1);
   }
 
   public void connectToInputSpace(InputSpace source, double inputRadius){

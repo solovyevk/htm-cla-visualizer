@@ -5,6 +5,7 @@ import htm.model.Synapse;
 import htm.model.space.InputSpace;
 
 import java.awt.*;
+import java.util.List;
 
 /*
 This is our Sensory Input Interface, bits activated on mouse enter
@@ -38,14 +39,25 @@ public class SensoryInputSurface extends BaseSurface.SquareElementsSurface {
   }
 
   public void drawProximalSynapsesForColumn(Column column, Graphics2D g2d){
-    java.util.List<Synapse.ProximalSynapse> synapsesToDraw = column.getProximalSynapses();
+    List<Synapse.ProximalSynapse> synapsesToDraw = column.getProximalSynapses();
+    Point center = column.getInputSpacePosition(sensoryInput);
+    Rectangle aroundRec = getElementAreaWithScale(center, 1/(Math.PI/4) * (sensoryInput.getShortSide()/column.getRegion().getShortSide()) * 1.1);
+    g2d.setColor(Color.ORANGE);
+    Composite original = g2d.getComposite();
+    g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER,
+            0.2f));
+    g2d.fillOval(aroundRec.x, aroundRec.y, aroundRec.width, aroundRec.height);
+    g2d.setComposite(original);
     for (Synapse.ProximalSynapse proximalSynapse : synapsesToDraw) {
-      Rectangle areaToDraw = this.getElementAreaByIndex(proximalSynapse.getConnectedSensoryInput().getIndex());
-      //third of cell width
-      int newWidth =  areaToDraw.width/3;
-      g2d.setColor(Color.RED);
-      g2d.fillRect(areaToDraw.x + newWidth + 1, areaToDraw.y + newWidth + 1, newWidth, newWidth);
+      Rectangle insideRec = getElementAreaWithScale(this.getElementPositionByIndex(
+              proximalSynapse.getConnectedSensoryInput().getIndex()), .5);
+      Color synapseStateColor = proximalSynapse.getPermanence() >= Column.CONNECTED_PERMANENCE ? Color.GREEN : Color.RED;
+      g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER,
+                                                  Math.min(1.0f, Math.max(0.2f, (float)Math.abs(proximalSynapse.getPermanence() - Column.CONNECTED_PERMANENCE) * 30))));
+      g2d.setColor(synapseStateColor);
+      g2d.fillRect(insideRec.x, insideRec.y, insideRec.width, insideRec.height);
     }
+    g2d.setComposite(original);
   }
 
 
@@ -91,6 +103,6 @@ public class SensoryInputSurface extends BaseSurface.SquareElementsSurface {
   }
 
   public void setCurrentColumn(Column currentColumn) {
-    this.currentColumn = currentColumn;
+    this.currentColumn = this.currentColumn != currentColumn ? currentColumn : null;
   }
 }
