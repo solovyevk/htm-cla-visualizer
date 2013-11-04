@@ -1,6 +1,6 @@
 package htm.model;
 
-import htm.visualizer.utils.CircularArrayList;
+import htm.utils.CircularArrayList;
 
 public class Cell {
 

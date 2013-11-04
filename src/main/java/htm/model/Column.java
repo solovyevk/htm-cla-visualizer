@@ -2,42 +2,84 @@ package htm.model;
 
 import htm.model.space.BaseSpace;
 import htm.model.space.InputSpace;
-import htm.visualizer.utils.CircularArrayList;
+import htm.utils.*;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import java.awt.*;
-import java.util.ArrayList;
-import java.util.Collections;
+import java.util.*;
 import java.util.List;
-import java.util.Random;
 
 public class Column extends BaseSpace.Element {
   private static final Log LOG = LogFactory.getLog(Column.class);
   public static int CELLS_PER_COLUMN = 3;
   public static int AMOUNT_OF_PROXIMAL_SYNAPSES = 30;
-  /*
-  *ProximalSynapse Parameters
+  /**
+   * WP
+   * A minimum number of inputs that must be active for a
+   * column to be considered during the inhibition step.
    */
+  public static int MIN_OVERLAP = 2;
+
+  //ProximalSynapse Parameters
+
+  /**
+  * WP
+  * If the permanence value for a synapse is greater than this
+  * value, it is said to be connected.
+  */
   public static double CONNECTED_PERMANENCE = 0.2;
+  /**
+  * WP
+  * Amount permanence values of synapses are incremented
+  * during learning.
+  */
   public static double PERMANENCE_INCREASE = 0.015;
+  /**
+  * WP
+  * Amount permanence values of synapses are decremented
+  *during learning.
+  */
   public static double PERMANENCE_DECREASE = 0.01;
+  /**
+  *WP
+  *overlap(c) The spatial pooler overlap of column c with a particular
+  *input pattern.
+  */
+  private static final int COLUMN_CYCLE_BUFFER_SIZE = 1000;
 
+  private static final CollectionUtils.Predicate<Synapse.ProximalSynapse> ACTIVE_CONNECTED_PROXIMAL_SYNAPSES_PREDICATE = new CollectionUtils.Predicate<Synapse.ProximalSynapse>() {
+    @Override public boolean apply(Synapse.ProximalSynapse synapse) {
+      return synapse.isConnected(CONNECTED_PERMANENCE) && synapse.getConnectedSensoryInput().getValue();
+    }
+  };
 
-  private static final int COLUMN_MAX_ACTIVE = 1000;
+  private static final CollectionUtils.Predicate<Synapse.ProximalSynapse> CONNECTED_PROXIMAL_SYNAPSES_PREDICATE = new CollectionUtils.Predicate<Synapse.ProximalSynapse>() {
+    @Override public boolean apply(Synapse.ProximalSynapse synapse) {
+      return synapse.isConnected(CONNECTED_PERMANENCE);
+    }
+  };
 
   private final Region region;
   private final List<Cell> cells = new ArrayList<Cell>();
   private final List<Synapse.ProximalSynapse> proximalSynapses = new ArrayList<Synapse.ProximalSynapse>();
-  private ArrayList<Boolean> activeList = new CircularArrayList<Boolean>(COLUMN_MAX_ACTIVE);
-
-  /**
-   * activeDutyCycle(c) A sliding average representing how often column c has
-   * been active after inhibition (e.g. over the last 1000 iterations).
-   */
-  private double activeDutyCycle;
+  private int minimalOverlap = MIN_OVERLAP;
+  private double boost = 1.0f;
 
 
+  private ColumnBufferedState<Double> overlap = new ColumnBufferedState<Double>(0.0){
+    @Override protected boolean positiveCondition(Double overlap) {
+      return overlap >= minimalOverlap;
+    }
+  };
+
+  private ColumnBufferedState<Boolean> active = new ColumnBufferedState<Boolean>(false){
+    @Override protected boolean positiveCondition(Boolean active) {
+      return active;
+    }
+  };
+
+  private Map<Double, List<Column>> neighbors_cache = new HashMap<Double, List<Column>>();
 
   public Column(Region region, int columnIndex, Point columnGridPosition) {
     super(columnGridPosition, columnIndex);
@@ -47,42 +89,148 @@ public class Column extends BaseSpace.Element {
     }
   }
 
+
+
   /*
   *A Point (srcX,srcY) of this Column's 'center' position in
   * terms of the proximal-synapse input space.
   **/
 
-  public Point getInputSpacePosition(InputSpace sensoryInput){
-    double xScale = sensoryInput.getDimension().getWidth()/region.getDimension().getWidth();
-    double yScale = sensoryInput.getDimension().getHeight()/region.getDimension().getHeight();
-    int inputSpaceX = Math.min((int) Math.ceil(position.getX() * xScale + (xScale > 1 ? xScale/2: 0)), sensoryInput.getDimension().width -1);
-    int inputSpaceY = Math.min((int) Math.ceil(position.getY() * yScale + (yScale > 1 ? yScale/2: 0)),  sensoryInput.getDimension().height -1);
-    return new Point(inputSpaceX, inputSpaceY);
+  public Point getInputSpacePosition() {
+    return this.region.convertColumnPositionToInputSpace(this.getPosition());
   }
 
-  public void createProximalSegment(InputSpace sensoryInput, double inputRadius){
-    Point inputSpacePosition = this.getInputSpacePosition(sensoryInput);
+  /**
+   * WP
+   * Prior to receiving any inputs, the region is initialized by computing a list of initial
+   * potential synapses for each column. This consists of a random set of inputs selected
+   * from the input space. Each input is represented by a synapse and assigned a
+   * random permanence value. The random permanence values are chosen with two
+   * criteria. First, the values are chosen to be in a small range around connectedPerm
+   * (the minimum permanence value at which a synapse is considered "connected").
+   * This enables potential synapses to become connected (or disconnected) after a
+   * small number of training iterations. Second, each column has a natural center over
+   * the input region, and the permanence values have a bias towards this center (they
+   * have higher values near the center).
+   *
+   * @param inputRadius
+   */
+
+  public void createProximalSegment(double inputRadius) {
+    InputSpace sensoryInput = this.region.getInputSpace();
+    Point inputSpacePosition = this.getInputSpacePosition();
     List<InputSpace.Input> potentialProximalInputs = sensoryInput.getAllWithinRadius(inputSpacePosition, inputRadius);
-    if(potentialProximalInputs.size() < AMOUNT_OF_PROXIMAL_SYNAPSES){
-        throw new IllegalArgumentException("Amount of potential synapses:" +  AMOUNT_OF_PROXIMAL_SYNAPSES
-                                           + " is bigger than number of inputs:" + potentialProximalInputs.size() +", increase input radius");
-      }
+    if (potentialProximalInputs.size() < AMOUNT_OF_PROXIMAL_SYNAPSES) {
+      throw new IllegalArgumentException("Amount of potential synapses:" + AMOUNT_OF_PROXIMAL_SYNAPSES
+                                         + " is bigger than number of inputs:" + potentialProximalInputs.size() + ", increase input radius");
+    }
     Collections.shuffle(potentialProximalInputs);
     // Tie the random seed to this Column's position for reproducibility
+    inputRadius = inputRadius < 1 ? Math.sqrt(Math.pow(sensoryInput.getDimension().height, 2) + Math.pow(
+            sensoryInput.getDimension().width, 2)) : inputRadius;
     Random randomGenerator = new Random(this.getLocationSeed());
     for (int j = 0; j < AMOUNT_OF_PROXIMAL_SYNAPSES; j++) {
       InputSpace.Input input = potentialProximalInputs.get(j);
       //Permanence value is based on Gaussian distribution around the ConnectedPerm value, biased by distance from this Column.
-      double distanceToInput = BaseSpace.getDistance(inputSpacePosition, input.getPosition()),
+      double distanceToInputSrc = BaseSpace.getDistance(inputSpacePosition, input.getPosition()),
+              distanceToInputColumn =  BaseSpace.getDistance(this.region.convertInputPositionToColumnSpace(input.getPosition()), position),
               initPermanence = PERMANENCE_INCREASE * randomGenerator.nextGaussian() + CONNECTED_PERMANENCE,
-      radiusBiasDeviation = 0.1f, //1.1 t to 0.9
-      radiusBiasScale = 1 + radiusBiasDeviation - radiusBiasDeviation/inputRadius * 2 * distanceToInput,
-      radiusBiasPermanence =  initPermanence * radiusBiasScale;
+              radiusBiasDeviation = 0.1f, //1.1 to 0.9 -> Y = 1.1 - radiusBiasDeviation / 2inputRadius * X
+              radiusBiasScale = 1 + radiusBiasDeviation - radiusBiasDeviation / inputRadius * 2 * distanceToInputSrc,
+              radiusBiasPermanence = initPermanence * radiusBiasScale;
       LOG.debug("PERMANENCE INITIALIZATION: init permanence" + initPermanence
-                + " ,distanceToInput:" + distanceToInput + ", radiusBiasScale:" + radiusBiasScale + " , radiusBiasPermanence:" + radiusBiasPermanence);
-      proximalSynapses.add(new Synapse.ProximalSynapse(radiusBiasPermanence,input));
+                + " ,distanceToInputSrc:" + distanceToInputSrc + ", distanceToInputColumn:" + distanceToInputColumn +", radiusBiasScale:" + radiusBiasScale + " , radiusBiasPermanence:" + radiusBiasPermanence);
+      proximalSynapses.add(new Synapse.ProximalSynapse(radiusBiasPermanence, input, this));
     }
   }
+
+  public List<Synapse.ProximalSynapse> getActiveConnectedSynapses() {
+    return CollectionUtils.filter(proximalSynapses, ACTIVE_CONNECTED_PROXIMAL_SYNAPSES_PREDICATE);
+  }
+
+  public List<Synapse.ProximalSynapse> getConnectedSynapses() {
+      return CollectionUtils.filter(proximalSynapses, CONNECTED_PROXIMAL_SYNAPSES_PREDICATE);
+    }
+
+  public double computeOverlap() {
+    double currentOverLap = getActiveConnectedSynapses().size();
+    if (currentOverLap < minimalOverlap) {
+      currentOverLap = 0;
+    } else {
+      currentOverLap = currentOverLap * getBoost();
+    }
+    overlap.addState(currentOverLap);
+    return currentOverLap;
+  }
+
+  public boolean computeActiveDoInhibition() {
+   // neighbors(c) A list of all the columns that are within inhibitionRadius of
+   // column c.
+   return true;
+  }
+
+  /**
+  * overlap(c) The spatial pooler overlap of column c with a particular
+  *input pattern.
+  * @return
+  */
+
+  public double getOverlap() {
+     return overlap.getLast();
+   }
+
+  /**
+  * WP
+  * overlapDutyCycle(c) A sliding average representing how often column c has had
+  * significant overlap (i.e. greater than minOverlap) with its
+  *inputs (e.g. over the last 1000 iterations).
+  * @return
+  */
+
+  public double getOverlapDutyCycle(){
+    return overlap.getSlidingAverage();
+  }
+
+  public boolean isActive(){
+    return active.getLast();
+  }
+
+  /**
+   * WP
+   * activeDutyCycle(c) A sliding average representing how often column c has
+   * been active after inhibition (e.g. over the last 1000 iterations).
+   */
+  public double getActiveDutyCycle(){
+    return  active.getSlidingAverage();
+  }
+
+  /*
+  * WP
+  * The boost value for column c as computed during learning -
+  * used to increase the overlap value for inactive columns.
+  */
+  public double getBoost(){
+    return boost;
+  }
+
+  /*
+  * WP
+  * neighbors(c) A list of all the columns that are within inhibitionRadius of
+  * column c.
+  */
+  public List<Column> getNeighbors(Double inhibitionRadius){
+    List<Column> result;
+    result = neighbors_cache.get(inhibitionRadius);
+    if(result == null){
+      result = region.getAllWithinRadius(this.getPosition(), inhibitionRadius);
+      //remove itself
+      result.remove(result.indexOf(this));
+      neighbors_cache.put(inhibitionRadius, result);
+    }
+    return result;
+  }
+
+
 
   public List<Cell> getCells() {
     return Collections.unmodifiableList(cells);
@@ -92,33 +240,6 @@ public class Column extends BaseSpace.Element {
     return cells.get(index);
   }
 
-  /**
-   * updateActiveDutyCycle(c) Computes a moving average of how often column c
-   * has been active after inhibition.
-   *
-   * @return
-   */
-  private double updateActiveDutyCycle() {
-    int totalActive = 0;
-    for (boolean act : activeList) {
-      if (act) {
-        totalActive++;
-      }
-    }
-    this.activeDutyCycle = (double)totalActive / activeList.size();
-    return activeDutyCycle;
-  }
-
-  public void setActive(boolean active) {
-    // logger.log(Level.INFO, "activeList" + activeList.size());
-    activeList.add(0, active);
-    updateActiveDutyCycle();
-  }
-
-  public boolean isActive() {
-    return this.activeList.size() > 0 ? activeList.get(0) : false;
-  }
-
   public List<Synapse.ProximalSynapse> getProximalSynapses() {
     return Collections.unmodifiableList(proximalSynapses);
   }
@@ -126,4 +247,37 @@ public class Column extends BaseSpace.Element {
   public Region getRegion() {
     return region;
   }
+
+
+  private static abstract class ColumnBufferedState<E> extends CircularArrayList<E>{
+     public ColumnBufferedState(E defValue) {
+       super(COLUMN_CYCLE_BUFFER_SIZE);
+       addState(defValue);
+     }
+
+     /**
+     * Set the column state
+     *
+     * @param value
+     **/
+     void addState(E value){
+       this.add(0,value);
+     }
+
+     public E getLast(){
+       return this.get(0);
+     }
+
+     public double getSlidingAverage(){
+       int length = this.size(), activeCount = 0;
+       for (int i = 0; i < length; i++) {
+         if(positiveCondition(get(i))){
+           activeCount++;
+         }
+       }
+       return activeCount/length;
+     }
+
+     protected abstract boolean positiveCondition(E state);
+   }
 }

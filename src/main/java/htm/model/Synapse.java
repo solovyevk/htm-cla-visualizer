@@ -1,5 +1,6 @@
 package htm.model;
 
+import htm.model.space.BaseSpace;
 import htm.model.space.InputSpace;
 
 public class Synapse {
@@ -17,7 +18,6 @@ public class Synapse {
    * @return
    */
   public boolean isConnected(double connectedPermanence) {
-
     return this.permanence >= connectedPermanence;
   }
 
@@ -32,14 +32,24 @@ public class Synapse {
 
   public static class ProximalSynapse extends Synapse {
     private final InputSpace.Input connectedSensoryInput;
-    public ProximalSynapse(double initPermanence, InputSpace.Input connectedSensoryInput) {
+    private final Column belongsTo;
+    private final double distanceToColumn;
+    public ProximalSynapse(double initPermanence, InputSpace.Input connectedSensoryInput, Column belongsTo) {
       super(initPermanence);
       this.connectedSensoryInput = connectedSensoryInput;
+      this.belongsTo =  belongsTo;
+      this.distanceToColumn = BaseSpace.getDistance(belongsTo.getRegion().convertInputPositionToColumnSpace(
+              connectedSensoryInput.getPosition()),
+                                               belongsTo.getPosition());
     }
 
 
     public InputSpace.Input getConnectedSensoryInput() {
       return connectedSensoryInput;
+    }
+
+    public double getDistanceToColumn() {
+      return distanceToColumn;
     }
   }
 

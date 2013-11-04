@@ -1,6 +1,6 @@
 package htm.visualizer.surface;
 
-import htm.visualizer.utils.MathUtils;
+import htm.utils.MathUtils;
 
 import javax.swing.*;
 import java.awt.*;

@@ -6,7 +6,7 @@
  * $NoKeywords$
  */
 
-package htm.visualizer.utils;
+package htm.utils;
 
 import java.util.ArrayList;
 

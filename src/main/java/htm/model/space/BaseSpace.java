@@ -8,7 +8,8 @@
 
 package htm.model.space;
 
-import htm.visualizer.utils.CollectionUtils;
+
+import htm.utils.*;
 
 import java.awt.*;
 import java.util.ArrayList;
@@ -79,6 +80,19 @@ public abstract class BaseSpace<E extends BaseSpace.Element> {
     return dimension;
   }
 
+  protected Point convertPositionToOtherSpace(Point srcPosition, Dimension srcDimension, Dimension targetDimension) {
+    double xScale = targetDimension.getWidth() / srcDimension.getWidth();
+    double yScale = targetDimension.getHeight() / srcDimension.getHeight();
+    //apply linear function scale
+    double xAdj = 1-(1/(srcDimension.getWidth()/xScale + xScale*xScale))*srcPosition.getX();
+   int targetX = Math.min((int)Math.ceil(srcPosition.getX() * xScale + (xScale > 1 ? xAdj   : 0)),
+                           targetDimension.width - 1);
+    double yAdj = 1-(1/(srcDimension.getHeight()/yScale + yScale*yScale))*srcPosition.getY();
+    int targetY = Math.min((int)Math.ceil(srcPosition.getY() * yScale + (yScale > 1 ? yAdj  : 0)),
+                           targetDimension.height - 1);
+    return new Point(targetX, targetY);
+  }
+
   /*
   helpers
    */
@@ -87,6 +101,8 @@ public abstract class BaseSpace<E extends BaseSpace.Element> {
     int dY = pointOne.y - pointTwo.y;
     return Math.sqrt(Math.pow(dX, 2) + Math.pow(dY, 2));
   }
+
+
 
 
   public static class Element {

@@ -38,8 +38,8 @@ public class HTMGraphicInterface extends JPanel {
    */
   private static final int HORIZONTAL_COLUMN_NUMBER = 12;
   private static final int VERTICAL_COLUMN_NUMBER = 12;
-  private static final int SENSORY_INPUT_WIDTH = 24;
-  private static final int SENSORY_INPUT_HEIGHT = 24;
+  private static final int SENSORY_INPUT_WIDTH = 36;
+  private static final int SENSORY_INPUT_HEIGHT= 36;
   private static final int CELLS_PER_COLUMN = 3;
 
   //TODO move them to region
@@ -62,6 +62,7 @@ public class HTMGraphicInterface extends JPanel {
   static {
     Column.CELLS_PER_COLUMN = CELLS_PER_COLUMN;
     Column.AMOUNT_OF_PROXIMAL_SYNAPSES = SP_AMOUNT_OF_SYNAPSES;
+    Column.MIN_OVERLAP = SP_MINIMAL_OVERLAP;
   }
 
   private ArrayList<boolean[]> patterns = new ArrayList<boolean[]>();
@@ -143,18 +144,13 @@ public class HTMGraphicInterface extends JPanel {
   }
 
   private void initListeners() {
-    //TODO REMOVE
     sdrInput.addElementMouseEnterListener(new BaseSurface.ElementMouseEnterListener() {
       @Override public void onElementMouseEnter(BaseSurface.ElementMouseEnterEvent e) {
         int index = e.getIndex();
-           /* Column column = sdrInput.getColumn(index);
-            column.setActive(true);
-            sdrInput.repaint(sdrInput.getElementAreaByIndex(index));
-            InputSpace.Input inp = sensoryInputSurface.getSensoryInput().getElementByPosition(column.getInputSpacePosition(sensoryInputSurface.getSensoryInput()));
-            sensoryInputSurface.setInputValue(inp.getIndex(), true);*/
         Column column = sdrInput.getColumn(index);
         sensoryInputSurface.setCurrentColumn(column);
         sensoryInputSurface.repaint();
+        LOG.debug("Number of active connected synapses:" + column.getActiveConnectedSynapses().size());
       }
     });
   }
@@ -176,7 +172,7 @@ public class HTMGraphicInterface extends JPanel {
             c.anchor = GridBagConstraints.NORTH;
             c.fill = GridBagConstraints.BOTH;
             this.add(control, c);
-            c.weighty = 1.0;
+            c.weighty = 1.2;
             c.weightx = 1.0;
             JComponent bottom = new SelectedCellsAndDetails();
             c.gridy = 1;
@@ -195,7 +191,7 @@ public class HTMGraphicInterface extends JPanel {
               }
             }.init(), c);
             c.gridy = 2;
-            c.weighty = 1.0;
+            c.weighty = 0.8;
             this.add(bottom, c);
             return this;
           }
@@ -258,6 +254,7 @@ public class HTMGraphicInterface extends JPanel {
             sensoryInputSurface.getSensoryInput().setInputValue(input.getIndex(), true);
           }
           sensoryInputSurface.repaint();
+          LOG.debug("AverageReceptiveFieldSize:" + region.getAverageReceptiveFieldSize());
         }
       });
       add(test);
