@@ -38,8 +38,8 @@ public class HTMGraphicInterface extends JPanel {
    */
   private static final int HORIZONTAL_COLUMN_NUMBER = 12;
   private static final int VERTICAL_COLUMN_NUMBER = 12;
-  private static final int SENSORY_INPUT_WIDTH = 36;
-  private static final int SENSORY_INPUT_HEIGHT= 36;
+  private static final int SENSORY_INPUT_WIDTH = 24;
+  private static final int SENSORY_INPUT_HEIGHT= 24;
   private static final int CELLS_PER_COLUMN = 3;
 
   //TODO move them to region
@@ -51,9 +51,10 @@ public class HTMGraphicInterface extends JPanel {
   private static final int SP_MINIMAL_OVERLAP = 2;
   private static final double SP_PERMANENCE_DEC = 0.05;
   private static final double SP_PERMANENCE_INC = 0.05;
-  private static final int SP_AMOUNT_OF_SYNAPSES = 30;
-  private static final double SP_INHIBITION_RADIUS = 5.0;
-  private static final double SP_INPUT_RADIUS = 8;
+  private static final int SP_AMOUNT_OF_SYNAPSES = 20;
+  private static final double SP_INPUT_RADIUS = 6;
+  /*The amount that is added to a Column's Boost value in a single time step, when it is being boosted.*/
+  private static final double SP_BOOST_RATE = 0.01;
 
 
   private static Border DEFAULT_BORDER = BorderFactory.createEmptyBorder(0, 4, 0, 4);
@@ -63,6 +64,8 @@ public class HTMGraphicInterface extends JPanel {
     Column.CELLS_PER_COLUMN = CELLS_PER_COLUMN;
     Column.AMOUNT_OF_PROXIMAL_SYNAPSES = SP_AMOUNT_OF_SYNAPSES;
     Column.MIN_OVERLAP = SP_MINIMAL_OVERLAP;
+    Column.DESIRED_LOCAL_ACTIVITY = SP_DESIRED_LOCAL_ACTIVITY;
+    Column.BOOST_RATE = SP_BOOST_RATE;
   }
 
   private ArrayList<boolean[]> patterns = new ArrayList<boolean[]>();
@@ -125,7 +128,7 @@ public class HTMGraphicInterface extends JPanel {
   private final SensoryInputSurface sensoryInputSurface = new SensoryInputSurface(sensoryInput);
 
   private final ColumnSDRSurface sdrInput = new ColumnSDRSurface(HORIZONTAL_COLUMN_NUMBER,
-                                                                 VERTICAL_COLUMN_NUMBER, region.getColumns());
+                                                                 VERTICAL_COLUMN_NUMBER, region);
 
 
   public HTMGraphicInterface() {
@@ -141,6 +144,13 @@ public class HTMGraphicInterface extends JPanel {
   private void initProcess() {
     process = new HTMProcess();
     process.addObserver(stepAction);
+    /*Repaint after each step*/
+    final JComponent win = this;
+    process.addObserver(new Observer(){
+      @Override public void update(Observable o, Object arg) {
+        win.repaint();
+      }
+    });
   }
 
   private void initListeners() {
@@ -151,6 +161,8 @@ public class HTMGraphicInterface extends JPanel {
         sensoryInputSurface.setCurrentColumn(column);
         sensoryInputSurface.repaint();
         LOG.debug("Number of active connected synapses:" + column.getActiveConnectedSynapses().size());
+        sdrInput.setCurrentColumn(column);
+        sdrInput.repaint();
       }
     });
   }
@@ -341,6 +353,7 @@ public class HTMGraphicInterface extends JPanel {
     public boolean step() {
       if (patterns.size() != 0) {
         sensoryInputSurface.setSensoryInputValues(patterns.get(currentPatternIndex));
+        region.performSpatialPooling();
         try {
           Thread.sleep(500);
         } catch (Exception e) {

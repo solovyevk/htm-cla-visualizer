@@ -10,6 +10,8 @@ package htm.model.space;
 
 
 import htm.utils.*;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 
 import java.awt.*;
 import java.util.ArrayList;
@@ -17,6 +19,9 @@ import java.util.Collections;
 import java.util.List;
 
 public abstract class BaseSpace<E extends BaseSpace.Element> {
+  private static final Log LOG = LogFactory.getLog(
+          BaseSpace.class);
+
   protected final java.util.List<E> elementList;
   private final Dimension dimension;
 
@@ -37,13 +42,13 @@ public abstract class BaseSpace<E extends BaseSpace.Element> {
     this(dimension.width, dimension.height);
   }
 
-  public int getLongSide(){
-    return  Math.max(dimension.width, dimension.height);
+  public int getLongSide() {
+    return Math.max(dimension.width, dimension.height);
   }
 
-  public int getShortSide(){
-     return  Math.min(dimension.width, dimension.height);
-   }
+  public int getShortSide() {
+    return Math.min(dimension.width, dimension.height);
+  }
 
   protected abstract E createElement(BaseSpace<E> space, int index, Point position);
 
@@ -60,13 +65,14 @@ public abstract class BaseSpace<E extends BaseSpace.Element> {
     return elementList.get(index);
   }
 
-  public List<E> getElements(){
-     return Collections.unmodifiableList(elementList);
+  public List<E> getElements() {
+    return Collections.unmodifiableList(elementList);
   }
 
 
   public List<E> getAllWithinRadius(final Point center, final double radius) {
-    final double adjustedRadius = radius < 1 ? Math.sqrt(Math.pow(this.getDimension().height, 2) + Math.pow(this.getDimension().width, 2)) : radius;
+    final double adjustedRadius = radius < 1 ? Math.sqrt(Math.pow(this.getDimension().height, 2) + Math.pow(
+            this.getDimension().width, 2)) : radius;
     CollectionUtils.Predicate<E> withinRadius = new CollectionUtils.Predicate<E>() {
       @Override public boolean apply(E element) {
         return Math.pow(center.x - element.getPosition().x, 2) + Math.pow(center.y - element.getPosition().y,
@@ -83,26 +89,28 @@ public abstract class BaseSpace<E extends BaseSpace.Element> {
   protected Point convertPositionToOtherSpace(Point srcPosition, Dimension srcDimension, Dimension targetDimension) {
     double xScale = targetDimension.getWidth() / srcDimension.getWidth();
     double yScale = targetDimension.getHeight() / srcDimension.getHeight();
-    //apply linear function scale
-    double xAdj = 1-(1/(srcDimension.getWidth()/xScale + xScale*xScale))*srcPosition.getX();
-   int targetX = Math.min((int)Math.ceil(srcPosition.getX() * xScale + (xScale > 1 ? xAdj   : 0)),
+    //apply function scale
+    double xAdj = xScale/2 - (srcPosition.getX()/srcDimension.getWidth()) * xScale;
+    double targetX = Math.min(Math.ceil(srcPosition.getX() * xScale + (xScale > 1 ? xAdj : 0)),
                            targetDimension.width - 1);
-    double yAdj = 1-(1/(srcDimension.getHeight()/yScale + yScale*yScale))*srcPosition.getY();
-    int targetY = Math.min((int)Math.ceil(srcPosition.getY() * yScale + (yScale > 1 ? yAdj  : 0)),
+    //LOG.debug("xAdj:" + xAdj + ", X:" + srcPosition.getX() * xScale + ", adj. targetX :" + targetX);
+    double yAdj = yScale/2 - (srcPosition.getY()/srcDimension.getHeight()) * yScale;
+    //double yAdj = yScale / 2 - srcPosition.getY() / ((yScale + 2) * yScale);
+    double targetY = Math.min(Math.ceil(srcPosition.getY() * yScale + (yScale > 1 ? yAdj : 0)),
                            targetDimension.height - 1);
-    return new Point(targetX, targetY);
+    Point result = new Point();
+    result.setLocation(targetX, targetY);
+    return result;
   }
 
   /*
   helpers
    */
-  public static double getDistance(Point pointOne, Point pointTwo){
+  public static double getDistance(Point pointOne, Point pointTwo) {
     int dX = pointOne.x - pointTwo.x;
     int dY = pointOne.y - pointTwo.y;
     return Math.sqrt(Math.pow(dX, 2) + Math.pow(dY, 2));
   }
-
-
 
 
   public static class Element {
@@ -121,16 +129,17 @@ public abstract class BaseSpace<E extends BaseSpace.Element> {
     public int getIndex() {
       return index;
     }
+
     /**
-    *Kind unique identifier for position
-    */
-    public int getLocationSeed(){
-      int length = position.y == 0 ? 1 : (int)(Math.log10(position.y)+1);
-      return (position.x + 1) * (int)Math.pow(10, length)  + position.y;
+     * Kind unique identifier for position
+     */
+    public int getLocationSeed() {
+      int length = position.y == 0 ? 1 : (int)(Math.log10(position.y) + 1);
+      return (position.x + 1) * (int)Math.pow(10, length) + position.y;
     }
 
     @Override public String toString() {
-      return "locationSeed:" + getLocationSeed() +", X:" + getPosition().x +", Y:"  + getPosition().y +", index:" + getIndex();
+      return "locationSeed:" + getLocationSeed() + ", X:" + getPosition().x + ", Y:" + getPosition().y + ", index:" + getIndex();
     }
   }
 

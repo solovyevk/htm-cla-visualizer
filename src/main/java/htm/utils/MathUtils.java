@@ -8,6 +8,8 @@
 
 package htm.utils;
 
+import java.math.BigDecimal;
+
 public class MathUtils {
   private MathUtils() {
   }
@@ -30,6 +32,13 @@ public class MathUtils {
 
   public static boolean inRange(int value, int lowerBound, int upperBound) {
     return (lowerBound <= value && value <= upperBound);
+  }
+
+  public static double round(double value, int places) {
+      if (places < 0) throw new IllegalArgumentException("places should not be negative");
+      BigDecimal bd = new BigDecimal(value);
+      bd = bd.setScale(places, BigDecimal.ROUND_HALF_UP);
+      return bd.doubleValue();
   }
 
 }
