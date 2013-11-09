@@ -41,6 +41,7 @@ public class ColumnSDRSurface extends BaseSurface.CircleElementsSurface {
 
   public void setCurrentColumn(Column currentColumn) {
     this.currentColumn = this.currentColumn != currentColumn ? currentColumn : null;
+    this.repaint();
   }
 
   public void drawInhibitedColumns(Column currentColumn, Graphics2D g2d) {

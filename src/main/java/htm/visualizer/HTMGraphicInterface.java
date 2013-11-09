@@ -124,11 +124,11 @@ public class HTMGraphicInterface extends JPanel {
 
   private final JComponent slicedView = new HTMRegionSlicedView();
   private final ControlPanel control = new ControlPanel();
-  private final SelectedCellsAndDetails details = new SelectedCellsAndDetails();
   private final SensoryInputSurface sensoryInputSurface = new SensoryInputSurface(sensoryInput);
 
   private final ColumnSDRSurface sdrInput = new ColumnSDRSurface(HORIZONTAL_COLUMN_NUMBER,
                                                                  VERTICAL_COLUMN_NUMBER, region);
+  private final ColumnInfo columnInfo = new ColumnInfo();
 
 
   public HTMGraphicInterface() {
@@ -159,10 +159,8 @@ public class HTMGraphicInterface extends JPanel {
         int index = e.getIndex();
         Column column = sdrInput.getColumn(index);
         sensoryInputSurface.setCurrentColumn(column);
-        sensoryInputSurface.repaint();
-        LOG.debug("Number of active connected synapses:" + column.getActiveConnectedSynapses().size());
         sdrInput.setCurrentColumn(column);
-        sdrInput.repaint();
+        columnInfo.setCurrentColumn(column);
       }
     });
   }
@@ -186,7 +184,7 @@ public class HTMGraphicInterface extends JPanel {
             this.add(control, c);
             c.weighty = 1.2;
             c.weightx = 1.0;
-            JComponent bottom = new SelectedCellsAndDetails();
+            JComponent bottom = new SelectedCellsAndDetails(columnInfo);
             c.gridy = 1;
             this.add(new JComponent() {
               private Container init() {
@@ -219,20 +217,24 @@ public class HTMGraphicInterface extends JPanel {
 
 
   private static class SelectedCellsAndDetails extends JPanel {
-    public SelectedCellsAndDetails() {
+    public SelectedCellsAndDetails(ColumnInfo columnInfo) {
       super(new BorderLayout());
       setBorder(BorderFactory.createCompoundBorder(
               BorderFactory.createTitledBorder("Selected/Active Column & Details"),
               DEFAULT_BORDER));
       final SensoryInputSurface top = new SensoryInputSurface(5, 3);
       top.setBorder(LIGHT_GRAY_BORDER);
-      final JComponent bottom = new JPanel();
+      JComponent test = new JPanel();
+      test.setBackground(Color.WHITE);
+      final JTabbedPane bottom = new JTabbedPane();
+           bottom.addTab("Column Attributes", columnInfo);
+           bottom.addTab("Proximal Synapses", test);
       bottom.setBorder(LIGHT_GRAY_BORDER);
       bottom.setBackground(Color.WHITE);
       JSplitPane splitPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT,
                                             top, bottom);
       splitPane.setOneTouchExpandable(true);
-      splitPane.setDividerLocation(150);
+      splitPane.setDividerLocation(50);
       //TODO REVIEW THIS
       splitPane.setUI(new BasicSplitPaneUI() {
         public BasicSplitPaneDivider createDefaultDivider() {
