@@ -41,13 +41,13 @@ public class Column extends BaseSpace.Element {
    * Amount permanence values of synapses are incremented
    * during learning.
    */
-  public static double PERMANENCE_INCREASE = 0.015;
+  public static double PERMANENCE_INCREASE = 0.005;
   /**
    * WP
    * Amount permanence values of synapses are decremented
    * during learning.
    */
-  public static double PERMANENCE_DECREASE = 0.01;
+  public static double PERMANENCE_DECREASE = 0.005;
   /**
    * WP
    * overlap(c) The spatial pooler overlap of column c with a particular
@@ -69,13 +69,15 @@ public class Column extends BaseSpace.Element {
 
   private static final Comparator<Column> OVERLAP_COMPARATOR = new Comparator<Column>() {
     @Override public int compare(Column column1, Column column2) {
-      return (int)(column1.getOverlap() - column2.getOverlap());
+      Double overlap1 = column1.getOverlap(), overlap2 = column2.getOverlap();
+      return overlap2.compareTo(overlap1);
     }
   };
 
   private static final Comparator<Column> ACTIVE_DUTY_CYCLE_COMPARATOR = new Comparator<Column>() {
     @Override public int compare(Column column1, Column column2) {
-      return (int)(column1.getActiveDutyCycle() - column2.getActiveDutyCycle());
+      Double activeDutyCycle1 = column1.getActiveDutyCycle(), activeDutyCycle2 = column2.getActiveDutyCycle();
+      return activeDutyCycle2.compareTo(activeDutyCycle1);
     }
   };
 
@@ -213,12 +215,12 @@ public class Column extends BaseSpace.Element {
 
   public void learnSpatial(double inhibitionRadius) {
     if (isActive()) {
-      List<Synapse.ProximalSynapse> connectedSynapses = getConnectedSynapses();
-      for (Synapse.ProximalSynapse connectedSynapse : connectedSynapses) {
-        if (connectedSynapse.getConnectedSensoryInput().getValue()) {
-          connectedSynapse.setPermanence(connectedSynapse.getPermanence() + Column.PERMANENCE_INCREASE);
+      List<Synapse.ProximalSynapse> potentialSynapses = getPotentialSynapses();
+      for (Synapse.ProximalSynapse potentialSynapse : potentialSynapses) {
+        if (potentialSynapse.getConnectedSensoryInput().getValue()) {
+          potentialSynapse.setPermanence(potentialSynapse.getPermanence() + Column.PERMANENCE_INCREASE);
         } else {
-          connectedSynapse.setPermanence(connectedSynapse.getPermanence() - Column.PERMANENCE_DECREASE);
+          potentialSynapse.setPermanence(potentialSynapse.getPermanence() - Column.PERMANENCE_DECREASE);
         }
       }
     }
@@ -237,7 +239,7 @@ public class Column extends BaseSpace.Element {
    * @param increaseBy
    */
   private void increasePermanence(double increaseBy) {
-    List<Synapse.ProximalSynapse> proximalSynapses = this.getProximalSynapses();
+    List<Synapse.ProximalSynapse> proximalSynapses = this.getPotentialSynapses();
     for (Synapse.ProximalSynapse proximalSynapse : proximalSynapses) {
       proximalSynapse.setPermanence(proximalSynapse.getPermanence() + increaseBy);
     }
@@ -358,11 +360,24 @@ public class Column extends BaseSpace.Element {
     return CollectionUtils.filter(proximalSynapses, ACTIVE_CONNECTED_PROXIMAL_SYNAPSES_PREDICATE);
   }
 
+  /**
+  *WP
+  *connectedSynapses(c)
+  *A subset of potentialSynapses(c) where the permanence value is greater than connectedPerm.
+  *These are the bottom-up inputs that are currently connected to column c.
+  * @return
+  */
   public List<Synapse.ProximalSynapse> getConnectedSynapses() {
     return CollectionUtils.filter(proximalSynapses, CONNECTED_PROXIMAL_SYNAPSES_PREDICATE);
   }
 
-  public List<Synapse.ProximalSynapse> getProximalSynapses() {
+  /**
+   * WP
+   * potentialSynapses(c)
+   * The list of potential synapses and their permanence values.
+   * @return
+   */
+  public List<Synapse.ProximalSynapse> getPotentialSynapses() {
     return Collections.unmodifiableList(proximalSynapses);
   }
 
@@ -400,13 +415,15 @@ public class Column extends BaseSpace.Element {
     }
 
     public double getSlidingAverage() {
+      double result = 0;
       int length = this.size(), activeCount = 0;
       for (int i = 0; i < length; i++) {
         if (positiveCondition(get(i))) {
           activeCount++;
         }
       }
-      return activeCount / length;
+      result = 1.0 * activeCount/length;
+      return result;
     }
 
     protected abstract boolean positiveCondition(E state);

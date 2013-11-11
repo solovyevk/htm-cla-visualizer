@@ -90,11 +90,11 @@ public abstract class BaseSpace<E extends BaseSpace.Element> {
     double xScale = targetDimension.getWidth() / srcDimension.getWidth();
     double yScale = targetDimension.getHeight() / srcDimension.getHeight();
     //apply function scale
-    double xAdj = xScale/2 - (srcPosition.getX()/srcDimension.getWidth()) * xScale;
+    double xAdj = 0;// xScale/2 - (srcPosition.getX()/srcDimension.getWidth()) * xScale;
     double targetX = Math.min(Math.ceil(srcPosition.getX() * xScale + (xScale > 1 ? xAdj : 0)),
                            targetDimension.width - 1);
     //LOG.debug("xAdj:" + xAdj + ", X:" + srcPosition.getX() * xScale + ", adj. targetX :" + targetX);
-    double yAdj = yScale/2 - (srcPosition.getY()/srcDimension.getHeight()) * yScale;
+    double yAdj = 0;// yScale/2 - (srcPosition.getY()/srcDimension.getHeight()) * yScale;
     //double yAdj = yScale / 2 - srcPosition.getY() / ((yScale + 2) * yScale);
     double targetY = Math.min(Math.ceil(srcPosition.getY() * yScale + (yScale > 1 ? yAdj : 0)),
                            targetDimension.height - 1);

@@ -21,6 +21,8 @@ import org.apache.commons.logging.LogFactory;
 
 import javax.swing.*;
 import javax.swing.border.Border;
+import javax.swing.event.ListSelectionEvent;
+import javax.swing.event.ListSelectionListener;
 import javax.swing.plaf.basic.BasicSplitPaneDivider;
 import javax.swing.plaf.basic.BasicSplitPaneUI;
 import java.awt.*;
@@ -38,8 +40,8 @@ public class HTMGraphicInterface extends JPanel {
    */
   private static final int HORIZONTAL_COLUMN_NUMBER = 12;
   private static final int VERTICAL_COLUMN_NUMBER = 12;
-  private static final int SENSORY_INPUT_WIDTH = 24;
-  private static final int SENSORY_INPUT_HEIGHT= 24;
+  private static final int SENSORY_INPUT_WIDTH = 12;
+  private static final int SENSORY_INPUT_HEIGHT = 12;
   private static final int CELLS_PER_COLUMN = 3;
 
   //TODO move them to region
@@ -52,7 +54,7 @@ public class HTMGraphicInterface extends JPanel {
   private static final double SP_PERMANENCE_DEC = 0.05;
   private static final double SP_PERMANENCE_INC = 0.05;
   private static final int SP_AMOUNT_OF_SYNAPSES = 20;
-  private static final double SP_INPUT_RADIUS = 6;
+  private static final double SP_INPUT_RADIUS = 8;
   /*The amount that is added to a Column's Boost value in a single time step, when it is being boosted.*/
   private static final double SP_BOOST_RATE = 0.01;
 
@@ -80,7 +82,7 @@ public class HTMGraphicInterface extends JPanel {
   private Action addPatternAction = new AbstractAction("Add Pattern") {
     @Override public void actionPerformed(ActionEvent e) {
       addPattern();
-      StringBuffer newName = new StringBuffer("Add Pattern");
+      StringBuilder newName = new StringBuilder("Add Pattern");
       this.putValue(NAME, newName.append("(").append(patterns.size()).append(")").toString());
     }
 
@@ -128,7 +130,7 @@ public class HTMGraphicInterface extends JPanel {
 
   private final ColumnSDRSurface sdrInput = new ColumnSDRSurface(HORIZONTAL_COLUMN_NUMBER,
                                                                  VERTICAL_COLUMN_NUMBER, region);
-  private final ColumnInfo columnInfo = new ColumnInfo();
+  private final SpatialInfo spatialInfo = new SpatialInfo();
 
 
   public HTMGraphicInterface() {
@@ -146,7 +148,7 @@ public class HTMGraphicInterface extends JPanel {
     process.addObserver(stepAction);
     /*Repaint after each step*/
     final JComponent win = this;
-    process.addObserver(new Observer(){
+    process.addObserver(new Observer() {
       @Override public void update(Observable o, Object arg) {
         win.repaint();
       }
@@ -160,9 +162,31 @@ public class HTMGraphicInterface extends JPanel {
         Column column = sdrInput.getColumn(index);
         sensoryInputSurface.setCurrentColumn(column);
         sdrInput.setCurrentColumn(column);
-        columnInfo.setCurrentColumn(column);
+        spatialInfo.setCurrentColumn(column);
       }
     });
+    //backward selection from spatial info
+    spatialInfo.getSynapsesTable().getSelectionModel().addListSelectionListener(new ListSelectionListener() {
+      @Override public void valueChanged(ListSelectionEvent e) {
+        //int inputIndex = (Integer)spatialInfo.getSynapsesTable().getModel().getValueAt(e.getFirstIndex(),3);
+        //sensoryInputSurface.setSelectedInput(inputIndex);
+        int rowViewInx = spatialInfo.getSynapsesTable().getSelectedRow();
+
+        LOG.debug("Table rowViewInx:" + rowViewInx);
+        if (rowViewInx == -1) {
+          sensoryInputSurface.setSelectedInput(null);
+        } else {
+          int rowColumnModelInx = spatialInfo.getSynapsesTable().convertRowIndexToModel(rowViewInx);
+          LOG.debug("Table columnModelInx:" + rowColumnModelInx);
+          int inputIndex = (Integer)spatialInfo.getSynapsesTable().getModel().getValueAt(rowColumnModelInx, 3);
+          sensoryInputSurface.setSelectedInput(inputIndex);
+          LOG.debug("Sensory Input Index selected:" + inputIndex);
+
+        }
+      }
+    }
+
+    );
   }
 
   private void initLayout() {
@@ -182,9 +206,9 @@ public class HTMGraphicInterface extends JPanel {
             c.anchor = GridBagConstraints.NORTH;
             c.fill = GridBagConstraints.BOTH;
             this.add(control, c);
-            c.weighty = 1.2;
+            c.weighty = 1.5;
             c.weightx = 1.0;
-            JComponent bottom = new SelectedCellsAndDetails(columnInfo);
+            JComponent bottom = new SelectedCellsAndDetails(spatialInfo);
             c.gridy = 1;
             this.add(new JComponent() {
               private Container init() {
@@ -201,7 +225,7 @@ public class HTMGraphicInterface extends JPanel {
               }
             }.init(), c);
             c.gridy = 2;
-            c.weighty = 0.8;
+            c.weighty = 0.5;
             this.add(bottom, c);
             return this;
           }
@@ -217,7 +241,7 @@ public class HTMGraphicInterface extends JPanel {
 
 
   private static class SelectedCellsAndDetails extends JPanel {
-    public SelectedCellsAndDetails(ColumnInfo columnInfo) {
+    public SelectedCellsAndDetails(SpatialInfo columnInfo) {
       super(new BorderLayout());
       setBorder(BorderFactory.createCompoundBorder(
               BorderFactory.createTitledBorder("Selected/Active Column & Details"),
@@ -227,14 +251,14 @@ public class HTMGraphicInterface extends JPanel {
       JComponent test = new JPanel();
       test.setBackground(Color.WHITE);
       final JTabbedPane bottom = new JTabbedPane();
-           bottom.addTab("Column Attributes", columnInfo);
-           bottom.addTab("Proximal Synapses", test);
+      bottom.addTab("Spatial Info", columnInfo);
+      bottom.addTab("Temporal Info", test);
       bottom.setBorder(LIGHT_GRAY_BORDER);
       bottom.setBackground(Color.WHITE);
       JSplitPane splitPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT,
                                             top, bottom);
       splitPane.setOneTouchExpandable(true);
-      splitPane.setDividerLocation(50);
+      splitPane.setDividerLocation(0);
       //TODO REVIEW THIS
       splitPane.setUI(new BasicSplitPaneUI() {
         public BasicSplitPaneDivider createDefaultDivider() {

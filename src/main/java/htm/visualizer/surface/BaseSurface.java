@@ -118,12 +118,11 @@ public abstract class BaseSurface extends JPanel {
     Point startPoint = getElementStartPoint(elementSpaceAllocation);
     return new Rectangle(elementSpaceAllocation * position.x + startPoint.x,
                          elementSpaceAllocation * position.y + startPoint.y,
-                         elementSpaceAllocation - BaseSurface.SPACE_BETWEEN_ELEMENTS +1,
-                         elementSpaceAllocation - BaseSurface.SPACE_BETWEEN_ELEMENTS +1);
+                         elementSpaceAllocation - BaseSurface.SPACE_BETWEEN_ELEMENTS + 1,
+                         elementSpaceAllocation - BaseSurface.SPACE_BETWEEN_ELEMENTS + 1);
 
 
   }
-
 
 
   /**
@@ -139,6 +138,10 @@ public abstract class BaseSurface extends JPanel {
     double newWidth = outsideArea.getWidth() * scaleFactor, newHeight = outsideArea.getHeight() * scaleFactor,
             newX = outsideArea.getX() - (newWidth - outsideArea.getWidth()) / 2, newY = outsideArea.getY() - (newHeight - outsideArea.getHeight()) / 2;
     return new Rectangle((int)newX, (int)newY, (int)newWidth, (int)newHeight);
+  }
+
+  public Rectangle getElementAreaWithScale(int byIndex, double scaleFactor) {
+    return getElementAreaWithScale(getElementPositionByIndex(byIndex), scaleFactor);
   }
 
 
