@@ -24,7 +24,8 @@ public class Column extends BaseSpace.Element {
   public static int MIN_OVERLAP = 2;
   /**
    * WP
-   * desiredLocalActivity A parameter controlling the number of columns that will be winners after the inhibition step.
+   * desiredLocalActivity A parameter controlling the number of columns that
+   * will be winners after the inhibition step.
    */
   public static int DESIRED_LOCAL_ACTIVITY = 2;
 
@@ -208,12 +209,13 @@ public class Column extends BaseSpace.Element {
    * WP
    * Phase 3: Learning
    * The third phase performs learning; it updates the permanence values of all synapses as necessary, as well as the boost and inhibition radius.
+   * <p/>
+   * First part
    * The main learning rule is implemented in lines 20-26. For winning columns, if a synapse is active, its permanence value is incremented, otherwise it is decremented. Permanence values are constrained to be between 0 and 1.
-   * Lines 28-36 implement boosting. There are two separate boosting mechanisms in place to help a column learn connections. If a column does not win often enough (as measured by activeDutyCycle), its overall boost value is increased (line 30-32). Alternatively, if a column's connected synapses do not overlap well with any inputs often enough (as measured by overlapDutyCycle), its permanence values are boosted (line 34-36). Note: once learning is turned off, boost(c) is frozen.
-   * Finally, at the end of Phase 3 the inhibition radius is recomputed (line 38).
+   * @param inhibitionRadius
    */
 
-  public void learnSpatial(double inhibitionRadius) {
+  public void learnSpatialForActive(double inhibitionRadius) {
     if (isActive()) {
       List<Synapse.ProximalSynapse> potentialSynapses = getPotentialSynapses();
       for (Synapse.ProximalSynapse potentialSynapse : potentialSynapses) {
@@ -224,6 +226,17 @@ public class Column extends BaseSpace.Element {
         }
       }
     }
+
+  }
+
+  /**
+   * Second part
+   * Lines 28-36 implement boosting. There are two separate boosting mechanisms in place to help a column learn connections. If a column does not win often enough (as measured by activeDutyCycle), its overall boost value is increased (line 30-32). Alternatively, if a column's connected synapses do not overlap well with any inputs often enough (as measured by overlapDutyCycle), its permanence values are boosted (line 34-36). Note: once learning is turned off, boost(c) is frozen.
+   * Finally, at the end of Phase 3 the inhibition radius is recomputed (line 38).
+   *
+   * @param inhibitionRadius
+   */
+  public void boostWeak(double inhibitionRadius) {
     double minDutyCycle = 0.01 * getMaxDutyCycle(inhibitionRadius);
     updateBoost(minDutyCycle);
     if (this.getOverlapDutyCycle() < minDutyCycle) {
@@ -361,12 +374,13 @@ public class Column extends BaseSpace.Element {
   }
 
   /**
-  *WP
-  *connectedSynapses(c)
-  *A subset of potentialSynapses(c) where the permanence value is greater than connectedPerm.
-  *These are the bottom-up inputs that are currently connected to column c.
-  * @return
-  */
+   * WP
+   * connectedSynapses(c)
+   * A subset of potentialSynapses(c) where the permanence value is greater than connectedPerm.
+   * These are the bottom-up inputs that are currently connected to column c.
+   *
+   * @return
+   */
   public List<Synapse.ProximalSynapse> getConnectedSynapses() {
     return CollectionUtils.filter(proximalSynapses, CONNECTED_PROXIMAL_SYNAPSES_PREDICATE);
   }
@@ -375,6 +389,7 @@ public class Column extends BaseSpace.Element {
    * WP
    * potentialSynapses(c)
    * The list of potential synapses and their permanence values.
+   *
    * @return
    */
   public List<Synapse.ProximalSynapse> getPotentialSynapses() {
@@ -422,7 +437,7 @@ public class Column extends BaseSpace.Element {
           activeCount++;
         }
       }
-      result = 1.0 * activeCount/length;
+      result = 1.0 * activeCount / length;
       return result;
     }
 

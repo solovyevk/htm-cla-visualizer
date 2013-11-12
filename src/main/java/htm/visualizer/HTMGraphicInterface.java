@@ -49,12 +49,9 @@ public class HTMGraphicInterface extends JPanel {
   SP Parameters
    */
   private static final int SP_DESIRED_LOCAL_ACTIVITY = 1;
-  private static final double SP_CONNECTED_PERMANENCE = 0.7;
   private static final int SP_MINIMAL_OVERLAP = 2;
-  private static final double SP_PERMANENCE_DEC = 0.05;
-  private static final double SP_PERMANENCE_INC = 0.05;
   private static final int SP_AMOUNT_OF_SYNAPSES = 20;
-  private static final double SP_INPUT_RADIUS = 8;
+  private static final double SP_INPUT_RADIUS = 5;
   /*The amount that is added to a Column's Boost value in a single time step, when it is being boosted.*/
   private static final double SP_BOOST_RATE = 0.01;
 
@@ -165,7 +162,7 @@ public class HTMGraphicInterface extends JPanel {
         spatialInfo.setCurrentColumn(column);
       }
     });
-    //backward selection from spatial info
+    //backward selection from synapses spatial info
     spatialInfo.getSynapsesTable().getSelectionModel().addListSelectionListener(new ListSelectionListener() {
       @Override public void valueChanged(ListSelectionEvent e) {
         //int inputIndex = (Integer)spatialInfo.getSynapsesTable().getModel().getValueAt(e.getFirstIndex(),3);
@@ -184,9 +181,24 @@ public class HTMGraphicInterface extends JPanel {
 
         }
       }
-    }
+    });
+    //backward selection from neighbors columns spatial info
+        spatialInfo.getNeighborColumnsTable().getSelectionModel().addListSelectionListener(new ListSelectionListener() {
+          @Override public void valueChanged(ListSelectionEvent e) {
+            //int inputIndex = (Integer)spatialInfo.getSynapsesTable().getModel().getValueAt(e.getFirstIndex(),3);
+            //sensoryInputSurface.setSelectedInput(inputIndex);
+            int rowViewInx = spatialInfo.getNeighborColumnsTable().getSelectedRow();
+            if (rowViewInx == -1) {
+              sensoryInputSurface.setSelectedInput(null);
+            } else {
+              int rowColumnModelInx = spatialInfo.getNeighborColumnsTable().convertRowIndexToModel(rowViewInx);
+              int inputIndex = (Integer)spatialInfo.getNeighborColumnsTable().getModel().getValueAt(rowColumnModelInx, 3);
+              sdrInput.setSelectedColumn(inputIndex);
+              LOG.debug("Column Input Index selected:" + inputIndex);
 
-    );
+            }
+          }
+        });
   }
 
   private void initLayout() {

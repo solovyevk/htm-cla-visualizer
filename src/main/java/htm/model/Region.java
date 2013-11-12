@@ -110,18 +110,21 @@ public class Region extends ColumnSpace {
     Column[] regionColumns = getColumns();
     List<Column> activeColumns = new ArrayList<Column>();
     //Phase 1: Compute the overlap
-    for (Column column : getColumns()) {
+    for (Column column : regionColumns) {
        column.computeOverlap();
     }
     //Phase 2:Compute the winning columns after inhibition
-    for (Column column : getColumns()) {
+    for (Column column : regionColumns) {
        if(column.computeActiveDoInhibition(inhibitionRadius)){
          activeColumns.add(column);
        }
     }
     // Phase 3: Update synapse permanence and internal variables
     for (Column activeColumn : activeColumns) {
-      activeColumn.learnSpatial(inhibitionRadius);
+      activeColumn.learnSpatialForActive(inhibitionRadius);
+    }
+    for (Column column : regionColumns) {
+       column.boostWeak(inhibitionRadius);
     }
   }
 
