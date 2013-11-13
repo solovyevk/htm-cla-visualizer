@@ -18,7 +18,9 @@ public class Viewer extends JFrame {
 
   private void initUI() {
     setTitle("CLA Visualiser");
-    add(new HTMGraphicInterface());
+    HTMGraphicInterface htmInterface = new HTMGraphicInterface();
+    add(htmInterface);
+    setJMenuBar(htmInterface.createMenuBar());
     setSize(1100, 800);
     setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
     setLocationRelativeTo(null);

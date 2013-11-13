@@ -28,6 +28,7 @@ import javax.swing.plaf.basic.BasicSplitPaneUI;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.KeyEvent;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Observable;
@@ -48,8 +49,8 @@ public class HTMGraphicInterface extends JPanel {
   /*
   SP Parameters
    */
-  private static final int SP_DESIRED_LOCAL_ACTIVITY = 1;
-  private static final int SP_MINIMAL_OVERLAP = 2;
+  private static final int SP_DESIRED_LOCAL_ACTIVITY = 3;
+  private static final int SP_MINIMAL_OVERLAP = 3;
   private static final int SP_AMOUNT_OF_SYNAPSES = 20;
   private static final double SP_INPUT_RADIUS = 5;
   /*The amount that is added to a Column's Boost value in a single time step, when it is being boosted.*/
@@ -72,6 +73,20 @@ public class HTMGraphicInterface extends JPanel {
   private InputSpace sensoryInput = new InputSpace(SENSORY_INPUT_WIDTH, SENSORY_INPUT_HEIGHT);
   private Region region = new Region(HORIZONTAL_COLUMN_NUMBER, VERTICAL_COLUMN_NUMBER, sensoryInput, SP_INPUT_RADIUS);
   private HTMProcess process;
+  /*
+  Menu Actions
+  */
+  private Action saveToFileAction = new AbstractAction("Save to File", createImageIcon("/images/disk.png")) {
+    @Override public void actionPerformed(ActionEvent e) {
+      LOG.debug("Save To File");
+    }
+  };
+
+  private Action loadFromFileAction = new AbstractAction("Load from File",  createImageIcon("/images/book_open.png")) {
+    @Override public void actionPerformed(ActionEvent e) {
+      LOG.debug("Load From File");
+    }
+  };
 
   /*
   Controls
@@ -153,6 +168,7 @@ public class HTMGraphicInterface extends JPanel {
   }
 
   private void initListeners() {
+    //select column to view details
     sdrInput.addElementMouseEnterListener(new BaseSurface.ElementMouseEnterListener() {
       @Override public void onElementMouseEnter(BaseSurface.ElementMouseEnterEvent e) {
         int index = e.getIndex();
@@ -162,44 +178,34 @@ public class HTMGraphicInterface extends JPanel {
         spatialInfo.setCurrentColumn(column);
       }
     });
-    //backward selection from synapses spatial info
+    //backward selection from synapses spatial info to Input Space
     spatialInfo.getSynapsesTable().getSelectionModel().addListSelectionListener(new ListSelectionListener() {
       @Override public void valueChanged(ListSelectionEvent e) {
-        //int inputIndex = (Integer)spatialInfo.getSynapsesTable().getModel().getValueAt(e.getFirstIndex(),3);
-        //sensoryInputSurface.setSelectedInput(inputIndex);
         int rowViewInx = spatialInfo.getSynapsesTable().getSelectedRow();
-
-        LOG.debug("Table rowViewInx:" + rowViewInx);
         if (rowViewInx == -1) {
           sensoryInputSurface.setSelectedInput(null);
         } else {
           int rowColumnModelInx = spatialInfo.getSynapsesTable().convertRowIndexToModel(rowViewInx);
-          LOG.debug("Table columnModelInx:" + rowColumnModelInx);
           int inputIndex = (Integer)spatialInfo.getSynapsesTable().getModel().getValueAt(rowColumnModelInx, 3);
           sensoryInputSurface.setSelectedInput(inputIndex);
-          LOG.debug("Sensory Input Index selected:" + inputIndex);
-
         }
       }
     });
-    //backward selection from neighbors columns spatial info
-        spatialInfo.getNeighborColumnsTable().getSelectionModel().addListSelectionListener(new ListSelectionListener() {
-          @Override public void valueChanged(ListSelectionEvent e) {
-            //int inputIndex = (Integer)spatialInfo.getSynapsesTable().getModel().getValueAt(e.getFirstIndex(),3);
-            //sensoryInputSurface.setSelectedInput(inputIndex);
-            int rowViewInx = spatialInfo.getNeighborColumnsTable().getSelectedRow();
-            if (rowViewInx == -1) {
-              sensoryInputSurface.setSelectedInput(null);
-            } else {
-              int rowColumnModelInx = spatialInfo.getNeighborColumnsTable().convertRowIndexToModel(rowViewInx);
-              int inputIndex = (Integer)spatialInfo.getNeighborColumnsTable().getModel().getValueAt(rowColumnModelInx, 3);
-              sdrInput.setSelectedColumn(inputIndex);
-              LOG.debug("Column Input Index selected:" + inputIndex);
-
-            }
-          }
-        });
+    //backward selection from neighbors columns spatial info to SDR Space
+    spatialInfo.getNeighborColumnsTable().getSelectionModel().addListSelectionListener(new ListSelectionListener() {
+      @Override public void valueChanged(ListSelectionEvent e) {
+        int rowViewInx = spatialInfo.getNeighborColumnsTable().getSelectedRow();
+        if (rowViewInx == -1) {
+          sensoryInputSurface.setSelectedInput(null);
+        } else {
+          int rowColumnModelInx = spatialInfo.getNeighborColumnsTable().convertRowIndexToModel(rowViewInx);
+          int inputIndex = (Integer)spatialInfo.getNeighborColumnsTable().getModel().getValueAt(rowColumnModelInx, 3);
+          sdrInput.setSelectedColumn(inputIndex);
+        }
+      }
+    });
   }
+
 
   private void initLayout() {
     this.add(new Container() {
@@ -251,6 +257,46 @@ public class HTMGraphicInterface extends JPanel {
     }.init(), BorderLayout.CENTER);
   }
 
+  public JMenuBar createMenuBar() {
+    JMenuBar menuBar;
+    JMenu menu;
+    JMenuItem menuItem;
+    menuBar = new JMenuBar();
+    menu = new JMenu("File");
+    menu.setMnemonic(KeyEvent.VK_F);
+    menu.getAccessibleContext().setAccessibleDescription(
+            "File related operations");
+    menuBar.add(menu);
+
+    menuItem = new JMenuItem(saveToFileAction);
+    menuItem.setMnemonic(KeyEvent.VK_S);
+    menuItem.setAccelerator(KeyStroke.getKeyStroke(
+            KeyEvent.VK_1, ActionEvent.ALT_MASK));
+    menuItem.getAccessibleContext().setAccessibleDescription(
+            "Save Patterns & Settings to File");
+
+    menu.add(menuItem);
+    menu.addSeparator();
+    menuItem = new JMenuItem(loadFromFileAction);
+    menuItem.setMnemonic(KeyEvent.VK_L);
+    menuItem.setAccelerator(KeyStroke.getKeyStroke(
+            KeyEvent.VK_2, ActionEvent.ALT_MASK));
+    menuItem.getAccessibleContext().setAccessibleDescription(
+            "Load Patterns & Settings from File");
+    menu.add(menuItem);
+    menuBar.add(menu);
+    return menuBar;
+  }
+
+  protected ImageIcon createImageIcon(String path) {
+    java.net.URL imgURL = getClass().getResource(path);
+    if (imgURL != null) {
+      return new ImageIcon(imgURL);
+    } else {
+      LOG.error("Couldn't find file: " + path);
+      throw new IllegalArgumentException("Couldn't find file: " + path);
+    }
+  }
 
   private static class SelectedCellsAndDetails extends JPanel {
     public SelectedCellsAndDetails(SpatialInfo columnInfo) {

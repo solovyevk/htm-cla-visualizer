@@ -124,6 +124,7 @@ public class SensoryInputSurface extends BaseSurface.SquareElementsSurface {
 
   public void setCurrentColumn(Column currentColumn) {
     this.currentColumn = this.currentColumn != currentColumn ? currentColumn : null;
+    selectedInputIndex = null;
     this.repaint();
   }
 

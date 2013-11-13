@@ -123,7 +123,7 @@ public class SpatialInfo extends JPanel {
       super.paint(g);
       Graphics2D graphics2D = (Graphics2D)g;
       Map<String, String> columnAttributes = getColumnAttributeMap(currentColumn);
-      drawPropertyParagraph(graphics2D, columnAttributes, 100, 5,30);
+      drawPropertyParagraph(graphics2D, columnAttributes, 100, 5, 30);
     }
 
 
@@ -234,11 +234,20 @@ public class SpatialInfo extends JPanel {
     @Override public Class<?> getColumnClass(int columnIndex) {
       Class result;
       switch (columnIndex) {
+        case 0:
+          result = Double.class;
+          break;
+        case 1:
+          result = Double.class;
+          break;
         case 2:
           result = Boolean.class;
           break;
         case 3:
           result = Integer.class;
+          break;
+        case 4:
+          result = SortablePoint.class;
           break;
         default:
           result = super.getColumnClass(
@@ -246,6 +255,7 @@ public class SpatialInfo extends JPanel {
       }
       return result;
     }
+
   }
 
   class ProximalSynapsesModel extends AbstractTableModel {
@@ -303,20 +313,29 @@ public class SpatialInfo extends JPanel {
     }
 
     @Override public Class<?> getColumnClass(int columnIndex) {
-        Class result;
-        switch (columnIndex) {
-          case 2:
-            result = Boolean.class;
-            break;
-          case 3:
-            result = Integer.class;
-            break;
-          default:
-            result = super.getColumnClass(
-                    columnIndex);
-        }
-        return result;
+      Class result;
+      switch (columnIndex) {
+        case 0:
+          result = Double.class;
+          break;
+        case 1:
+          result = Double.class;
+          break;
+        case 2:
+          result = Boolean.class;
+          break;
+        case 3:
+          result = Integer.class;
+          break;
+        case 4:
+          result = SortablePoint.class;
+          break;
+        default:
+          result = super.getColumnClass(
+                  columnIndex);
       }
+      return result;
+    }
   }
 
 
@@ -340,7 +359,7 @@ public class SpatialInfo extends JPanel {
     }
 
     @Override protected void setValue(Object value) {
-      setText((value == null) ? "" : DF_2.format(value));
+      super.setValue(DF_2.format(value));
     }
   }
 

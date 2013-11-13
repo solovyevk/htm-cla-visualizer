@@ -29,11 +29,7 @@ public class ColumnSDRSurface extends BaseSurface.CircleElementsSurface {
 
   @Override protected void drawElement(Graphics2D g2d, int index, int x, int y, int width, int height) {
     g2d.setColor(getColumn(index).isActive() ? activeColor : this.getBackground());
-    Composite original = g2d.getComposite();
-    // g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER,
-    //                                              0.6f));
     g2d.fillOval(x, y, width, height);
-    //g2d.setComposite(original);
     super.drawElement(g2d, index, x, y, width,
                       height);
   }
@@ -44,6 +40,7 @@ public class ColumnSDRSurface extends BaseSurface.CircleElementsSurface {
 
   public void setCurrentColumn(Column currentColumn) {
     this.currentColumn = this.currentColumn != currentColumn ? currentColumn : null;
+    this.selectedColumnIndex = null;
     this.repaint();
   }
 
