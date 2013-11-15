@@ -64,7 +64,10 @@ public class Viewer extends JFrame {
             win.remove(htmInterface);
             htmInterface = new HTMGraphicInterface(newCfg);
             win.add(htmInterface);
-            win.revalidate();
+            //for java 1.6
+            win.invalidate();
+            win.validate();
+            win.repaint();
           }
         } catch (Exception ex) {
           LOG.error("Error loading HTM parameters", ex);
