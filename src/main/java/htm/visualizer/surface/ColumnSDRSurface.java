@@ -22,8 +22,8 @@ public class ColumnSDRSurface extends BaseSurface.CircleElementsSurface {
   private Column currentColumn; //clicked on
   private Integer selectedColumnIndex; //selected from neighbours  table
 
-  public ColumnSDRSurface(int xSize, int ySize, Region region) {
-    super(xSize, ySize);
+  public ColumnSDRSurface(Region region) {
+    super(region.getDimension().width, region.getDimension().height);
     this.region = region;
   }
 

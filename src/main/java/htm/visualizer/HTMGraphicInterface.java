@@ -1,11 +1,3 @@
-/**
- * Copyright (c) 2011, Peace Technology, Inc.
- * $Author:$
- * $Revision:$
- * $Date:$
- * $NoKeywords$
- */
-
 package htm.visualizer;
 
 import htm.model.Cell;
@@ -28,11 +20,8 @@ import javax.swing.plaf.basic.BasicSplitPaneUI;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.awt.event.KeyEvent;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Observable;
-import java.util.Observer;
+import java.util.*;
+import java.util.List;
 
 public class HTMGraphicInterface extends JPanel {
   private static final Log LOG = LogFactory.getLog(HTMGraphicInterface.class);
@@ -52,6 +41,11 @@ public class HTMGraphicInterface extends JPanel {
   private static final int SP_DESIRED_LOCAL_ACTIVITY = 3;
   private static final int SP_MINIMAL_OVERLAP = 3;
   private static final int SP_AMOUNT_OF_SYNAPSES = 20;
+
+  /*inputRadius for this input Space
+  * The concept of Input Radius is an additional parameter to control how
+  * far away synapse connections can be made instead of allowing connections anywhere.
+  */
   private static final double SP_INPUT_RADIUS = 5;
   /*The amount that is added to a Column's Boost value in a single time step, when it is being boosted.*/
   private static final double SP_BOOST_RATE = 0.01;
@@ -68,90 +62,117 @@ public class HTMGraphicInterface extends JPanel {
     Column.BOOST_RATE = SP_BOOST_RATE;
   }
 
-  private ArrayList<boolean[]> patterns = new ArrayList<boolean[]>();
+  private java.util.List<boolean[]> patterns = new ArrayList<boolean[]>();
 
-  private InputSpace sensoryInput = new InputSpace(SENSORY_INPUT_WIDTH, SENSORY_INPUT_HEIGHT);
-  private Region region = new Region(HORIZONTAL_COLUMN_NUMBER, VERTICAL_COLUMN_NUMBER, sensoryInput, SP_INPUT_RADIUS);
+
   private HTMProcess process;
-  /*
-  Menu Actions
-  */
-  private Action saveToFileAction = new AbstractAction("Save to File", createImageIcon("/images/disk.png")) {
-    @Override public void actionPerformed(ActionEvent e) {
-      LOG.debug("Save To File");
-    }
-  };
-
-  private Action loadFromFileAction = new AbstractAction("Load from File",  createImageIcon("/images/book_open.png")) {
-    @Override public void actionPerformed(ActionEvent e) {
-      LOG.debug("Load From File");
-    }
-  };
 
   /*
   Controls
    */
-  private Action addPatternAction = new AbstractAction("Add Pattern") {
-    @Override public void actionPerformed(ActionEvent e) {
-      addPattern();
-      StringBuilder newName = new StringBuilder("Add Pattern");
-      this.putValue(NAME, newName.append("(").append(patterns.size()).append(")").toString());
-    }
+  private Action addPatternAction;
+  private Action resetPatternsAction;
+  private Action runAction;
+  private ObservableAction stepAction;
+  private Action stopAction;
 
-  };
 
-  private Action resetPatternsAction = new AbstractAction("Reset Patterns") {
-    @Override public void actionPerformed(ActionEvent e) {
-      resetPatterns();
-    }
-  };
+  private InputSpace sensoryInput;
+  private Region region;
+  private final JComponent slicedView;
+  private final ControlPanel control;
+  private final SensoryInputSurface sensoryInputSurface;
+  private final ColumnSDRSurface sdrInput;
+  private final SpatialInfo spatialInfo;
 
-  private Action runAction = new AbstractAction("Run") {
-    @Override public void actionPerformed(ActionEvent e) {
-      process.run();
+
+  public HTMGraphicInterface() {
+    this(new Config(null, new Dimension(HORIZONTAL_COLUMN_NUMBER, VERTICAL_COLUMN_NUMBER),
+                    new Dimension(SENSORY_INPUT_WIDTH, SENSORY_INPUT_HEIGHT), SP_INPUT_RADIUS));
+  }
+
+  public HTMGraphicInterface(Config cfg) {
+    super(new BorderLayout(0, 0));
+    initActions();
+    this.sensoryInput = new InputSpace(cfg.sensoryInputDimension.width, cfg.sensoryInputDimension.height);
+    this.sensoryInputSurface = new SensoryInputSurface(sensoryInput);
+    this.region = new Region(cfg.regionDimension.width, cfg.regionDimension.height, sensoryInput, cfg.inputRadius);
+    this.sdrInput = new ColumnSDRSurface(region);
+    this.slicedView = new HTMRegionSlicedView();
+    this.control = new ControlPanel();
+    this.spatialInfo = new SpatialInfo();
+    initLayout();
+    initProcess();
+    initListeners();
+    if(cfg.patterns != null && cfg.patterns.size() > 0){
+      setPatterns(cfg.patterns);
     }
-  };
+    LOG.debug("Finish initialization");
+  }
+
+  private void initActions() {
+   // final HTMGraphicInterface win = this;
+
+
+      /*
+      Controls
+       */
+    addPatternAction = new AbstractAction("Add Pattern") {
+      @Override public void actionPerformed(ActionEvent e) {
+        addPattern();
+        StringBuilder newName = new StringBuilder("Add Pattern");
+        this.putValue(NAME, newName.append("(").append(patterns.size()).append(")").toString());
+      }
+
+    };
+
+    resetPatternsAction = new AbstractAction("Reset Patterns") {
+      @Override public void actionPerformed(ActionEvent e) {
+        resetPatterns();
+      }
+    };
+
+    runAction = new AbstractAction("Run") {
+      @Override public void actionPerformed(ActionEvent e) {
+        process.run();
+      }
+    };
+
+    stepAction = new ObservableAction("Step") {
+
+      @Override public void actionPerformed(ActionEvent e) {
+        process.step();
+      }
+
+      @Override public void update(Observable o, Object currentPatternIndex) {
+        StringBuffer newName = new StringBuffer("Step");
+        this.putValue(NAME, newName.append(" #").append(process.getCurrentPatternIndex() + 1).toString());
+      }
+    };
+
+    stopAction = new AbstractAction("Stop") {
+      @Override public void actionPerformed(ActionEvent e) {
+        process.stop();
+      }
+    };
+
+  }
+
+
+  public java.util.List<boolean[]> getPatterns() {
+    return patterns;
+  }
+
+  public void setPatterns(List<boolean[]> patterns) {
+    this.patterns = patterns;
+    sensoryInputSurface.setSensoryInputValues(patterns.get(0));
+    addPatternAction.putValue(Action.NAME, new StringBuilder("Add Pattern").append("(").append(patterns.size()).append(")").toString());
+  }
 
   private abstract static class ObservableAction extends AbstractAction implements Observer {
     protected ObservableAction(String name) {
       super(name);
     }
-  }
-
-  private ObservableAction stepAction = new ObservableAction("Step") {
-
-    @Override public void actionPerformed(ActionEvent e) {
-      process.step();
-    }
-
-    @Override public void update(Observable o, Object currentPatternIndex) {
-      StringBuffer newName = new StringBuffer("Step");
-      this.putValue(NAME, newName.append(" #").append(process.getCurrentPatternIndex() + 1).toString());
-    }
-  };
-
-  private Action stopAction = new AbstractAction("Stop") {
-    @Override public void actionPerformed(ActionEvent e) {
-      process.stop();
-    }
-  };
-
-  private final JComponent slicedView = new HTMRegionSlicedView();
-  private final ControlPanel control = new ControlPanel();
-  private final SensoryInputSurface sensoryInputSurface = new SensoryInputSurface(sensoryInput);
-
-  private final ColumnSDRSurface sdrInput = new ColumnSDRSurface(HORIZONTAL_COLUMN_NUMBER,
-                                                                 VERTICAL_COLUMN_NUMBER, region);
-  private final SpatialInfo spatialInfo = new SpatialInfo();
-
-
-  public HTMGraphicInterface() {
-    super(new BorderLayout(0, 0));
-    initLayout();
-    initProcess();
-    initListeners();
-    LOG.debug("Finish initialization");
-
   }
 
 
@@ -257,46 +278,14 @@ public class HTMGraphicInterface extends JPanel {
     }.init(), BorderLayout.CENTER);
   }
 
-  public JMenuBar createMenuBar() {
-    JMenuBar menuBar;
-    JMenu menu;
-    JMenuItem menuItem;
-    menuBar = new JMenuBar();
-    menu = new JMenu("File");
-    menu.setMnemonic(KeyEvent.VK_F);
-    menu.getAccessibleContext().setAccessibleDescription(
-            "File related operations");
-    menuBar.add(menu);
-
-    menuItem = new JMenuItem(saveToFileAction);
-    menuItem.setMnemonic(KeyEvent.VK_S);
-    menuItem.setAccelerator(KeyStroke.getKeyStroke(
-            KeyEvent.VK_1, ActionEvent.ALT_MASK));
-    menuItem.getAccessibleContext().setAccessibleDescription(
-            "Save Patterns & Settings to File");
-
-    menu.add(menuItem);
-    menu.addSeparator();
-    menuItem = new JMenuItem(loadFromFileAction);
-    menuItem.setMnemonic(KeyEvent.VK_L);
-    menuItem.setAccelerator(KeyStroke.getKeyStroke(
-            KeyEvent.VK_2, ActionEvent.ALT_MASK));
-    menuItem.getAccessibleContext().setAccessibleDescription(
-            "Load Patterns & Settings from File");
-    menu.add(menuItem);
-    menuBar.add(menu);
-    return menuBar;
+  Region getRegion(){
+    return region;
   }
 
-  protected ImageIcon createImageIcon(String path) {
-    java.net.URL imgURL = getClass().getResource(path);
-    if (imgURL != null) {
-      return new ImageIcon(imgURL);
-    } else {
-      LOG.error("Couldn't find file: " + path);
-      throw new IllegalArgumentException("Couldn't find file: " + path);
-    }
+  InputSpace getSensoryInput(){
+    return sensoryInput;
   }
+
 
   private static class SelectedCellsAndDetails extends JPanel {
     public SelectedCellsAndDetails(SpatialInfo columnInfo) {
@@ -387,7 +376,7 @@ public class HTMGraphicInterface extends JPanel {
         for (int j = 0; j < columns.length; j++) {
           layer[j] = columns[j].getCellByIndex(i);
         }
-        final BaseSurface cellLayer = new ColumnCellsByIndexSurface(HORIZONTAL_COLUMN_NUMBER, VERTICAL_COLUMN_NUMBER,
+        final BaseSurface cellLayer = new ColumnCellsByIndexSurface(region.getDimension().width, region.getDimension().height,
                                                                     layer);
         cellLayer.setBorder(LIGHT_GRAY_BORDER);
         cellLayer.addElementMouseEnterListener(new BaseSurface.ElementMouseEnterListener() {
@@ -419,7 +408,7 @@ public class HTMGraphicInterface extends JPanel {
   /*Control Methods*/
   private void addPattern() {
     patterns.add(sensoryInputSurface.getSensoryInputValues());
-    sensoryInputSurface.reset();
+    //sensoryInputSurface.reset();
   }
 
   private void resetPatterns() {
@@ -487,6 +476,24 @@ public class HTMGraphicInterface extends JPanel {
       currentPatternIndex = 0;
       notifyObservers();
     }
+  }
+
+  public static class Config {
+
+    private final java.util.List<boolean[]> patterns;
+    private final Dimension regionDimension;
+    private final Dimension sensoryInputDimension;
+    private final double inputRadius;
+
+    public Config(List<boolean[]> patterns, Dimension regionDimension, Dimension sensoryInputDimension,
+                  double inputRadius) {
+      this.patterns = patterns;
+      this.regionDimension = regionDimension;
+      this.sensoryInputDimension = sensoryInputDimension;
+      this.inputRadius = inputRadius;
+    }
+
+
   }
 
 }

@@ -12,6 +12,7 @@ import java.util.List;
 
 public class Region extends ColumnSpace {
   private final InputSpace inputSpace;
+  private final double inputRadius;
 
   private static final Log LOG = LogFactory.getLog(Region.class);
 
@@ -19,14 +20,15 @@ public class Region extends ColumnSpace {
   public Region(int xSize, int ySize, InputSpace source, double inputRadius) {
     super(xSize, ySize);
     this.inputSpace = source;
-    connectToInputSpace(inputRadius);
+    this.inputRadius = inputRadius;
+    connectToInputSpace();
   }
 
   public Region(int xSize, int ySize, InputSpace source) {
     this(xSize, ySize, source, -1);
   }
 
-  public void connectToInputSpace(double inputRadius) {
+  public void connectToInputSpace() {
     Column[] columns = this.getColumns();
     for (Column column : columns) {
       column.createProximalSegment(inputRadius);
@@ -131,6 +133,10 @@ public class Region extends ColumnSpace {
 
   public InputSpace getInputSpace() {
     return inputSpace;
+  }
+
+  public double getInputRadius() {
+    return inputRadius;
   }
 }
 

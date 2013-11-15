@@ -1,0 +1,12 @@
+<?xml version="1.0"?>
+<htm-config>
+  <region>
+    <inputRadius>5.0</inputRadius>
+    <sizeX>12</sizeX>
+    <sizeY>12</sizeY>
+  </region>
+  <inputSpace>
+    <sizeX>12</sizeX>
+    <sizeY>12</sizeY>
+  </inputSpace>
+</htm-config>
