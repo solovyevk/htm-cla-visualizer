@@ -1,6 +1,7 @@
 <?xml version="1.0"?>
 <htm-config>
   <region>
+    <skipSpatial>false</skipSpatial>
     <inputRadius>5.0</inputRadius>
     <sizeX>12</sizeX>
     <sizeY>12</sizeY>

@@ -201,7 +201,7 @@ public class Column extends BaseSpace.Element {
 
   public boolean computeActiveDoInhibition(double inhibitionRadius) {
     double minLocalActivity = kthScore(getNeighbors(inhibitionRadius), DESIRED_LOCAL_ACTIVITY);
-    this.active.addState(this.getOverlap() > 0 && this.getOverlap() >= minLocalActivity);
+    this.setActive(this.getOverlap() > 0 && this.getOverlap() >= minLocalActivity);
     return this.isActive();
   }
 
@@ -317,6 +317,10 @@ public class Column extends BaseSpace.Element {
 
   public boolean isActive() {
     return active.getLast();
+  }
+
+  void setActive(boolean active){
+    this.active.addState(active);
   }
 
   /**

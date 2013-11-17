@@ -32,6 +32,10 @@ public class Viewer extends JFrame {
  */
   private Action saveToFileAction;
   private Action loadFromFileAction;
+  private Action editParametersAction;
+  private Action skipSpatialPoolingAction;
+
+  JCheckBoxMenuItem skipSpatialPoolMenuItem;
 
   private JFileChooser fc = createFileChooser();
 
@@ -44,7 +48,7 @@ public class Viewer extends JFrame {
           int returnVal = fc.showSaveDialog(win);
           if (returnVal == JFileChooser.APPROVE_OPTION) {
             File file = fc.getSelectedFile();
-            Serializer.INSTANCE.saveHTMParameters(file, htmInterface);
+            Serializer.INSTANCE.saveHTMParameters(file, htmInterface.getParameters());
           }
         } catch (Exception ex) {
           LOG.error("Error saving HTM parameters", ex);
@@ -61,19 +65,46 @@ public class Viewer extends JFrame {
           if (returnVal == JFileChooser.APPROVE_OPTION) {
             File file = fc.getSelectedFile();
             HTMGraphicInterface.Config newCfg = Serializer.INSTANCE.loadHTMParameters(file);
-            win.remove(htmInterface);
-            htmInterface = new HTMGraphicInterface(newCfg);
-            win.add(htmInterface);
-            //for java 1.6
-            win.invalidate();
-            win.validate();
-            win.repaint();
+            win.reloadHTMInterface(newCfg);
           }
         } catch (Exception ex) {
           LOG.error("Error loading HTM parameters", ex);
         }
       }
     };
+
+    editParametersAction = new AbstractAction("Edit Parameters", UIUtils.INSTANCE.createImageIcon(
+            "/images/cog_edit.png")) {
+      @Override public void actionPerformed(ActionEvent e) {
+        //To change body of implemented methods use File | Settings | File Templates.
+      }
+    };
+
+    skipSpatialPoolingAction = new AbstractAction("Skip Spatial Pooling", UIUtils.INSTANCE.createImageIcon(
+            "/images/bullet_go.png")) {
+      @Override public void actionPerformed(ActionEvent e) {
+        boolean checked = ((JCheckBoxMenuItem)e.getSource()).getState();
+        LOG.debug("Skip Spatial Pooling is:" + checked);
+        HTMGraphicInterface.Config oldCfg = htmInterface.getParameters();
+        HTMGraphicInterface.Config newCfg = new HTMGraphicInterface.Config(oldCfg.getPatterns(),
+                                                                           oldCfg.getRegionDimension(),
+                                                                           oldCfg.getSensoryInputDimension(),
+                                                                           oldCfg.getInputRadius(), checked);
+        win.reloadHTMInterface(newCfg);
+      }
+    };
+
+  }
+
+  private void reloadHTMInterface(HTMGraphicInterface.Config newCfg) {
+    this.remove(htmInterface);
+    htmInterface = new HTMGraphicInterface(newCfg);
+    this.add(htmInterface);
+    skipSpatialPoolMenuItem.setState(htmInterface.getRegion().isSkipSpatial());
+    //for java 1.6
+    this.invalidate();
+    this.validate();
+    this.repaint();
   }
 
   public Viewer() {
@@ -99,7 +130,9 @@ public class Viewer extends JFrame {
     }
     add(htmInterface);
     setJMenuBar(createMenuBar());
-    setSize(1100, 800);
+    //sync skipSP state
+    skipSpatialPoolMenuItem.setState(htmInterface.getRegion().isSkipSpatial());
+    setSize(1200, 800);
     setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
     setLocationRelativeTo(null);
   }
@@ -137,7 +170,26 @@ public class Viewer extends JFrame {
     menuItem.getAccessibleContext().setAccessibleDescription(
             "Load Patterns & Settings from File");
     menu.add(menuItem);
+    menu = new JMenu("Edit");
+    menu.setMnemonic(KeyEvent.VK_E);
+    menu.getAccessibleContext().setAccessibleDescription(
+            "Edit CLA options");
     menuBar.add(menu);
+    menuItem = new JMenuItem(editParametersAction);
+    menuItem.setMnemonic(KeyEvent.VK_M);
+    menuItem.setAccelerator(KeyStroke.getKeyStroke(
+            KeyEvent.VK_3, ActionEvent.ALT_MASK));
+    menuItem.getAccessibleContext().setAccessibleDescription(
+            "Modify CLA parameters");
+    menu.add(menuItem);
+    menu.addSeparator();
+    skipSpatialPoolMenuItem = new JCheckBoxMenuItem(skipSpatialPoolingAction);
+    skipSpatialPoolMenuItem.setMnemonic(KeyEvent.VK_S);
+    skipSpatialPoolMenuItem.setAccelerator(KeyStroke.getKeyStroke(
+            KeyEvent.VK_4, ActionEvent.ALT_MASK));
+    skipSpatialPoolMenuItem.getAccessibleContext().setAccessibleDescription(
+            "Skip Spatial Pooling, Connect Input to Temporal Pooling directly");
+    menu.add(skipSpatialPoolMenuItem);
     return menuBar;
   }
 

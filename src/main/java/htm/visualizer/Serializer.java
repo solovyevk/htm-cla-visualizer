@@ -23,6 +23,7 @@ public enum Serializer {
   private static final Log LOG = LogFactory.getLog(Serializer.class);
   private static final String HTM_ELEMENT = "htm-config";
   private static final String REGION_ELEMENT = "region";
+  private static final String SKIP_SPATIAL_POOLING_ELEMENT = "skipSpatial";
   private static final String INPUT_SPACE_ELEMENT = "inputSpace";
   private static final String INPUT_RADIUS_ELEMENT = "inputRadius";
   private static final String X_SIZE = "sizeX";
@@ -45,6 +46,7 @@ public enum Serializer {
     Dimension regionDimension = new Dimension(-1, -1);
     Dimension inputSpaceDimension = new Dimension(-1, -1);
     XMLInputFactory inputFactory = XMLInputFactory.newInstance();
+    boolean skipSpatialPooling = false;
     boolean parseRegion = false;
     XMLEventReader eventReader = inputFactory.createXMLEventReader(in);
     // read the XML document
@@ -60,6 +62,12 @@ public enum Serializer {
         if (event.asStartElement().getName().getLocalPart()
                 .equals(REGION_ELEMENT)) {
           parseRegion = true;
+          continue;
+        }
+        if (event.asStartElement().getName().getLocalPart()
+                .equals(SKIP_SPATIAL_POOLING_ELEMENT)) {
+          event = eventReader.nextEvent();
+          skipSpatialPooling = event.asCharacters().getData().equals("true");
           continue;
         }
         if (event.asStartElement().getName().getLocalPart()
@@ -100,19 +108,20 @@ public enum Serializer {
     if (inputRadius == -1 || regionDimension.height == -1 || regionDimension.width == -1 || inputSpaceDimension.height == -1 || inputSpaceDimension.width == -1) {
       throw new IllegalArgumentException("Can't find HTM necessary parameters in input file");
     }
-    return new HTMGraphicInterface.Config(patterns, regionDimension, inputSpaceDimension, inputRadius);
+    return new HTMGraphicInterface.Config(patterns, regionDimension, inputSpaceDimension, inputRadius,
+                                          skipSpatialPooling);
   }
 
-  public void saveHTMParameters(File output, HTMGraphicInterface htmInterface) throws Exception {
+  public void saveHTMParameters(File output, HTMGraphicInterface.Config parameters) throws Exception {
     OutputStream out = new FileOutputStream(output);
     try {
-      saveHTMParameters(out, htmInterface);
+      saveHTMParameters(out, parameters);
     } finally {
       out.close();
     }
   }
 
-  public void saveHTMParameters(OutputStream out, HTMGraphicInterface htmInterface) throws Exception {
+  public void saveHTMParameters(OutputStream out, HTMGraphicInterface.Config parameters) throws Exception {
     XMLOutputFactory outputFactory = XMLOutputFactory.newInstance();
     XMLEventWriter eventWriter = outputFactory
             .createXMLEventWriter(out);
@@ -125,21 +134,22 @@ public enum Serializer {
     eventWriter.add(end);
     eventWriter.add(eventFactory.createStartElement("", "", REGION_ELEMENT));
     eventWriter.add(end);
-    createNode(eventWriter, INPUT_RADIUS_ELEMENT, htmInterface.getRegion().getInputRadius() + "");
-    createNode(eventWriter, X_SIZE, htmInterface.getRegion().getDimension().width + "");
-    createNode(eventWriter, Y_SIZE, htmInterface.getRegion().getDimension().height + "");
+    createNode(eventWriter, SKIP_SPATIAL_POOLING_ELEMENT, parameters.isSkipSpatial() + "");
+    createNode(eventWriter, INPUT_RADIUS_ELEMENT, parameters.getInputRadius() + "");
+    createNode(eventWriter, X_SIZE, parameters.getRegionDimension().width + "");
+    createNode(eventWriter, Y_SIZE, parameters.getRegionDimension().height + "");
     eventWriter.add(eventFactory.createEndElement("", "", REGION_ELEMENT));
     eventWriter.add(end);
     eventWriter.add(eventFactory.createStartElement("", "", INPUT_SPACE_ELEMENT));
     eventWriter.add(end);
-    createNode(eventWriter, X_SIZE, htmInterface.getSensoryInput().getDimension().width + "");
-    createNode(eventWriter, Y_SIZE, htmInterface.getSensoryInput().getDimension().height + "");
+    createNode(eventWriter, X_SIZE, parameters.getSensoryInputDimension().width + "");
+    createNode(eventWriter, Y_SIZE, parameters.getSensoryInputDimension().height + "");
     eventWriter.add(eventFactory.createEndElement("", "", INPUT_SPACE_ELEMENT));
     eventWriter.add(end);
     eventWriter.add(eventFactory.createStartElement("", "", PATTERNS_LIST_ELEMENT_NAME));
     eventWriter.add(end);
     // Write patterns
-    for (boolean[] pattern : htmInterface.getPatterns()) {
+    for (boolean[] pattern : parameters.getPatterns()) {
       createNode(eventWriter, PATTERN_ELEMENT_NAME, convertPatternToString(pattern));
     }
     eventWriter.add(eventFactory.createEndElement("", "", PATTERNS_LIST_ELEMENT_NAME));

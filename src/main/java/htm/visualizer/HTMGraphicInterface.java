@@ -83,12 +83,12 @@ public class HTMGraphicInterface extends JPanel {
   private final ControlPanel control;
   private final SensoryInputSurface sensoryInputSurface;
   private final ColumnSDRSurface sdrInput;
-  private final SpatialInfo spatialInfo;
+  private SpatialInfo spatialInfo;
 
 
   public HTMGraphicInterface() {
     this(new Config(null, new Dimension(HORIZONTAL_COLUMN_NUMBER, VERTICAL_COLUMN_NUMBER),
-                    new Dimension(SENSORY_INPUT_WIDTH, SENSORY_INPUT_HEIGHT), SP_INPUT_RADIUS));
+                    new Dimension(SENSORY_INPUT_WIDTH, SENSORY_INPUT_HEIGHT), SP_INPUT_RADIUS, false));
   }
 
   public HTMGraphicInterface(Config cfg) {
@@ -96,22 +96,25 @@ public class HTMGraphicInterface extends JPanel {
     initActions();
     this.sensoryInput = new InputSpace(cfg.sensoryInputDimension.width, cfg.sensoryInputDimension.height);
     this.sensoryInputSurface = new SensoryInputSurface(sensoryInput);
-    this.region = new Region(cfg.regionDimension.width, cfg.regionDimension.height, sensoryInput, cfg.inputRadius);
+    this.region = new Region(cfg.regionDimension.width, cfg.regionDimension.height, sensoryInput, cfg.inputRadius,
+                             cfg.skipSpatial);
     this.sdrInput = new ColumnSDRSurface(region);
     this.slicedView = new HTMRegionSlicedView();
     this.control = new ControlPanel();
-    this.spatialInfo = new SpatialInfo();
+    if (!cfg.skipSpatial) {
+      this.spatialInfo = new SpatialInfo();
+    }
     initLayout();
     initProcess();
     initListeners();
-    if(cfg.patterns != null && cfg.patterns.size() > 0){
+    if (cfg.patterns != null && cfg.patterns.size() > 0) {
       setPatterns(cfg.patterns);
     }
     LOG.debug("Finish initialization");
   }
 
   private void initActions() {
-   // final HTMGraphicInterface win = this;
+    // final HTMGraphicInterface win = this;
 
 
       /*
@@ -166,7 +169,8 @@ public class HTMGraphicInterface extends JPanel {
   public void setPatterns(List<boolean[]> patterns) {
     this.patterns = patterns;
     sensoryInputSurface.setSensoryInputValues(patterns.get(0));
-    addPatternAction.putValue(Action.NAME, new StringBuilder("Add Pattern").append("(").append(patterns.size()).append(")").toString());
+    addPatternAction.putValue(Action.NAME, new StringBuilder("Add Pattern").append("(").append(patterns.size()).append(
+            ")").toString());
   }
 
   private abstract static class ObservableAction extends AbstractAction implements Observer {
@@ -190,41 +194,43 @@ public class HTMGraphicInterface extends JPanel {
 
   private void initListeners() {
     //select column to view details
-    sdrInput.addElementMouseEnterListener(new BaseSurface.ElementMouseEnterListener() {
-      @Override public void onElementMouseEnter(BaseSurface.ElementMouseEnterEvent e) {
-        int index = e.getIndex();
-        Column column = sdrInput.getColumn(index);
-        sensoryInputSurface.setCurrentColumn(column);
-        sdrInput.setCurrentColumn(column);
-        spatialInfo.setCurrentColumn(column);
-      }
-    });
-    //backward selection from synapses spatial info to Input Space
-    spatialInfo.getSynapsesTable().getSelectionModel().addListSelectionListener(new ListSelectionListener() {
-      @Override public void valueChanged(ListSelectionEvent e) {
-        int rowViewInx = spatialInfo.getSynapsesTable().getSelectedRow();
-        if (rowViewInx == -1) {
-          sensoryInputSurface.setSelectedInput(null);
-        } else {
-          int rowColumnModelInx = spatialInfo.getSynapsesTable().convertRowIndexToModel(rowViewInx);
-          int inputIndex = (Integer)spatialInfo.getSynapsesTable().getModel().getValueAt(rowColumnModelInx, 3);
-          sensoryInputSurface.setSelectedInput(inputIndex);
+    if (!region.isSkipSpatial()) {
+      sdrInput.addElementMouseEnterListener(new BaseSurface.ElementMouseEnterListener() {
+        @Override public void onElementMouseEnter(BaseSurface.ElementMouseEnterEvent e) {
+          int index = e.getIndex();
+          Column column = sdrInput.getColumn(index);
+          sensoryInputSurface.setCurrentColumn(column);
+          sdrInput.setCurrentColumn(column);
+          spatialInfo.setCurrentColumn(column);
         }
-      }
-    });
-    //backward selection from neighbors columns spatial info to SDR Space
-    spatialInfo.getNeighborColumnsTable().getSelectionModel().addListSelectionListener(new ListSelectionListener() {
-      @Override public void valueChanged(ListSelectionEvent e) {
-        int rowViewInx = spatialInfo.getNeighborColumnsTable().getSelectedRow();
-        if (rowViewInx == -1) {
-          sensoryInputSurface.setSelectedInput(null);
-        } else {
-          int rowColumnModelInx = spatialInfo.getNeighborColumnsTable().convertRowIndexToModel(rowViewInx);
-          int inputIndex = (Integer)spatialInfo.getNeighborColumnsTable().getModel().getValueAt(rowColumnModelInx, 3);
-          sdrInput.setSelectedColumn(inputIndex);
+      });
+      //backward selection from synapses spatial info to Input Space
+      spatialInfo.getSynapsesTable().getSelectionModel().addListSelectionListener(new ListSelectionListener() {
+        @Override public void valueChanged(ListSelectionEvent e) {
+          int rowViewInx = spatialInfo.getSynapsesTable().getSelectedRow();
+          if (rowViewInx == -1) {
+            sensoryInputSurface.setSelectedInput(null);
+          } else {
+            int rowColumnModelInx = spatialInfo.getSynapsesTable().convertRowIndexToModel(rowViewInx);
+            int inputIndex = (Integer)spatialInfo.getSynapsesTable().getModel().getValueAt(rowColumnModelInx, 3);
+            sensoryInputSurface.setSelectedInput(inputIndex);
+          }
         }
-      }
-    });
+      });
+      //backward selection from neighbors columns spatial info to SDR Space
+      spatialInfo.getNeighborColumnsTable().getSelectionModel().addListSelectionListener(new ListSelectionListener() {
+        @Override public void valueChanged(ListSelectionEvent e) {
+          int rowViewInx = spatialInfo.getNeighborColumnsTable().getSelectedRow();
+          if (rowViewInx == -1) {
+            sensoryInputSurface.setSelectedInput(null);
+          } else {
+            int rowColumnModelInx = spatialInfo.getNeighborColumnsTable().convertRowIndexToModel(rowViewInx);
+            int inputIndex = (Integer)spatialInfo.getNeighborColumnsTable().getModel().getValueAt(rowColumnModelInx, 6);
+            sdrInput.setSelectedColumn(inputIndex);
+          }
+        }
+      });
+    }
   }
 
 
@@ -245,7 +251,7 @@ public class HTMGraphicInterface extends JPanel {
             c.anchor = GridBagConstraints.NORTH;
             c.fill = GridBagConstraints.BOTH;
             this.add(control, c);
-            c.weighty = 1.5;
+            c.weighty = 1.55;
             c.weightx = 1.0;
             JComponent bottom = new SelectedCellsAndDetails(spatialInfo);
             c.gridy = 1;
@@ -264,7 +270,7 @@ public class HTMGraphicInterface extends JPanel {
               }
             }.init(), c);
             c.gridy = 2;
-            c.weighty = 0.5;
+            c.weighty = 0.45;
             this.add(bottom, c);
             return this;
           }
@@ -278,17 +284,21 @@ public class HTMGraphicInterface extends JPanel {
     }.init(), BorderLayout.CENTER);
   }
 
-  Region getRegion(){
+  Region getRegion() {
     return region;
   }
 
-  InputSpace getSensoryInput(){
+  InputSpace getSensoryInput() {
     return sensoryInput;
+  }
+
+  Config getParameters(){
+    return new Config(patterns, region.getDimension(), sensoryInput.getDimension(), region.getInputRadius(), region.isSkipSpatial());
   }
 
 
   private static class SelectedCellsAndDetails extends JPanel {
-    public SelectedCellsAndDetails(SpatialInfo columnInfo) {
+    public SelectedCellsAndDetails(SpatialInfo spatialInfo) {
       super(new BorderLayout());
       setBorder(BorderFactory.createCompoundBorder(
               BorderFactory.createTitledBorder("Selected/Active Column & Details"),
@@ -298,7 +308,9 @@ public class HTMGraphicInterface extends JPanel {
       JComponent test = new JPanel();
       test.setBackground(Color.WHITE);
       final JTabbedPane bottom = new JTabbedPane();
-      bottom.addTab("Spatial Info", columnInfo);
+      if (spatialInfo != null) {
+        bottom.addTab("Spatial Info", spatialInfo);
+      }
       bottom.addTab("Temporal Info", test);
       bottom.setBorder(LIGHT_GRAY_BORDER);
       bottom.setBackground(Color.WHITE);
@@ -376,7 +388,8 @@ public class HTMGraphicInterface extends JPanel {
         for (int j = 0; j < columns.length; j++) {
           layer[j] = columns[j].getCellByIndex(i);
         }
-        final BaseSurface cellLayer = new ColumnCellsByIndexSurface(region.getDimension().width, region.getDimension().height,
+        final BaseSurface cellLayer = new ColumnCellsByIndexSurface(region.getDimension().width,
+                                                                    region.getDimension().height,
                                                                     layer);
         cellLayer.setBorder(LIGHT_GRAY_BORDER);
         cellLayer.addElementMouseEnterListener(new BaseSurface.ElementMouseEnterListener() {
@@ -479,21 +492,46 @@ public class HTMGraphicInterface extends JPanel {
   }
 
   public static class Config {
-
     private final java.util.List<boolean[]> patterns;
     private final Dimension regionDimension;
     private final Dimension sensoryInputDimension;
     private final double inputRadius;
+    private final boolean skipSpatial;
+    /*private final int cellsInColumn;
+    private final int amountOfProximalSynapses;
+    private final int minOverlap;
+    private final int desiredLocalActivity;*/
+
 
     public Config(List<boolean[]> patterns, Dimension regionDimension, Dimension sensoryInputDimension,
-                  double inputRadius) {
+                  double inputRadius, boolean skipSpatial) {
       this.patterns = patterns;
       this.regionDimension = regionDimension;
       this.sensoryInputDimension = sensoryInputDimension;
       this.inputRadius = inputRadius;
+      this.skipSpatial = skipSpatial;
     }
 
 
+    public double getInputRadius() {
+      return inputRadius;
+    }
+
+    public List<boolean[]> getPatterns() {
+      return patterns;
+    }
+
+    public Dimension getRegionDimension() {
+      return regionDimension;
+    }
+
+    public Dimension getSensoryInputDimension() {
+      return sensoryInputDimension;
+    }
+
+    public boolean isSkipSpatial() {
+      return skipSpatial;
+    }
   }
 
 }

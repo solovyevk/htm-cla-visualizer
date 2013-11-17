@@ -41,7 +41,7 @@ public class SpatialInfo extends JPanel {
                                                     TitledBorder.TOP));
     this.add(left, c);
     c.gridx = 1;
-    c.weightx = 2.0;
+    c.weightx = 1.8;
     //Create the scroll pane and add the table to it.
     proximalSynapsesTable = initSynapsesTable();
     JScrollPane center = new JScrollPane(proximalSynapsesTable);
@@ -56,7 +56,7 @@ public class SpatialInfo extends JPanel {
 
     this.add(center, c);
     c.gridx = 2;
-    c.weightx = 2.0;
+    c.weightx = 2.2;
     neighborColumnsTable = initNeighborColumnsTable();
     JScrollPane right = new JScrollPane(neighborColumnsTable);
     right.setBackground(Color.WHITE);
@@ -72,13 +72,13 @@ public class SpatialInfo extends JPanel {
 
   private JTable initSynapsesTable() {
     JTable table = new JTable(new ProximalSynapsesModel());
-    table.setPreferredScrollableViewportSize(new Dimension(100, 70));
+    table.setPreferredScrollableViewportSize(new Dimension(100, 50));
     table.setFillsViewportHeight(true);
     table.setAutoCreateRowSorter(true);
     table.getColumnModel().getColumn(0).setCellRenderer(new PermanenceRenderer());
     table.getColumnModel().getColumn(1).setCellRenderer(new SmallDoubleRenderer());
-    //table.getColumnModel().getColumn(2).setPreferredWidth(30);
-    //table.getColumnModel().getColumn(3).setPreferredWidth(30);
+    table.getColumnModel().getColumn(2).setPreferredWidth(50);
+    table.getColumnModel().getColumn(3).setPreferredWidth(50);
     table.getColumnModel().getColumn(4).setCellRenderer(new PositionRenderer());
     return table;
   }
@@ -94,14 +94,19 @@ public class SpatialInfo extends JPanel {
 
   private JTable initNeighborColumnsTable() {
     JTable table = new JTable(new NeighborColumnsModel());
-    table.setPreferredScrollableViewportSize(new Dimension(100, 70));
+    table.setPreferredScrollableViewportSize(new Dimension(100, 50));
     table.setFillsViewportHeight(true);
     table.setAutoCreateRowSorter(true);
     table.getColumnModel().getColumn(0).setCellRenderer(new SmallDoubleRenderer());
     table.getColumnModel().getColumn(1).setCellRenderer(new SmallDoubleRenderer());
-    //table.getColumnModel().getColumn(2).setPreferredWidth(30);
-    //table.getColumnModel().getColumn(3).setPreferredWidth(30);
-    table.getColumnModel().getColumn(4).setCellRenderer(new PositionRenderer());
+    table.getColumnModel().getColumn(1).setPreferredWidth(50);
+    table.getColumnModel().getColumn(2).setCellRenderer(new SmallDoubleRenderer());
+    table.getColumnModel().getColumn(3).setCellRenderer(new SmallDoubleRenderer());
+    table.getColumnModel().getColumn(4).setCellRenderer(new SmallDoubleRenderer());
+    table.getColumnModel().getColumn(4).setPreferredWidth(50);
+    table.getColumnModel().getColumn(5).setPreferredWidth(40);
+    table.getColumnModel().getColumn(6).setPreferredWidth(40);
+    table.getColumnModel().getColumn(7).setCellRenderer(new PositionRenderer());
     return table;
   }
 
@@ -123,7 +128,7 @@ public class SpatialInfo extends JPanel {
       super.paint(g);
       Graphics2D graphics2D = (Graphics2D)g;
       Map<String, String> columnAttributes = getColumnAttributeMap(currentColumn);
-      drawPropertyParagraph(graphics2D, columnAttributes, 100, 5, 30);
+      drawPropertyParagraph(graphics2D, columnAttributes, 100, 5, 20);
     }
 
 
@@ -180,9 +185,12 @@ public class SpatialInfo extends JPanel {
     private java.util.List<Column> neighbors = null;
     private String[] columnNames = {
             "Overlap",
-            "Distance",
-            "Active",
-            "Index",
+            "Dist",
+            "ADC",
+            "ODC",
+            "Boost",
+            "Act",
+            "Inx",
             "Position"};
 
     public void setColumn(Column column) {
@@ -216,12 +224,21 @@ public class SpatialInfo extends JPanel {
             value = BaseSpace.getDistance(column.getPosition(), row.getPosition());
             break;
           case 2:
-            value = row.isActive();
+            value = row.getActiveDutyCycle();
             break;
           case 3:
-            value = row.getIndex();
+            value = row.getOverlapDutyCycle();
             break;
           case 4:
+            value = row.getBoost();
+            break;
+          case 5:
+            value = row.isActive();
+            break;
+          case 6:
+            value = row.getIndex();
+            break;
+          case 7:
             value = new SortablePoint(row.getPosition());
             break;
           default:
@@ -232,7 +249,7 @@ public class SpatialInfo extends JPanel {
     }
 
     @Override public Class<?> getColumnClass(int columnIndex) {
-      Class result;
+      Class<?> result;
       switch (columnIndex) {
         case 0:
           result = Double.class;
@@ -241,12 +258,21 @@ public class SpatialInfo extends JPanel {
           result = Double.class;
           break;
         case 2:
-          result = Boolean.class;
+          result = Double.class;
           break;
         case 3:
-          result = Integer.class;
+          result = Double.class;
           break;
         case 4:
+          result = Double.class;
+          break;
+        case 5:
+          result = Boolean.class;
+          break;
+        case 6:
+          result = Integer.class;
+          break;
+        case 7:
           result = SortablePoint.class;
           break;
         default:
@@ -261,10 +287,10 @@ public class SpatialInfo extends JPanel {
   class ProximalSynapsesModel extends AbstractTableModel {
     private java.util.List<Synapse.ProximalSynapse> synapses = null;
     private String[] columnNames = {
-            "Permanence",
-            "Distance",
-            "I-Active",
-            "I-Index",
+            "Perm",
+            "Dist",
+            "I-Act",
+            "I-Inx",
             "I-Position"};
 
     public void setColumn(Column column) {
