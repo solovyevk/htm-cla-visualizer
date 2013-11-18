@@ -62,10 +62,10 @@ public class SensoryInputSurface extends BaseSurface.SquareElementsSurface {
 
   public static void renderSynapse(Graphics2D g2d, double permanence, Rectangle insideRec) {
     Composite original = g2d.getComposite();
-    Color synapseStateColor = permanence >= Column.CONNECTED_PERMANENCE ? Color.GREEN : Color.RED;
+    Color synapseStateColor = permanence >= Synapse.ProximalSynapse.CONNECTED_PERMANENCE ? Color.GREEN : Color.RED;
     g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER,
                                                 Math.min(1.0f, Math.max(0.2f, (float)Math.abs(
-                                                        permanence - Column.CONNECTED_PERMANENCE) * 30))));
+                                                        permanence - Synapse.ProximalSynapse.CONNECTED_PERMANENCE) * 30))));
     g2d.setColor(synapseStateColor);
     g2d.fillRect(insideRec.x, insideRec.y, insideRec.width, insideRec.height);
     g2d.setComposite(original);

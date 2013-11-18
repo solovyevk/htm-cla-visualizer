@@ -3,6 +3,7 @@ package htm.visualizer;
 import htm.model.Cell;
 import htm.model.Column;
 import htm.model.Region;
+import htm.model.Synapse;
 import htm.model.space.InputSpace;
 import htm.visualizer.surface.BaseSurface;
 import htm.visualizer.surface.ColumnCellsByIndexSurface;
@@ -26,40 +27,50 @@ import java.util.List;
 public class HTMGraphicInterface extends JPanel {
   private static final Log LOG = LogFactory.getLog(HTMGraphicInterface.class);
   /*
-  Global HTM Region Parameters
+  Parameters below will be used if no valid config provided
+   */
+
+  /*
+  Default HTM Region Parameters
    */
   private static final int HORIZONTAL_COLUMN_NUMBER = 12;
   private static final int VERTICAL_COLUMN_NUMBER = 12;
   private static final int SENSORY_INPUT_WIDTH = 12;
   private static final int SENSORY_INPUT_HEIGHT = 12;
-  private static final int CELLS_PER_COLUMN = 3;
+  private static final double INPUT_RADIUS = 8;
 
-  //TODO move them to region
+
   /*
-  SP Parameters
+  Default HTM Column Parameters
    */
-  private static final int SP_DESIRED_LOCAL_ACTIVITY = 3;
-  private static final int SP_MINIMAL_OVERLAP = 3;
-  private static final int SP_AMOUNT_OF_SYNAPSES = 20;
+  private static final int CELLS_PER_COLUMN = 3;
+  private static final int DESIRED_LOCAL_ACTIVITY = 1;
+  private static final int MINIMAL_OVERLAP = 2;
+  private static final int AMOUNT_OF_SYNAPSES = 30;
+  private static final double BOOST_RATE = 0.01;
 
-  /*inputRadius for this input Space
-  * The concept of Input Radius is an additional parameter to control how
-  * far away synapse connections can be made instead of allowing connections anywhere.
+  /*
+  Default Proximal Synapse Parameters
   */
-  private static final double SP_INPUT_RADIUS = 5;
-  /*The amount that is added to a Column's Boost value in a single time step, when it is being boosted.*/
-  private static final double SP_BOOST_RATE = 0.01;
+
+  public static double PROXIMAL_SYNAPSE_CONNECTED_PERMANENCE = 0.2;
+  public static double PROXIMAL_SYNAPSE_PERMANENCE_INCREASE = 0.005;
+  public static double PROXIMAL_SYNAPSE_PERMANENCE_DECREASE = 0.005;
+
+  /*
+  Default Distal Synapse Parameters
+  */
+
+  public static double DISTAL_SYNAPSE_CONNECTED_PERMANENCE = 0.2;
+  public static double DISTAL_SYNAPSE_PERMANENCE_INCREASE = 0.005;
+  public static double DISTAL_SYNAPSE_PERMANENCE_DECREASE = 0.005;
 
 
   private static Border DEFAULT_BORDER = BorderFactory.createEmptyBorder(0, 4, 0, 4);
   private static Border LIGHT_GRAY_BORDER = BorderFactory.createLineBorder(Color.lightGray);
 
   static {
-    Column.CELLS_PER_COLUMN = CELLS_PER_COLUMN;
-    Column.AMOUNT_OF_PROXIMAL_SYNAPSES = SP_AMOUNT_OF_SYNAPSES;
-    Column.MIN_OVERLAP = SP_MINIMAL_OVERLAP;
-    Column.DESIRED_LOCAL_ACTIVITY = SP_DESIRED_LOCAL_ACTIVITY;
-    Column.BOOST_RATE = SP_BOOST_RATE;
+    Column.BOOST_RATE = BOOST_RATE;
   }
 
   private java.util.List<boolean[]> patterns = new ArrayList<boolean[]>();
@@ -76,8 +87,6 @@ public class HTMGraphicInterface extends JPanel {
   private ObservableAction stepAction;
   private Action stopAction;
 
-
-  private InputSpace sensoryInput;
   private Region region;
   private final JComponent slicedView;
   private final ControlPanel control;
@@ -87,21 +96,31 @@ public class HTMGraphicInterface extends JPanel {
 
 
   public HTMGraphicInterface() {
-    this(new Config(null, new Dimension(HORIZONTAL_COLUMN_NUMBER, VERTICAL_COLUMN_NUMBER),
-                    new Dimension(SENSORY_INPUT_WIDTH, SENSORY_INPUT_HEIGHT), SP_INPUT_RADIUS, false));
+    this(new Config(null, new Region.Config(new Dimension(HORIZONTAL_COLUMN_NUMBER, VERTICAL_COLUMN_NUMBER),
+                                            new Dimension(SENSORY_INPUT_WIDTH, SENSORY_INPUT_HEIGHT), INPUT_RADIUS,
+                                            false),
+                    new Column.Config(CELLS_PER_COLUMN, AMOUNT_OF_SYNAPSES,
+                                      MINIMAL_OVERLAP, DESIRED_LOCAL_ACTIVITY, BOOST_RATE),
+                    new Synapse.Config(PROXIMAL_SYNAPSE_CONNECTED_PERMANENCE, PROXIMAL_SYNAPSE_PERMANENCE_INCREASE,
+                                       PROXIMAL_SYNAPSE_PERMANENCE_DECREASE),
+                    new Synapse.Config(DISTAL_SYNAPSE_CONNECTED_PERMANENCE, DISTAL_SYNAPSE_PERMANENCE_INCREASE,
+                                       DISTAL_SYNAPSE_PERMANENCE_DECREASE)));
   }
 
   public HTMGraphicInterface(Config cfg) {
     super(new BorderLayout(0, 0));
     initActions();
-    this.sensoryInput = new InputSpace(cfg.sensoryInputDimension.width, cfg.sensoryInputDimension.height);
-    this.sensoryInputSurface = new SensoryInputSurface(sensoryInput);
-    this.region = new Region(cfg.regionDimension.width, cfg.regionDimension.height, sensoryInput, cfg.inputRadius,
-                             cfg.skipSpatial);
+    //Set static attributes for HTM Model classes
+    Column.updateFromConfig(cfg.getColumnConfig());
+    Synapse.ProximalSynapse.updateFromConfig(cfg.getProximalSynapseConfig());
+    Synapse.DistalSynapse.updateFromConfig(cfg.getDistalSynapseConfig());
+    //Initialize region and all related UI
+    this.region = new Region(cfg.getRegionConfig());
+    this.sensoryInputSurface = new SensoryInputSurface(region.getInputSpace());
     this.sdrInput = new ColumnSDRSurface(region);
     this.slicedView = new HTMRegionSlicedView();
     this.control = new ControlPanel();
-    if (!cfg.skipSpatial) {
+    if (!region.isSkipSpatial()) {
       this.spatialInfo = new SpatialInfo();
     }
     initLayout();
@@ -241,7 +260,7 @@ public class HTMGraphicInterface extends JPanel {
         GridBagConstraints c = new GridBagConstraints();
         c.fill = GridBagConstraints.BOTH;
         c.weighty = 1.0;
-        c.weightx = 3 + CELLS_PER_COLUMN * .1;
+        c.weightx = 2;// + Column.CELLS_PER_COLUMN * .1;
         this.add(new Container() {
           private Container init() {
             this.setLayout(new GridBagLayout());
@@ -288,12 +307,22 @@ public class HTMGraphicInterface extends JPanel {
     return region;
   }
 
-  InputSpace getSensoryInput() {
-    return sensoryInput;
-  }
 
-  Config getParameters(){
-    return new Config(patterns, region.getDimension(), sensoryInput.getDimension(), region.getInputRadius(), region.isSkipSpatial());
+  Config getParameters() {
+    return new Config(patterns, new Region.Config(region.getDimension(), region.getInputSpaceDimension(),
+                                                  region.getInputRadius(), region.isSkipSpatial()),
+                      new Column.Config(Column.CELLS_PER_COLUMN,
+                                        Column.AMOUNT_OF_PROXIMAL_SYNAPSES,
+                                        Column.MIN_OVERLAP,
+                                        Column.DESIRED_LOCAL_ACTIVITY, Column.BOOST_RATE),
+                      new Synapse.Config(Synapse.ProximalSynapse.CONNECTED_PERMANENCE,
+                                         Synapse.ProximalSynapse.PERMANENCE_INCREASE,
+                                         Synapse.ProximalSynapse.PERMANENCE_DECREASE
+                      ),
+                      new Synapse.Config(Synapse.DistalSynapse.CONNECTED_PERMANENCE,
+                                         Synapse.DistalSynapse.PERMANENCE_INCREASE,
+                                         Synapse.DistalSynapse.PERMANENCE_DECREASE
+                      ));
   }
 
 
@@ -378,7 +407,7 @@ public class HTMGraphicInterface extends JPanel {
 
   private class HTMRegionSlicedView extends JPanel {
     public HTMRegionSlicedView() {
-      super(new GridLayout(CELLS_PER_COLUMN, 0));
+      super(new GridLayout(0, 1));
       setBorder(BorderFactory.createCompoundBorder(
               BorderFactory.createTitledBorder("Region Slices"),
               DEFAULT_BORDER));
@@ -409,10 +438,15 @@ public class HTMGraphicInterface extends JPanel {
       }
     }
 
-
+    @Override
     public Dimension getPreferredSize() {
-      return new Dimension(super.getPreferredSize().width,
-                           200 * CELLS_PER_COLUMN);
+      int prefWidth = super.getPreferredSize().width;
+      /*LOG.debug("HTMRegionSlicedView width:" + getSize().width);
+      double cof = getSize().width != 0 ? 1.0 * getSize().width/300 : 1;
+      LOG.debug("Coef:" +cof);
+      return new Dimension(prefWidth,
+                           (int)(270 * Column.CELLS_PER_COLUMN * cof));  */
+      return new Dimension(prefWidth, 270 * Column.CELLS_PER_COLUMN);
     }
 
   }
@@ -493,44 +527,40 @@ public class HTMGraphicInterface extends JPanel {
 
   public static class Config {
     private final java.util.List<boolean[]> patterns;
-    private final Dimension regionDimension;
-    private final Dimension sensoryInputDimension;
-    private final double inputRadius;
-    private final boolean skipSpatial;
-    /*private final int cellsInColumn;
-    private final int amountOfProximalSynapses;
-    private final int minOverlap;
-    private final int desiredLocalActivity;*/
+    private final Region.Config regionConfig;
+    private final Column.Config columnConfig;
+    private final Synapse.Config proximalSynapseConfig;
+    private final Synapse.Config distalSynapseConfig;
 
 
-    public Config(List<boolean[]> patterns, Dimension regionDimension, Dimension sensoryInputDimension,
-                  double inputRadius, boolean skipSpatial) {
+    public Config(List<boolean[]> patterns, Region.Config regionConfig, Column.Config columnConfig,
+                  Synapse.ProximalSynapse.Config proximalSynapseConfig,
+                  Synapse.DistalSynapse.Config distalSynapseConfig) {
       this.patterns = patterns;
-      this.regionDimension = regionDimension;
-      this.sensoryInputDimension = sensoryInputDimension;
-      this.inputRadius = inputRadius;
-      this.skipSpatial = skipSpatial;
+      this.regionConfig = regionConfig;
+      this.columnConfig = columnConfig;
+      this.proximalSynapseConfig = proximalSynapseConfig;
+      this.distalSynapseConfig = distalSynapseConfig;
     }
 
-
-    public double getInputRadius() {
-      return inputRadius;
+    public Region.Config getRegionConfig() {
+      return regionConfig;
     }
 
     public List<boolean[]> getPatterns() {
       return patterns;
     }
 
-    public Dimension getRegionDimension() {
-      return regionDimension;
+    public Column.Config getColumnConfig() {
+      return columnConfig;
     }
 
-    public Dimension getSensoryInputDimension() {
-      return sensoryInputDimension;
+    public Synapse.Config getProximalSynapseConfig() {
+      return proximalSynapseConfig;
     }
 
-    public boolean isSkipSpatial() {
-      return skipSpatial;
+    public Synapse.Config getDistalSynapseConfig() {
+      return distalSynapseConfig;
     }
   }
 

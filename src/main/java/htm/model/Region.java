@@ -12,17 +12,22 @@ import java.util.List;
 
 public class Region extends ColumnSpace {
   private final InputSpace inputSpace;
+  /**
+  * inputRadius for this input Space
+  * The concept of Input Radius is an additional parameter to control how
+  * far away synapse connections can be made instead of allowing connections anywhere.
+  */
   private final double inputRadius;
   private final boolean skipSpatial;
 
   private static final Log LOG = LogFactory.getLog(Region.class);
 
-
-  public Region(int xSize, int ySize, InputSpace source, double inputRadius, boolean skipSpatial) {
-    super(xSize, ySize);
-    this.inputSpace = source;
-    this.inputRadius = inputRadius;
-    this.skipSpatial = skipSpatial;
+  public Region(Config regionCfg) {
+    super(regionCfg.getRegionDimension().width, regionCfg.getRegionDimension().height);
+    this.inputSpace = new InputSpace(regionCfg.getSensoryInputDimension().width,
+                                     regionCfg.getSensoryInputDimension().height);
+    this.inputRadius = regionCfg.getInputRadius();
+    this.skipSpatial = regionCfg.isSkipSpatial();
     if (skipSpatial) {
       if (inputSpace.getDimension().height != this.getDimension().height && inputSpace.getDimension().width != this.getDimension().width) {
         throw new IllegalArgumentException(
@@ -31,10 +36,6 @@ public class Region extends ColumnSpace {
     } else {
       connectToInputSpace();
     }
-  }
-
-  public Region(int xSize, int ySize, InputSpace source) {
-    this(xSize, ySize, source, -1, false);
   }
 
   public void connectToInputSpace() {
@@ -146,6 +147,9 @@ public class Region extends ColumnSpace {
     }
   }
 
+  public Dimension getInputSpaceDimension() {
+    return inputSpace.getDimension();
+  }
 
   public InputSpace getInputSpace() {
     return inputSpace;
@@ -157,6 +161,40 @@ public class Region extends ColumnSpace {
 
   public boolean isSkipSpatial() {
     return skipSpatial;
+  }
+
+  public static class Config {
+    private final Dimension regionDimension;
+    private final Dimension sensoryInputDimension;
+    private final double inputRadius;
+    private final boolean skipSpatial;
+
+
+    public Config(Dimension regionDimension, Dimension sensoryInputDimension,
+                  double inputRadius, boolean skipSpatial) {
+      this.regionDimension = regionDimension;
+      this.sensoryInputDimension = sensoryInputDimension;
+      this.inputRadius = inputRadius;
+      this.skipSpatial = skipSpatial;
+    }
+
+
+    public double getInputRadius() {
+      return inputRadius;
+    }
+
+    public Dimension getRegionDimension() {
+      return regionDimension;
+    }
+
+    public Dimension getSensoryInputDimension() {
+      return sensoryInputDimension;
+    }
+
+    public boolean isSkipSpatial() {
+      return skipSpatial;
+    }
+
   }
 }
 

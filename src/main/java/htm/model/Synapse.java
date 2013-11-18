@@ -31,16 +31,42 @@ public class Synapse {
   }
 
   public static class ProximalSynapse extends Synapse {
+    /**
+     * WP
+     * If the permanence value for a synapse is greater than this
+     * value, it is said to be connected.
+     */
+    public static double CONNECTED_PERMANENCE = 0.2;
+    /**
+     * WP
+     * Amount permanence values of synapses are incremented
+     * during learning.
+     */
+    public static double PERMANENCE_INCREASE = 0.005;
+    /**
+     * WP
+     * Amount permanence values of synapses are decremented
+     * during learning.
+     */
+    public static double PERMANENCE_DECREASE = 0.005;
+
+    public static void updateFromConfig(Config synapseCfg) {
+      ProximalSynapse.CONNECTED_PERMANENCE = synapseCfg.getConnectedPerm();
+      ProximalSynapse.PERMANENCE_INCREASE = synapseCfg.getPermanenceInc();
+      ProximalSynapse.PERMANENCE_DECREASE = synapseCfg.getPermanenceDec();
+    }
+
     private final InputSpace.Input connectedSensoryInput;
     private final Column belongsTo;
     private final double distanceToColumn;
+
     public ProximalSynapse(double initPermanence, InputSpace.Input connectedSensoryInput, Column belongsTo) {
       super(initPermanence);
       this.connectedSensoryInput = connectedSensoryInput;
-      this.belongsTo =  belongsTo;
+      this.belongsTo = belongsTo;
       this.distanceToColumn = BaseSpace.getDistance(belongsTo.getRegion().convertInputPositionToColumnSpace(
               connectedSensoryInput.getPosition()),
-                                               belongsTo.getPosition());
+                                                    belongsTo.getPosition());
     }
 
 
@@ -51,11 +77,61 @@ public class Synapse {
     public double getDistanceToColumn() {
       return distanceToColumn;
     }
+
+    public Column getBelongsTo() {
+      return belongsTo;
+    }
   }
 
   public static class DistalSynapse extends Synapse {
+
+    public static double CONNECTED_PERMANENCE = 0.2;
+    /**
+     * WP
+     * Amount permanence values of synapses are incremented
+     * during learning.
+     */
+    public static double PERMANENCE_INCREASE = 0.005;
+    /**
+     * WP
+     * Amount permanence values of synapses are decremented
+     * during learning.
+     */
+    public static double PERMANENCE_DECREASE = 0.005;
+
+    public static void updateFromConfig(Config synapseCfg) {
+      DistalSynapse.CONNECTED_PERMANENCE = synapseCfg.getConnectedPerm();
+      DistalSynapse.PERMANENCE_INCREASE = synapseCfg.getPermanenceInc();
+      DistalSynapse.PERMANENCE_DECREASE = synapseCfg.getPermanenceDec();
+    }
+
     public DistalSynapse(double initPermanence) {
       super(initPermanence);
+    }
+  }
+
+  public static class Config {
+    private final double connectedPerm;
+    private final double permanenceInc;
+    private final double permanenceDec;
+
+
+    public Config(double connectedPerm, double permanenceInc, double permanenceDec) {
+      this.connectedPerm = connectedPerm;
+      this.permanenceInc = permanenceInc;
+      this.permanenceDec = permanenceDec;
+    }
+
+    public double getConnectedPerm() {
+      return connectedPerm;
+    }
+
+    public double getPermanenceInc() {
+      return permanenceInc;
+    }
+
+    public double getPermanenceDec() {
+      return permanenceDec;
     }
   }
 }

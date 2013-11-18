@@ -8,6 +8,8 @@
 
 package htm.visualizer;
 
+import htm.model.Column;
+import htm.model.Region;
 import htm.utils.UIUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -86,10 +88,12 @@ public class Viewer extends JFrame {
         boolean checked = ((JCheckBoxMenuItem)e.getSource()).getState();
         LOG.debug("Skip Spatial Pooling is:" + checked);
         HTMGraphicInterface.Config oldCfg = htmInterface.getParameters();
-        HTMGraphicInterface.Config newCfg = new HTMGraphicInterface.Config(oldCfg.getPatterns(),
-                                                                           oldCfg.getRegionDimension(),
-                                                                           oldCfg.getSensoryInputDimension(),
-                                                                           oldCfg.getInputRadius(), checked);
+        Region.Config oldRegionCfg = oldCfg.getRegionConfig();
+        Column.Config oldColumnCfg = oldCfg.getColumnConfig();
+        HTMGraphicInterface.Config newCfg = new HTMGraphicInterface.Config(oldCfg.getPatterns(), new Region.Config(
+                oldRegionCfg.getRegionDimension(),
+                oldRegionCfg.getSensoryInputDimension(),
+                oldRegionCfg.getInputRadius(), checked), oldColumnCfg, null, null);
         win.reloadHTMInterface(newCfg);
       }
     };
@@ -132,7 +136,7 @@ public class Viewer extends JFrame {
     setJMenuBar(createMenuBar());
     //sync skipSP state
     skipSpatialPoolMenuItem.setState(htmInterface.getRegion().isSkipSpatial());
-    setSize(1200, 800);
+    setSize(1200, 880);
     setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
     setLocationRelativeTo(null);
   }

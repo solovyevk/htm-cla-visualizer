@@ -14,7 +14,9 @@ public class Column extends BaseSpace.Element {
   private static final Log LOG = LogFactory.getLog(Column.class);
   public static int CELLS_PER_COLUMN = 3;
   public static int AMOUNT_OF_PROXIMAL_SYNAPSES = 30;
-
+  /**
+  *The amount that is added to a Column's Boost value in a single time step, when it is being boosted.
+  */
   public static double BOOST_RATE = 0.01;
   /**
    * WP
@@ -29,26 +31,7 @@ public class Column extends BaseSpace.Element {
    */
   public static int DESIRED_LOCAL_ACTIVITY = 2;
 
-  //ProximalSynapse Parameters
 
-  /**
-   * WP
-   * If the permanence value for a synapse is greater than this
-   * value, it is said to be connected.
-   */
-  public static double CONNECTED_PERMANENCE = 0.2;
-  /**
-   * WP
-   * Amount permanence values of synapses are incremented
-   * during learning.
-   */
-  public static double PERMANENCE_INCREASE = 0.005;
-  /**
-   * WP
-   * Amount permanence values of synapses are decremented
-   * during learning.
-   */
-  public static double PERMANENCE_DECREASE = 0.005;
   /**
    * WP
    * overlap(c) The spatial pooler overlap of column c with a particular
@@ -58,13 +41,13 @@ public class Column extends BaseSpace.Element {
 
   private static final CollectionUtils.Predicate<Synapse.ProximalSynapse> ACTIVE_CONNECTED_PROXIMAL_SYNAPSES_PREDICATE = new CollectionUtils.Predicate<Synapse.ProximalSynapse>() {
     @Override public boolean apply(Synapse.ProximalSynapse synapse) {
-      return synapse.isConnected(CONNECTED_PERMANENCE) && synapse.getConnectedSensoryInput().getValue();
+      return synapse.isConnected(Synapse.ProximalSynapse.CONNECTED_PERMANENCE) && synapse.getConnectedSensoryInput().getValue();
     }
   };
 
   private static final CollectionUtils.Predicate<Synapse.ProximalSynapse> CONNECTED_PROXIMAL_SYNAPSES_PREDICATE = new CollectionUtils.Predicate<Synapse.ProximalSynapse>() {
     @Override public boolean apply(Synapse.ProximalSynapse synapse) {
-      return synapse.isConnected(CONNECTED_PERMANENCE);
+      return synapse.isConnected(Synapse.ProximalSynapse.CONNECTED_PERMANENCE);
     }
   };
 
@@ -81,6 +64,14 @@ public class Column extends BaseSpace.Element {
       return activeDutyCycle2.compareTo(activeDutyCycle1);
     }
   };
+
+  public static void updateFromConfig(Config columnCfg){
+    Column.CELLS_PER_COLUMN = columnCfg.getCellsInColumn();
+    Column.AMOUNT_OF_PROXIMAL_SYNAPSES = columnCfg.getAmountOfProximalSynapses();
+    Column.MIN_OVERLAP = columnCfg.getMinOverlap();
+    Column.DESIRED_LOCAL_ACTIVITY = columnCfg.getDesiredLocalActivity();
+    Column.BOOST_RATE = columnCfg.getBoostRate();
+  }
 
   private final Region region;
   private final List<Cell> cells = new ArrayList<Cell>();
@@ -157,7 +148,7 @@ public class Column extends BaseSpace.Element {
       double distanceToInputSrc = BaseSpace.getDistance(inputSpacePosition, input.getPosition()),
               distanceToInputColumn = BaseSpace.getDistance(this.region.convertInputPositionToColumnSpace(
                       input.getPosition()), position),
-              initPermanence = PERMANENCE_INCREASE * randomGenerator.nextGaussian() + CONNECTED_PERMANENCE,
+              initPermanence = Synapse.ProximalSynapse.PERMANENCE_INCREASE * randomGenerator.nextGaussian() + Synapse.ProximalSynapse.CONNECTED_PERMANENCE,
               radiusBiasDeviation = 0.1f, //1.1 to 0.9 -> Y = 1.1 - radiusBiasDeviation / 2inputRadius * X
               radiusBiasScale = 1 + radiusBiasDeviation - radiusBiasDeviation / inputRadius * 2 * distanceToInputSrc,
               radiusBiasPermanence = initPermanence * radiusBiasScale;
@@ -220,9 +211,9 @@ public class Column extends BaseSpace.Element {
       List<Synapse.ProximalSynapse> potentialSynapses = getPotentialSynapses();
       for (Synapse.ProximalSynapse potentialSynapse : potentialSynapses) {
         if (potentialSynapse.getConnectedSensoryInput().getValue()) {
-          potentialSynapse.setPermanence(potentialSynapse.getPermanence() + Column.PERMANENCE_INCREASE);
+          potentialSynapse.setPermanence(potentialSynapse.getPermanence() + Synapse.ProximalSynapse.PERMANENCE_INCREASE);
         } else {
-          potentialSynapse.setPermanence(potentialSynapse.getPermanence() - Column.PERMANENCE_DECREASE);
+          potentialSynapse.setPermanence(potentialSynapse.getPermanence() - Synapse.ProximalSynapse.PERMANENCE_DECREASE);
         }
       }
     }
@@ -240,7 +231,7 @@ public class Column extends BaseSpace.Element {
     double minDutyCycle = 0.01 * getMaxDutyCycle(inhibitionRadius);
     updateBoost(minDutyCycle);
     if (this.getOverlapDutyCycle() < minDutyCycle) {
-      increasePermanence(0.1 * CONNECTED_PERMANENCE);
+      increasePermanence(0.1 * Synapse.ProximalSynapse.CONNECTED_PERMANENCE);
     }
   }
 
@@ -446,5 +437,41 @@ public class Column extends BaseSpace.Element {
     }
 
     protected abstract boolean positiveCondition(E state);
+  }
+
+  public static class Config {
+    private final int cellsInColumn;
+    private final int amountOfProximalSynapses;
+    private final int minOverlap;
+    private final int desiredLocalActivity;
+    private final double boostRate;
+
+    public Config(int cellsInColumn, int amountOfProximalSynapses, int minOverlap, int desiredLocalActivity, double boostRate) {
+      this.cellsInColumn = cellsInColumn;
+      this.amountOfProximalSynapses = amountOfProximalSynapses;
+      this.minOverlap = minOverlap;
+      this.desiredLocalActivity = desiredLocalActivity;
+      this.boostRate = boostRate;
+    }
+
+    public int getCellsInColumn() {
+      return cellsInColumn;
+    }
+
+    public int getAmountOfProximalSynapses() {
+      return amountOfProximalSynapses;
+    }
+
+    public int getMinOverlap() {
+      return minOverlap;
+    }
+
+    public int getDesiredLocalActivity() {
+      return desiredLocalActivity;
+    }
+
+    public double getBoostRate() {
+      return boostRate;
+    }
   }
 }
