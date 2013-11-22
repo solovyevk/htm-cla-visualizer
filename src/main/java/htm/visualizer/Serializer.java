@@ -229,8 +229,8 @@ public enum Serializer {
             minOverlap,
             desiredLocalActivity, boostRate), new Synapse.Config(proximalConnectedPerm, proximalPermanenceInc,
                                                                  proximalPermanenceDec),
-                                          new Synapse.Config(distalConnectedPerm, distalConnectedPerm,
-                                                             distalConnectedPerm));
+                                          new Synapse.Config(distalConnectedPerm, distalPermanenceInc,
+                                                             distalPermanenceDec));
   }
 
   public void saveHTMParameters(File output, HTMGraphicInterface.Config parameters) throws Exception {

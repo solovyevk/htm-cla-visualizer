@@ -19,12 +19,12 @@
   </column>
   <proximalSynapse>
     <connectedPerm>0.2</connectedPerm>
-    <permanenceInc>0.0050</permanenceInc>
-    <permanenceDec>0.0050</permanenceDec>
+    <permanenceInc>0.005</permanenceInc>
+    <permanenceDec>0.005</permanenceDec>
   </proximalSynapse>
   <distalSynapse>
     <connectedPerm>0.2</connectedPerm>
-    <permanenceInc>0.0050</permanenceInc>
-    <permanenceDec>0.0050</permanenceDec>
+    <permanenceInc>0.005</permanenceInc>
+    <permanenceDec>0.005</permanenceDec>
   </distalSynapse>
 </htm-config>

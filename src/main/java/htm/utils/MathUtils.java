@@ -34,6 +34,10 @@ public class MathUtils {
     return (lowerBound <= value && value <= upperBound);
   }
 
+  public static boolean inRange(double value, double lowerBound, double upperBound) {
+     return (lowerBound <= value && value <= upperBound);
+   }
+
   public static double round(double value, int places) {
       if (places < 0) throw new IllegalArgumentException("places should not be negative");
       BigDecimal bd = new BigDecimal(value);

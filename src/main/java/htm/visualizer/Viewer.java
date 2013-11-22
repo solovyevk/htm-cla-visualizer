@@ -8,7 +8,6 @@
 
 package htm.visualizer;
 
-import htm.model.Column;
 import htm.model.Region;
 import htm.utils.UIUtils;
 import org.apache.commons.logging.Log;
@@ -78,7 +77,19 @@ public class Viewer extends JFrame {
     editParametersAction = new AbstractAction("Edit Parameters", UIUtils.INSTANCE.createImageIcon(
             "/images/cog_edit.png")) {
       @Override public void actionPerformed(ActionEvent e) {
-        //To change body of implemented methods use File | Settings | File Templates.
+        HTMGraphicInterface.Config oldCfg = htmInterface.getParameters();
+        HTMGraphicInterface.Config modCfg = ParametersChooser.showDialog(
+                win,
+                "Edit Parameters",
+                htmInterface.getParameters());
+        Region.Config modRegionCfg = modCfg.getRegionConfig();
+        HTMGraphicInterface.Config newCfg = new HTMGraphicInterface.Config(oldCfg.getPatterns(), new Region.Config(
+                modRegionCfg.getRegionDimension(),
+                modRegionCfg.getSensoryInputDimension(),
+                modRegionCfg.getInputRadius(), modRegionCfg.isSkipSpatial()), modCfg.getColumnConfig(),
+                                                                           modCfg.getProximalSynapseConfig(),
+                                                                           modCfg.getDistalSynapseConfig());
+        win.reloadHTMInterface(newCfg);
       }
     };
 
@@ -89,11 +100,11 @@ public class Viewer extends JFrame {
         LOG.debug("Skip Spatial Pooling is:" + checked);
         HTMGraphicInterface.Config oldCfg = htmInterface.getParameters();
         Region.Config oldRegionCfg = oldCfg.getRegionConfig();
-        Column.Config oldColumnCfg = oldCfg.getColumnConfig();
         HTMGraphicInterface.Config newCfg = new HTMGraphicInterface.Config(oldCfg.getPatterns(), new Region.Config(
                 oldRegionCfg.getRegionDimension(),
                 oldRegionCfg.getSensoryInputDimension(),
-                oldRegionCfg.getInputRadius(), checked), oldColumnCfg, null, null);
+                oldRegionCfg.getInputRadius(), checked), oldCfg.getColumnConfig(), oldCfg.getProximalSynapseConfig(),
+                                                                           oldCfg.getDistalSynapseConfig());
         win.reloadHTMInterface(newCfg);
       }
     };
