@@ -235,7 +235,7 @@ public class Parameters {
       this.cfg = cfg;
       setLayout(new SpringLayout());
       cellsInColumnParam = new IntegerParameter(1, 20, cfg.getCellsInColumn());
-      amountOfProximalSynapsesParam = new IntegerParameter(10, 60, cfg.getAmountOfProximalSynapses());
+      amountOfProximalSynapsesParam = new IntegerParameter(2, 60, cfg.getAmountOfProximalSynapses());
       minOverlapParam = new IntegerParameter(1, 10, cfg.getMinOverlap());
       desiredLocalActivityParam = new IntegerParameter(1, 10, cfg.getDesiredLocalActivity());
       boostRateParam = new Parameters.DoubleParameter(0.005, 0.2, cfg.getBoostRate(), 200);

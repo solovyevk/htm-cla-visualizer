@@ -15,11 +15,10 @@ import org.apache.commons.logging.LogFactory;
 
 import javax.swing.*;
 import javax.swing.filechooser.FileNameExtensionFilter;
+import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.KeyEvent;
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.util.ArrayList;
 
 public class Viewer extends JFrame {
@@ -35,6 +34,7 @@ public class Viewer extends JFrame {
   private Action loadFromFileAction;
   private Action editParametersAction;
   private Action skipSpatialPoolingAction;
+  private Action resetAction;
 
   JCheckBoxMenuItem skipSpatialPoolMenuItem;
 
@@ -53,6 +53,7 @@ public class Viewer extends JFrame {
           }
         } catch (Exception ex) {
           LOG.error("Error saving HTM parameters", ex);
+          ExceptionHandler.showErrorDialog(ex);
         }
       }
     };
@@ -61,6 +62,7 @@ public class Viewer extends JFrame {
             "/images/book_open.png")) {
       @Override public void actionPerformed(ActionEvent e) {
         LOG.debug("Load From File");
+        HTMGraphicInterface.Config oldCfg = htmInterface.getParameters();
         try {
           int returnVal = fc.showOpenDialog(win);
           if (returnVal == JFileChooser.APPROVE_OPTION) {
@@ -70,6 +72,8 @@ public class Viewer extends JFrame {
           }
         } catch (Exception ex) {
           LOG.error("Error loading HTM parameters", ex);
+          ExceptionHandler.showErrorDialog(ex);
+          win.reloadHTMInterface(oldCfg);
         }
       }
     };
@@ -78,18 +82,27 @@ public class Viewer extends JFrame {
             "/images/cog_edit.png")) {
       @Override public void actionPerformed(ActionEvent e) {
         HTMGraphicInterface.Config oldCfg = htmInterface.getParameters();
-        HTMGraphicInterface.Config modCfg = ParametersChooser.showDialog(
+        HTMGraphicInterface.Config modCfg = ParametersEditor.showDialog(
                 win,
                 "Edit Parameters",
                 htmInterface.getParameters());
-        Region.Config modRegionCfg = modCfg.getRegionConfig();
-        HTMGraphicInterface.Config newCfg = new HTMGraphicInterface.Config(oldCfg.getPatterns(), new Region.Config(
-                modRegionCfg.getRegionDimension(),
-                modRegionCfg.getSensoryInputDimension(),
-                modRegionCfg.getInputRadius(), modRegionCfg.isSkipSpatial()), modCfg.getColumnConfig(),
-                                                                           modCfg.getProximalSynapseConfig(),
-                                                                           modCfg.getDistalSynapseConfig());
-        win.reloadHTMInterface(newCfg);
+        if (modCfg != null) {
+          Region.Config modRegionCfg = modCfg.getRegionConfig();
+          HTMGraphicInterface.Config newCfg = new HTMGraphicInterface.Config(oldCfg.getPatterns(), new Region.Config(
+                  modRegionCfg.getRegionDimension(),
+                  modRegionCfg.getSensoryInputDimension(),
+                  modRegionCfg.getInputRadius(), modRegionCfg.isSkipSpatial()), modCfg.getColumnConfig(),
+                                                                             modCfg.getProximalSynapseConfig(),
+
+                                                                             modCfg.getDistalSynapseConfig());
+          try {
+            win.reloadHTMInterface(newCfg);
+          } catch (Exception ex) {
+            LOG.error("Error editing HTM parameters", ex);
+            ExceptionHandler.showErrorDialog(ex);
+            win.reloadHTMInterface(oldCfg);
+          }
+        }
       }
     };
 
@@ -105,9 +118,36 @@ public class Viewer extends JFrame {
                 oldRegionCfg.getSensoryInputDimension(),
                 oldRegionCfg.getInputRadius(), checked), oldCfg.getColumnConfig(), oldCfg.getProximalSynapseConfig(),
                                                                            oldCfg.getDistalSynapseConfig());
-        win.reloadHTMInterface(newCfg);
+        try {
+          win.reloadHTMInterface(newCfg);
+        } catch (Exception ex) {
+          ExceptionHandler.showErrorDialog(ex);
+          win.reloadHTMInterface(oldCfg);
+        }
       }
     };
+
+    resetAction = new AbstractAction("Reset HTM to original state", UIUtils.INSTANCE.createImageIcon(
+            "/images/arrow_rotate_clockwise.png")) {
+
+      @Override public void actionPerformed(ActionEvent e) {
+        HTMGraphicInterface.Config cfg;
+        InputStream in = getClass().getResourceAsStream("/config.xml");
+        try {
+          cfg = Serializer.INSTANCE.loadHTMParameters(in);
+          win.reloadHTMInterface(cfg);
+        } catch (Exception ex) {
+          LOG.error("Error loading HTM parameters from config.xml resource", ex);
+        } finally {
+          try {
+            if (in != null) in.close();
+          } catch (IOException ex) {
+            LOG.error("Can't close config.xml resource stream");
+          }
+        }
+      }
+    };
+
 
   }
 
@@ -198,23 +238,127 @@ public class Viewer extends JFrame {
             "Modify CLA parameters");
     menu.add(menuItem);
     menu.addSeparator();
+
+    menuItem = new JMenuItem(resetAction);
+    menuItem.setMnemonic(KeyEvent.VK_R);
+    menuItem.setAccelerator(KeyStroke.getKeyStroke(
+            KeyEvent.VK_4, ActionEvent.ALT_MASK));
+    menu.add(menuItem);
+    menu.addSeparator();
     skipSpatialPoolMenuItem = new JCheckBoxMenuItem(skipSpatialPoolingAction);
     skipSpatialPoolMenuItem.setMnemonic(KeyEvent.VK_S);
     skipSpatialPoolMenuItem.setAccelerator(KeyStroke.getKeyStroke(
-            KeyEvent.VK_4, ActionEvent.ALT_MASK));
+            KeyEvent.VK_5, ActionEvent.ALT_MASK));
     skipSpatialPoolMenuItem.getAccessibleContext().setAccessibleDescription(
             "Skip Spatial Pooling, Connect Input to Temporal Pooling directly");
     menu.add(skipSpatialPoolMenuItem);
+
     return menuBar;
   }
 
-  public static void main(String[] args) {
-    SwingUtilities.invokeLater(new Runnable() {
+  public static Frame findActiveFrame() {
+    Frame[] frames = JFrame.getFrames();
+    for (int i = 0; i < frames.length; i++) {
+      Frame frame = frames[i];
+      if (frame.isVisible()) {
+        return frame;
+      }
+    }
+    return null;
+  }
 
+  private static class ExceptionHandler
+          implements Thread.UncaughtExceptionHandler {
+    private static int SHOW_LINES = 10;
+
+    public static void showErrorDialog(Throwable thrown) {;
+      StackTraceElement[] stackTraceElements =  thrown.getStackTrace();
+      int counter = 0;
+      StringBuffer stackTraceBuffer = new StringBuffer();
+      for (int i = 0; i < stackTraceElements.length; i++) {
+        StackTraceElement stackTraceElement = stackTraceElements[i];
+        stackTraceBuffer.append(stackTraceElement.toString()).append("\n");
+        if(counter >= SHOW_LINES){
+          break;
+        }
+        counter++;
+      }
+      if(stackTraceElements.length > SHOW_LINES){
+        stackTraceBuffer.append("and ").append(stackTraceElements.length - SHOW_LINES).append(" more ...");
+      }
+
+      final String errorStackTrace =  stackTraceBuffer.toString();
+      final String errorMessage = thrown.getMessage();
+      Object[] options = {"Close", "Restart"};
+      int result = JOptionPane.showOptionDialog(findActiveFrame(),
+                                                errorMessage +"\n\n" +errorStackTrace,
+                                                "Exception Occurred",
+                                                JOptionPane.YES_NO_OPTION,
+                                                JOptionPane.ERROR_MESSAGE,
+                                                null,
+                                                options,
+                                                options[0]);
+      if (result == JOptionPane.NO_OPTION) {
+        LOG.debug("Try to restore UI");
+        SwingUtilities.invokeLater(new Runnable() {
+          @Override
+          public void run() {
+            Frame f = findActiveFrame();
+            if (f != null && f instanceof Viewer) {
+              Viewer viewer = (Viewer)f;
+              HTMGraphicInterface.Config cfg;
+              InputStream in = getClass().getResourceAsStream("/config.xml");
+              try {
+                cfg = Serializer.INSTANCE.loadHTMParameters(in);
+                viewer.reloadHTMInterface(cfg);
+              } catch (Exception e) {
+                LOG.error("Error loading HTM parameters from config.xml resource", e);
+              } finally {
+                try {
+                  if (in != null) in.close();
+                } catch (IOException ex) {
+                  LOG.error("Can't close config.xml resource stream");
+                }
+              }
+            }
+          }
+        });
+      }
+    }
+
+    public void handle(Throwable thrown) {
+      // for EDT exceptions
+      handleException(Thread.currentThread().getName(), thrown);
+    }
+
+    public void uncaughtException(Thread thread, Throwable thrown) {
+      // for other uncaught exceptions
+      handleException(thread.getName(), thrown);
+    }
+
+    protected void handleException(String tname, Throwable thrown) {
+      LOG.error("Exception on " + tname);
+      LOG.error("Handling uncaught exceptions", thrown);
+      showErrorDialog(thrown);
+    }
+  }
+
+
+  public static void main(String[] args) {
+    Thread.setDefaultUncaughtExceptionHandler(new ExceptionHandler());
+    System.setProperty("sun.awt.exception.handler",
+                       ExceptionHandler.class.getName());
+    SwingUtilities.invokeLater(new Runnable() {
+      @Override
       public void run() {
-        Viewer sk = new Viewer();
+        final Viewer sk = new Viewer();
         sk.setVisible(true);
       }
     });
   }
 }
+
+
+
+
+

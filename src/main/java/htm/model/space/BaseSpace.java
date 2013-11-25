@@ -9,7 +9,7 @@
 package htm.model.space;
 
 
-import htm.utils.*;
+import htm.utils.CollectionUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
@@ -71,12 +71,10 @@ public abstract class BaseSpace<E extends BaseSpace.Element> {
 
 
   public List<E> getAllWithinRadius(final Point center, final double radius) {
-    final double adjustedRadius = radius < 1 ? Math.sqrt(Math.pow(this.getDimension().height, 2) + Math.pow(
-            this.getDimension().width, 2)) : radius;
     CollectionUtils.Predicate<E> withinRadius = new CollectionUtils.Predicate<E>() {
       @Override public boolean apply(E element) {
         return Math.pow(center.x - element.getPosition().x, 2) + Math.pow(center.y - element.getPosition().y,
-                                                                          2) <= Math.pow(adjustedRadius, 2);
+                                                                          2) <= Math.pow(radius, 2);
       }
     };
     return CollectionUtils.filter(elementList, withinRadius);

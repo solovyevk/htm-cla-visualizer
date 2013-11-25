@@ -15,7 +15,7 @@ import java.awt.*;
 import java.awt.event.*;
 import java.io.Serializable;
 
-public class ParametersChooser extends JComponent {
+public class ParametersEditor extends JComponent {
   private final static Color LIGHT_BLUE = new Color(150, 150, 255);
   private static Border DEFAULT_BORDER = BorderFactory.createEmptyBorder(4, 4, 4, 4);
   private static Font LABEL_FONT = UIManager.getFont("JLabel.font");
@@ -26,7 +26,7 @@ public class ParametersChooser extends JComponent {
                                                       String title,
                                                       HTMGraphicInterface.Config initialParams) throws HeadlessException {
 
-    final ParametersChooser pane = new ParametersChooser(initialParams);
+    final ParametersEditor pane = new ParametersEditor(initialParams);
 
     ParametersTracker ok = new ParametersTracker(pane);
     JDialog dialog = createDialog(component, title, true, pane, ok, null);
@@ -37,16 +37,16 @@ public class ParametersChooser extends JComponent {
   }
 
   public static JDialog createDialog(Component c, String title, boolean modal,
-                                     ParametersChooser chooserPane, ActionListener okListener,
+                                     ParametersEditor chooserPane, ActionListener okListener,
                                      ActionListener cancelListener) throws HeadlessException {
 
     Window window = getWindowForComponent(c);
-    ParametersChooserDialog dialog;
+    ParametersEditorDialog dialog;
     if (window instanceof Frame) {
-      dialog = new ParametersChooserDialog((Frame)window, title, modal, c, chooserPane,
+      dialog = new ParametersEditorDialog((Frame)window, title, modal, c, chooserPane,
                                            okListener, cancelListener);
     } else {
-      dialog = new ParametersChooserDialog((Dialog)window, title, modal, c, chooserPane,
+      dialog = new ParametersEditorDialog((Dialog)window, title, modal, c, chooserPane,
                                            okListener, cancelListener);
     }
     return dialog;
@@ -79,7 +79,7 @@ public class ParametersChooser extends JComponent {
     return new HTMGraphicInterface.Config(null, regionParameters.getParameters(), columnParameters.getParameters(), proximalSynapsesParameters.getParameters(), distalSynapsesParameters.getParameters());
   }
 
-  public ParametersChooser(HTMGraphicInterface.Config params) {
+  public ParametersEditor(HTMGraphicInterface.Config params) {
     regionParameters = new Parameters.RegionParameters(params.getRegionConfig());
     columnParameters = new Parameters.ColumnParameters(params.getColumnConfig());
     proximalSynapsesParameters = new Parameters.SynapseParameters(params.getProximalSynapseConfig());
@@ -112,28 +112,28 @@ public class ParametersChooser extends JComponent {
 
 }
 
-class ParametersChooserDialog extends JDialog {
+class ParametersEditorDialog extends JDialog {
   private HTMGraphicInterface.Config initialCfg;
-  private ParametersChooser chooserPane;
+  private ParametersEditor chooserPane;
   private JButton cancelButton;
 
-  public ParametersChooserDialog(Dialog owner, String title, boolean modal,
-                                 Component c, ParametersChooser chooserPane,
-                                 ActionListener okListener, ActionListener cancelListener)
+  public ParametersEditorDialog(Dialog owner, String title, boolean modal,
+                                Component c, ParametersEditor chooserPane,
+                                ActionListener okListener, ActionListener cancelListener)
           throws HeadlessException {
     super(owner, title, modal);
     initParametersChooserDialog(c, chooserPane, okListener, cancelListener);
   }
 
-  public ParametersChooserDialog(Frame owner, String title, boolean modal,
-                                 Component c, ParametersChooser chooserPane,
-                                 ActionListener okListener, ActionListener cancelListener)
+  public ParametersEditorDialog(Frame owner, String title, boolean modal,
+                                Component c, ParametersEditor chooserPane,
+                                ActionListener okListener, ActionListener cancelListener)
           throws HeadlessException {
     super(owner, title, modal);
     initParametersChooserDialog(c, chooserPane, okListener, cancelListener);
   }
 
-  protected void initParametersChooserDialog(Component c, ParametersChooser chooserPane,
+  protected void initParametersChooserDialog(Component c, ParametersEditor chooserPane,
                                              ActionListener okListener, ActionListener cancelListener) {
     //setResizable(false);
 
@@ -252,10 +252,10 @@ class ParametersChooserDialog extends JDialog {
 }
 
 class ParametersTracker implements ActionListener, Serializable {
-  ParametersChooser chooser;
+  ParametersEditor chooser;
   HTMGraphicInterface.Config cfg;
 
-  public ParametersTracker(ParametersChooser c) {
+  public ParametersTracker(ParametersEditor c) {
     chooser = c;
   }
 

@@ -29,7 +29,7 @@ public class Region extends ColumnSpace {
     this.inputRadius = regionCfg.getInputRadius();
     this.skipSpatial = regionCfg.isSkipSpatial();
     if (skipSpatial) {
-      if (inputSpace.getDimension().height != this.getDimension().height && inputSpace.getDimension().width != this.getDimension().width) {
+      if (inputSpace.getDimension().height != this.getDimension().height || inputSpace.getDimension().width != this.getDimension().width) {
         throw new IllegalArgumentException(
                 "With \"Skip Spatial Mode \" Sensory Input must be the same size as this Region");
       }
@@ -69,7 +69,6 @@ public class Region extends ColumnSpace {
       double maxDistance = 0;
       for (Synapse.ProximalSynapse connectedSynapse : connectedSynapses) {
         // Determine the distance of the further proximal synapse. This will be considered the size of the receptive field.
-        double distanceToInput = connectedSynapse.getDistanceToColumn();
         maxDistance = Math.max(maxDistance, connectedSynapse.getDistanceToColumn());
       }
       LOG.debug("maxDistance for column:#" + column.getIndex() + " - " + maxDistance);

@@ -359,6 +359,9 @@ public class Column extends BaseSpace.Element {
       result = region.getAllWithinRadius(this.getPosition(), roundedInhibitionRadius);
       //remove itself
       result.remove(result.indexOf(this));
+      if(result.size() == 0){
+        throw new IllegalArgumentException("No neighbors found within inhibitionRadius of: " + inhibitionRadius + ". Please increase receptiveFieldSize by increasing inputRadius for input Space.");
+      }
       neighbors_cache.put(roundedInhibitionRadius, result);
     }
     return result;
