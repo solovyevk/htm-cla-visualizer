@@ -440,18 +440,18 @@ public class HTMGraphicInterface extends JPanel {
     }
 
 
-  /*  public Dimension getMinimumSize() {
+    public Dimension getMinimumSize() {
       return getPreferredSize();
-    } */
+    }
 
-   /* public Dimension getPreferredSize() {
-      return new Dimension(super.getPreferredSize().width,
+    public Dimension getPreferredSize() {
+      return new Dimension(400,
                            40);
-    }*/
+    }
 
-  /*  public Dimension getMaximumSize() {
+   public Dimension getMaximumSize() {
       return getPreferredSize();
-    } */
+    }
 
 
   }
