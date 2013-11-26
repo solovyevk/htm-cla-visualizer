@@ -127,7 +127,7 @@ public class Viewer extends JFrame {
       }
     };
 
-    resetAction = new AbstractAction("Reset HTM to original state", UIUtils.INSTANCE.createImageIcon(
+    resetAction = new AbstractAction("Restart", UIUtils.INSTANCE.createImageIcon(
             "/images/arrow_rotate_clockwise.png")) {
 
       @Override public void actionPerformed(ActionEvent e) {

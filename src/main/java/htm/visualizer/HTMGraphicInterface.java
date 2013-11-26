@@ -4,7 +4,7 @@ import htm.model.Cell;
 import htm.model.Column;
 import htm.model.Region;
 import htm.model.Synapse;
-import htm.model.space.InputSpace;
+import htm.utils.UIUtils;
 import htm.visualizer.surface.BaseSurface;
 import htm.visualizer.surface.ColumnCellsByIndexSurface;
 import htm.visualizer.surface.ColumnSDRSurface;
@@ -20,9 +20,10 @@ import javax.swing.plaf.basic.BasicSplitPaneDivider;
 import javax.swing.plaf.basic.BasicSplitPaneUI;
 import java.awt.*;
 import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.util.*;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Observable;
+import java.util.Observer;
 
 public class HTMGraphicInterface extends JPanel {
   private static final Log LOG = LogFactory.getLog(HTMGraphicInterface.class);
@@ -78,14 +79,6 @@ public class HTMGraphicInterface extends JPanel {
 
   private HTMProcess process;
 
-  /*
-  Controls
-   */
-  private Action addPatternAction;
-  private Action resetPatternsAction;
-  private Action runAction;
-  private ObservableAction stepAction;
-  private Action stopAction;
 
   private Region region;
   private final JComponent slicedView;
@@ -109,7 +102,6 @@ public class HTMGraphicInterface extends JPanel {
 
   public HTMGraphicInterface(Config cfg) {
     super(new BorderLayout(0, 0));
-    initActions();
     //Set static attributes for HTM Model classes
     Column.updateFromConfig(cfg.getColumnConfig());
     Synapse.ProximalSynapse.updateFromConfig(cfg.getProximalSynapseConfig());
@@ -132,53 +124,6 @@ public class HTMGraphicInterface extends JPanel {
     LOG.debug("Finish initialization");
   }
 
-  private void initActions() {
-    // final HTMGraphicInterface win = this;
-
-
-      /*
-      Controls
-       */
-    addPatternAction = new AbstractAction("Add Pattern") {
-      @Override public void actionPerformed(ActionEvent e) {
-        addPattern();
-        StringBuilder newName = new StringBuilder("Add Pattern");
-        this.putValue(NAME, newName.append("(").append(patterns.size()).append(")").toString());
-      }
-
-    };
-
-    resetPatternsAction = new AbstractAction("Reset Patterns") {
-      @Override public void actionPerformed(ActionEvent e) {
-        resetPatterns();
-      }
-    };
-
-    runAction = new AbstractAction("Run") {
-      @Override public void actionPerformed(ActionEvent e) {
-        process.run();
-      }
-    };
-
-    stepAction = new ObservableAction("Step") {
-
-      @Override public void actionPerformed(ActionEvent e) {
-        process.step();
-      }
-
-      @Override public void update(Observable o, Object currentPatternIndex) {
-        StringBuffer newName = new StringBuffer("Step");
-        this.putValue(NAME, newName.append(" #").append(process.getCurrentPatternIndex() + 1).toString());
-      }
-    };
-
-    stopAction = new AbstractAction("Stop") {
-      @Override public void actionPerformed(ActionEvent e) {
-        process.stop();
-      }
-    };
-
-  }
 
 
   public java.util.List<boolean[]> getPatterns() {
@@ -187,21 +132,13 @@ public class HTMGraphicInterface extends JPanel {
 
   public void setPatterns(List<boolean[]> patterns) {
     this.patterns = patterns;
-    sensoryInputSurface.setSensoryInputValues(patterns.get(0));
-    addPatternAction.putValue(Action.NAME, new StringBuilder("Add Pattern").append("(").append(patterns.size()).append(
-            ")").toString());
-  }
-
-  private abstract static class ObservableAction extends AbstractAction implements Observer {
-    protected ObservableAction(String name) {
-      super(name);
-    }
+    process.sendUpdateNotification();
   }
 
 
   private void initProcess() {
     process = new HTMProcess();
-    process.addObserver(stepAction);
+    process.addObserver(control);
     /*Repaint after each step*/
     final JComponent win = this;
     process.addObserver(new Observer() {
@@ -361,45 +298,160 @@ public class HTMGraphicInterface extends JPanel {
     }
   }
 
-  private class ControlPanel extends JPanel {
+  private class ControlPanel extends JPanel implements Observer {
+    /*
+ Controls
+  */
+    private Action addPatternAction;
+    private Action resetPatternsAction;
+    private Action runAction;
+    private Action stepAction;
+    private Action stopAction;
+    private Action cleanInputSpaceAction;
+
+    final JToolBar toolBar = new JToolBar();
+    final Container infoPane = new Container();
+    private JLabel pattersInfo = new JLabel("Patterns: 0");
+    private JLabel stepInfo = new JLabel("Current Pattern: 0");
+    private JLabel cycleInfo = new JLabel("Cycle: 0");
+
+    @Override public void update(Observable o, Object arg) {
+      enableActions();
+      infoPane.setVisible(patterns.size() > 0);
+      pattersInfo.setText("Patterns: " + patterns.size() + "");
+      stepInfo.setText("Current: " + process.getCurrentPatternIndex() + "");
+      cycleInfo.setText("Cycle: " + process.getCycle());
+    }
+
+    private void enableActions(){
+      resetPatternsAction.setEnabled(patterns.size() > 0);
+      runAction.setEnabled(patterns.size() > 0 && !process.isRunning());
+      stepAction.setEnabled(patterns.size() > 0);
+      stopAction.setEnabled(patterns.size() > 0 && process.isRunning());
+    }
+
+
+
+    private void initActions() {
+        cleanInputSpaceAction = new AbstractAction("Clean", UIUtils.INSTANCE.createImageIcon(
+                "/images/cleanup.png")) {
+          @Override public void actionPerformed(ActionEvent e) {
+            sensoryInputSurface.reset();
+          }
+        };
+
+        addPatternAction = new AbstractAction("Add", UIUtils.INSTANCE.createImageIcon(
+                "/images/add.png")) {
+          @Override public void actionPerformed(ActionEvent e) {
+            addPattern();
+          }
+
+        };
+
+        resetPatternsAction = new AbstractAction("Reset", UIUtils.INSTANCE.createImageIcon(
+                "/images/refresh.png")) {
+          @Override public void actionPerformed(ActionEvent e) {
+            resetPatterns();
+          }
+        };
+
+        runAction = new AbstractAction("Run", UIUtils.INSTANCE.createImageIcon(
+                "/images/play.png")) {
+          @Override public void actionPerformed(ActionEvent e) {
+            process.run();
+          }
+        };
+
+        stepAction = new AbstractAction("Step", UIUtils.INSTANCE.createImageIcon(
+                "/images/step.png")) {
+
+          @Override public void actionPerformed(ActionEvent e) {
+            process.step();
+          }
+
+        };
+
+        stopAction = new AbstractAction("Stop", UIUtils.INSTANCE.createImageIcon(
+                "/images/stop.png")) {
+          @Override public void actionPerformed(ActionEvent e) {
+            process.stop();
+          }
+        };
+        enableActions();
+
+      }
+
+
     public ControlPanel() {
+      initActions();
+      infoPane.setPreferredSize(new Dimension(200, infoPane.getPreferredSize().height));
+      infoPane.setLayout(new GridLayout(0, 3, 1, 1));
+      infoPane.setVisible(patterns.size() > 0);
+      infoPane.add(pattersInfo);
+      infoPane.add(stepInfo);
+      infoPane.add(cycleInfo);
+      toolBar.add(new JButton(cleanInputSpaceAction));
+      toolBar.add(new JButton(addPatternAction));
+      toolBar.add(new JButton(resetPatternsAction));
+      toolBar.add(new JButton(runAction));
+      toolBar.add(new JButton(stepAction));
+      toolBar.add(new JButton(stopAction));
+      toolBar.addSeparator();
+      toolBar.add(infoPane);
+      this.add(toolBar);
+      /*this.setLayout(new GridLayout(0, 2, 10, 10));
+      processInfo.setBackground(Color.BLUE);
       setBorder(BorderFactory.createCompoundBorder(
               BorderFactory.createTitledBorder("Controls"),
-              DEFAULT_BORDER));
-      add(new JButton(addPatternAction));
-      add(new JButton(resetPatternsAction));
-      add(new JButton(runAction));
-      add(new JButton(stepAction));
-      add(new JButton(stopAction));
-      //TODO remove
-      JButton test = new JButton("test");
-      test.addActionListener(new ActionListener() {
-        @Override public void actionPerformed(ActionEvent e) {
-          Collection<InputSpace.Input> r = sensoryInputSurface.getSensoryInput().getAllWithinRadius(new Point(5, 5), 3);
-          for (InputSpace.Input input : r) {
-            sensoryInputSurface.getSensoryInput().setInputValue(input.getIndex(), true);
-          }
-          sensoryInputSurface.repaint();
-          LOG.debug("AverageReceptiveFieldSize:" + region.getAverageReceptiveFieldSize());
+              BorderFactory.createEmptyBorder(0, 0, 0, 0)));
+      this.add(new JPanel() {
+                 private JPanel init() {
+                   this.add(toolBar);
+                   return this;
+                 }
+               }.init());
+      this.add(processInfo);
+       /*this.add(new Container() {
+       private Container init() {
+          this.setLayout(new GridBagLayout());
+          GridBagConstraints c = new GridBagConstraints();
+          c.gridx = 0;
+          c.gridy = 0;
+          c.weightx = 2;
+          c.anchor = GridBagConstraints.SOUTH;
+          c.fill = GridBagConstraints.BASELINE;
+          this.add(new JToolBar() {
+            private JToolBar init() {
+              add(new JButton(cleanInputSpaceAction));
+              add(new JButton(addPatternAction));
+              add(new JButton(resetPatternsAction));
+              add(new JButton(runAction));
+              add(new JButton(stepAction));
+              add(new JButton(stopAction));
+              return this;
+            }
+          }.init(), c);
+          c.gridx = 1;
+          c.weightx = 1;
+          this.add(processInfo, c);
+          return this;
         }
-      });
-      add(test);
-
-
+      }.init());*/
     }
 
-    public Dimension getMinimumSize() {
+
+  /*  public Dimension getMinimumSize() {
       return getPreferredSize();
-    }
+    } */
 
-    public Dimension getPreferredSize() {
+   /* public Dimension getPreferredSize() {
       return new Dimension(super.getPreferredSize().width,
-                           60);
-    }
+                           40);
+    }*/
 
-    public Dimension getMaximumSize() {
+  /*  public Dimension getMaximumSize() {
       return getPreferredSize();
-    }
+    } */
 
 
   }
@@ -455,20 +507,27 @@ public class HTMGraphicInterface extends JPanel {
   /*Control Methods*/
   private void addPattern() {
     patterns.add(sensoryInputSurface.getSensoryInputValues());
-    //sensoryInputSurface.reset();
+    region.performSpatialPooling();
+    process.sendUpdateNotification();
+    this.repaint();
   }
 
   private void resetPatterns() {
     patterns.clear();
     sensoryInputSurface.reset();
     process.reset();
-    addPatternAction.putValue(Action.NAME, "Add Pattern");
-    stepAction.putValue(Action.NAME, "Step");
   }
 
   private class HTMProcess extends Observable {
     private boolean running = false;
     private int currentPatternIndex = 0;
+    private int cycleCounter = 0;
+
+    public void sendUpdateNotification() {
+      setChanged();
+      notifyObservers();
+    }
+
 
     public boolean step() {
       if (patterns.size() != 0) {
@@ -482,10 +541,10 @@ public class HTMGraphicInterface extends JPanel {
         if (currentPatternIndex < patterns.size() - 1) {
           currentPatternIndex++;
         } else {
+          cycleCounter++;
           currentPatternIndex = 0;
         }
-        setChanged();
-        notifyObservers(currentPatternIndex);
+        sendUpdateNotification();
         return true;
       } else {
         return false;
@@ -518,10 +577,15 @@ public class HTMGraphicInterface extends JPanel {
       return currentPatternIndex;
     }
 
+    public int getCycle() {
+      return cycleCounter;
+    }
+
     public void reset() {
       running = false;
       currentPatternIndex = 0;
-      notifyObservers();
+      cycleCounter = 0;
+      sendUpdateNotification();
     }
   }
 
