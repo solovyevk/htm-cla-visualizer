@@ -30,6 +30,13 @@ public class ColumnSDRSurface extends BaseSurface.CircleElementsSurface {
   @Override protected void drawElement(Graphics2D g2d, int index, int x, int y, int width, int height) {
     g2d.setColor(getColumn(index).isActive() ? activeColor : this.getBackground());
     g2d.fillOval(x, y, width, height);
+
+    //TODO REMOVE
+    if (getColumn(index).isMarked()) {
+      g2d.setColor(Color.RED);
+      g2d.fillOval(x, y, width, height);
+    }
+
     super.drawElement(g2d, index, x, y, width,
                       height);
   }

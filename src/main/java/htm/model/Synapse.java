@@ -99,14 +99,26 @@ public class Synapse {
      */
     public static double PERMANENCE_DECREASE = 0.005;
 
+    private final Cell fromCell;
+
     public static void updateFromConfig(Config synapseCfg) {
       DistalSynapse.CONNECTED_PERMANENCE = synapseCfg.getConnectedPerm();
       DistalSynapse.PERMANENCE_INCREASE = synapseCfg.getPermanenceInc();
       DistalSynapse.PERMANENCE_DECREASE = synapseCfg.getPermanenceDec();
     }
 
-    public DistalSynapse(double initPermanence) {
+    public DistalSynapse(Cell fromCell) {
+      //NOT sure how to deal with initial permanence, do following for now
+      this(CONNECTED_PERMANENCE -3*PERMANENCE_INCREASE, fromCell);
+    }
+
+    public DistalSynapse(double initPermanence, Cell fromCell) {
       super(initPermanence);
+      this.fromCell = fromCell;
+    }
+
+    public Cell getFromCell() {
+      return fromCell;
     }
   }
 

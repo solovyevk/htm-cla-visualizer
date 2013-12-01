@@ -2,6 +2,7 @@ package htm.model;
 
 import htm.model.space.ColumnSpace;
 import htm.model.space.InputSpace;
+import htm.utils.CollectionUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
@@ -13,14 +14,33 @@ import java.util.List;
 public class Region extends ColumnSpace {
   private final InputSpace inputSpace;
   /**
-  * inputRadius for this input Space
-  * The concept of Input Radius is an additional parameter to control how
-  * far away synapse connections can be made instead of allowing connections anywhere.
-  */
+   * inputRadius for this input Space
+   * The concept of Input Radius is an additional parameter to control how
+   * far away synapse connections can be made instead of allowing connections anywhere.
+   */
   private final double inputRadius;
+
+  /**
+  *Furthest number of columns away (in this Region's Column grid space) to allow new distal
+  *synapse connections.  If set to 0 then there is no restriction and connections
+  *can form between any two columns in the region.
+
+  *WP
+  *
+  *learningRadius The area around a temporal pooler cell from which it can get lateral connections.
+  */
+  private final double learningRadius = 4.0;
+
+
   private final boolean skipSpatial;
 
   private static final Log LOG = LogFactory.getLog(Region.class);
+
+  private static final CollectionUtils.Predicate<Column> BOTTOM_UP_WINNING_COLUMNS_PREDICATE = new CollectionUtils.Predicate<Column>() {
+    @Override public boolean apply(Column column) {
+      return column.isActive();
+    }
+  };
 
   public Region(Config regionCfg) {
     super(regionCfg.getRegionDimension().width, regionCfg.getRegionDimension().height);
@@ -52,6 +72,39 @@ public class Region extends ColumnSpace {
   public Point convertInputPositionToColumnSpace(Point inputPosition) {
     return convertPositionToOtherSpace(inputPosition, inputSpace.getDimension(), this.getDimension());
   }
+
+  public boolean getTemporalLearning(){
+    return true;
+  }
+
+  /**
+   * WP
+   * activeColumns(t) t=0
+   * List of column indices that are winners due to bottom-up input
+   * (this is the output of the spatial pooler).
+   * @return
+   */
+
+  public List<Column> getActiveColumns() {
+     return CollectionUtils.filter(this.getElements(), BOTTOM_UP_WINNING_COLUMNS_PREDICATE);
+   }
+
+  /**
+  * WP
+  * activeColumns(t)
+  * List of column indices that are winners due to bottom-up input
+  * (this is the output of the spatial pooler).
+   * @param time (t - 0) - current step, (t - 1) - previous step, (t- n) - n step
+   * @return
+   */
+  public List<Column> getActiveColumns(final int time){
+    return CollectionUtils.filter(this.getElements(), new CollectionUtils.Predicate<Column>() {
+      @Override public boolean apply(Column column) {
+        return column.isActive(time);
+      }
+    });
+  }
+
 
   /**
    * WP
@@ -146,6 +199,36 @@ public class Region extends ColumnSpace {
     }
   }
 
+  /**
+   * Performs temporal pooling based on the current spatial pooler output.
+   * WP:
+   * The input to this code is activeColumns(t), as computed by the spatial pooler.
+   * The code computes the active and predictive state for each cell at the current
+   * time step, t. The boolean OR of the active and predictive states for each cell
+   * forms the output of the temporal pooler for the next level.
+   * <p/>
+   * Phase 1:
+   * Compute the active state, activeState(t), for each cell.
+   * The first phase calculates the activeState for each cell that is in a winning column.
+   * For those columns, the code further selects one cell per column as the learning cell (learnState).
+   * The logic is as follows: if the bottom-up input was predicted by any cell
+   * (i.e. its predictiveState output was 1 due to a sequence segment),
+   * then those cells become active (lines 23-27). If that segment became
+   * active from cells chosen with learnState on, this cell is selected as the learning cell (lines 28-30).
+   * If the bottom-up input was not predicted, then all cells in the become active (lines 32-34).
+   * In addition, the best matching cell is chosen as the learning cell (lines 36-41) and a
+   * new segment is added to that cell.
+   */
+  public void performTemporalPooling() {
+    //Phase 1:Compute the active state, activeState(t), for each cell.
+    List<Column> activeColumns = this.getActiveColumns();
+    for (Column activeColumn : activeColumns) {
+
+    }
+
+
+  }
+
   public Dimension getInputSpaceDimension() {
     return inputSpace.getDimension();
   }
@@ -156,6 +239,10 @@ public class Region extends ColumnSpace {
 
   public double getInputRadius() {
     return inputRadius;
+  }
+
+  public double getLearningRadius(){
+    return learningRadius;
   }
 
   public boolean isSkipSpatial() {

@@ -2,7 +2,9 @@ package htm.model;
 
 import htm.model.space.BaseSpace;
 import htm.model.space.InputSpace;
-import htm.utils.*;
+import htm.utils.CircularArrayList;
+import htm.utils.CollectionUtils;
+import htm.utils.MathUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
@@ -15,8 +17,8 @@ public class Column extends BaseSpace.Element {
   public static int CELLS_PER_COLUMN = 3;
   public static int AMOUNT_OF_PROXIMAL_SYNAPSES = 30;
   /**
-  *The amount that is added to a Column's Boost value in a single time step, when it is being boosted.
-  */
+   * The amount that is added to a Column's Boost value in a single time step, when it is being boosted.
+   */
   public static double BOOST_RATE = 0.01;
   /**
    * WP
@@ -40,13 +42,16 @@ public class Column extends BaseSpace.Element {
   private static final int COLUMN_CYCLE_BUFFER_SIZE = 1000;
 
   private static final CollectionUtils.Predicate<Synapse.ProximalSynapse> ACTIVE_CONNECTED_PROXIMAL_SYNAPSES_PREDICATE = new CollectionUtils.Predicate<Synapse.ProximalSynapse>() {
-    @Override public boolean apply(Synapse.ProximalSynapse synapse) {
-      return synapse.isConnected(Synapse.ProximalSynapse.CONNECTED_PERMANENCE) && synapse.getConnectedSensoryInput().getValue();
+    @Override
+    public boolean apply(Synapse.ProximalSynapse synapse) {
+      return synapse.isConnected(
+              Synapse.ProximalSynapse.CONNECTED_PERMANENCE) && synapse.getConnectedSensoryInput().getValue();
     }
   };
 
   private static final CollectionUtils.Predicate<Synapse.ProximalSynapse> CONNECTED_PROXIMAL_SYNAPSES_PREDICATE = new CollectionUtils.Predicate<Synapse.ProximalSynapse>() {
-    @Override public boolean apply(Synapse.ProximalSynapse synapse) {
+    @Override
+    public boolean apply(Synapse.ProximalSynapse synapse) {
       return synapse.isConnected(Synapse.ProximalSynapse.CONNECTED_PERMANENCE);
     }
   };
@@ -65,13 +70,26 @@ public class Column extends BaseSpace.Element {
     }
   };
 
-  public static void updateFromConfig(Config columnCfg){
+  public static void updateFromConfig(Config columnCfg) {
     Column.CELLS_PER_COLUMN = columnCfg.getCellsInColumn();
     Column.AMOUNT_OF_PROXIMAL_SYNAPSES = columnCfg.getAmountOfProximalSynapses();
     Column.MIN_OVERLAP = columnCfg.getMinOverlap();
     Column.DESIRED_LOCAL_ACTIVITY = columnCfg.getDesiredLocalActivity();
     Column.BOOST_RATE = columnCfg.getBoostRate();
   }
+
+  //TODO REMOVE marked after debugging
+
+  private boolean marked;
+
+  public boolean isMarked() {
+    return marked;
+  }
+
+  public void setMarked(boolean marked) {
+    this.marked = marked;
+  }
+
 
   private final Region region;
   private final List<Cell> cells = new ArrayList<Cell>();
@@ -160,6 +178,8 @@ public class Column extends BaseSpace.Element {
 
   /**
    * WP
+   * SPATIAL POOLING
+   * <p/>
    * Phase 1: Overlap
    * Given an input vector, the first phase calculates the overlap of each column with that vector.
    * The overlap for each column is simply the number of connected synapses with active inputs,
@@ -180,6 +200,8 @@ public class Column extends BaseSpace.Element {
 
   /**
    * WP
+   * SPATIAL POOLING
+   * <p/>
    * Phase 2: Inhibition
    * The second phase calculates which columns remain as winners after the inhibition step.
    * desiredLocalActivity is a parameter that controls the number of columns that end up winning.
@@ -198,11 +220,14 @@ public class Column extends BaseSpace.Element {
 
   /**
    * WP
+   * SPATIAL POOLING
+   * <p/>
    * Phase 3: Learning
    * The third phase performs learning; it updates the permanence values of all synapses as necessary, as well as the boost and inhibition radius.
    * <p/>
    * First part
    * The main learning rule is implemented in lines 20-26. For winning columns, if a synapse is active, its permanence value is incremented, otherwise it is decremented. Permanence values are constrained to be between 0 and 1.
+   *
    * @param inhibitionRadius
    */
 
@@ -211,13 +236,14 @@ public class Column extends BaseSpace.Element {
       List<Synapse.ProximalSynapse> potentialSynapses = getPotentialSynapses();
       for (Synapse.ProximalSynapse potentialSynapse : potentialSynapses) {
         if (potentialSynapse.getConnectedSensoryInput().getValue()) {
-          potentialSynapse.setPermanence(potentialSynapse.getPermanence() + Synapse.ProximalSynapse.PERMANENCE_INCREASE);
+          potentialSynapse.setPermanence(
+                  potentialSynapse.getPermanence() + Synapse.ProximalSynapse.PERMANENCE_INCREASE);
         } else {
-          potentialSynapse.setPermanence(potentialSynapse.getPermanence() - Synapse.ProximalSynapse.PERMANENCE_DECREASE);
+          potentialSynapse.setPermanence(
+                  potentialSynapse.getPermanence() - Synapse.ProximalSynapse.PERMANENCE_DECREASE);
         }
       }
     }
-
   }
 
   /**
@@ -310,7 +336,21 @@ public class Column extends BaseSpace.Element {
     return active.getLast();
   }
 
-  void setActive(boolean active){
+  /**
+   * Get column active state at time
+   *
+   * @param time (t - 0) - current step, (t - 1) - previous step, (t- n) - n step
+   * @return
+   */
+  public boolean isActive(int time) {
+    if (time > active.size()) {
+      throw new IllegalArgumentException("time: " + time + " can't exceed history buffer limit: " + active.size());
+    }
+    return active.get(time);
+  }
+
+
+  void setActive(boolean active) {
     this.active.addState(active);
   }
 
@@ -359,8 +399,9 @@ public class Column extends BaseSpace.Element {
       result = region.getAllWithinRadius(this.getPosition(), roundedInhibitionRadius);
       //remove itself
       result.remove(result.indexOf(this));
-      if(result.size() == 0){
-        throw new IllegalArgumentException("No neighbors found within inhibitionRadius of: " + inhibitionRadius + ". Please increase receptiveFieldSize by increasing inputRadius for input Space.");
+      if (result.size() == 0) {
+        throw new IllegalArgumentException(
+                "No neighbors found within inhibitionRadius of: " + inhibitionRadius + ". Please increase receptiveFieldSize by increasing inputRadius for input Space.");
       }
       neighbors_cache.put(roundedInhibitionRadius, result);
     }
@@ -392,6 +433,82 @@ public class Column extends BaseSpace.Element {
    */
   public List<Synapse.ProximalSynapse> getPotentialSynapses() {
     return Collections.unmodifiableList(proximalSynapses);
+  }
+
+  /**
+   * WP
+   * TEMPORAL POOLING
+   * <p/>
+   * Phase 1: Compute cells state
+   * The first phase calculates the activeState for each cell that is in a winning column.
+   * For those columns, the code further selects one cell per column as the learning cell (learnState).
+   * The logic is as follows: if the bottom-up input was predicted by any cell (i.e. its predictiveState
+   * output was 1 due to a sequence segment), then those cells become active (lines 23-27).
+   * If that segment became active from cells chosen with learnState on, this cell is selected as
+   * the learning cell (lines 28-30). If the bottom-up input was not predicted, then all cells
+   * in the become active (lines 32-34). In addition, the best matching cell is chosen as the
+   * learning cell (lines 36-41) and a new segment is added to that cell.
+   */
+  public void computeCellsActiveState() {
+    if (!isActive()) {
+      throw new RuntimeException("Column should be active");
+    }
+    boolean buPredicted = false, lcChosen = false;
+    for (Cell cell : cells) {
+      if (cell.getPredictiveState(Cell.BEFORE)) {
+        DistalDendriteSegment segment = cell.getActiveSegment(Cell.BEFORE, Cell.State.ACTIVE);
+        if (segment != null && segment.isSequenceSegment()) {
+          buPredicted = true;
+          cell.setActiveState(true);
+          if (segment.segmentActive(Cell.BEFORE, Cell.State.LEARN)) {
+            lcChosen = true;
+            cell.setLearnState(true);
+          }
+        }
+      }
+    }
+    if (!buPredicted) {
+      for (Cell cell : cells) {
+        cell.setActiveState(true);
+      }
+    }
+    if (!lcChosen && region.getTemporalLearning()) {
+      Cell bestCell = getBestMatchingCell(Cell.BEFORE);
+      DistalDendriteSegment learningCellBestSegment = bestCell.getBestMatchingSegment(Cell.BEFORE);
+      bestCell.setLearnState(true);
+      // segmentUpdate is added internally to the bestCell's update list.
+      DistalDendriteSegment.Update segmentUpdate = bestCell.getSegmentActiveSynapses(learningCellBestSegment, Cell.BEFORE, true);
+      segmentUpdate.setSequenceSegment(true);
+      /*
+      learnState(c, i, t) = 1
+      39. sUpdate = getSegmentActiveSynapses (c, i, s, t-1, true)
+      40. sUpdate.sequenceSegment = true
+      41. segmentUpdateList.add(sUpdate)
+       */
+    }
+  }
+
+  /**
+   * WP
+   * <p/>
+   * getBestMatchingCell(c)
+   * For the given column, return the cell with the best matching segment.
+   * If no cell has a matching segment, then return the cell with the fewest number of segments.
+   *
+   * @param time
+   * @return
+   */
+  private Cell getBestMatchingCell(int time) {
+    List<DistalDendriteSegment> bestMatchingSegmentsFromCells = new ArrayList<DistalDendriteSegment>();
+    Cell minSegmentListCell = cells.get(0);
+    for (Cell cell : cells) {
+      if (cell.getSegments().size() < minSegmentListCell.getSegments().size()) {
+        minSegmentListCell = cell;
+      }
+      bestMatchingSegmentsFromCells.add(cell.getBestMatchingSegment(time));
+    }
+    DistalDendriteSegment columnBestMatchingSegment = Cell.getBestMatchingSegment(bestMatchingSegmentsFromCells, time);
+    return columnBestMatchingSegment != null ? columnBestMatchingSegment.getBelongsToCell() : minSegmentListCell;
   }
 
   public List<Cell> getCells() {
@@ -449,7 +566,8 @@ public class Column extends BaseSpace.Element {
     private final int desiredLocalActivity;
     private final double boostRate;
 
-    public Config(int cellsInColumn, int amountOfProximalSynapses, int minOverlap, int desiredLocalActivity, double boostRate) {
+    public Config(int cellsInColumn, int amountOfProximalSynapses, int minOverlap, int desiredLocalActivity,
+                  double boostRate) {
       this.cellsInColumn = cellsInColumn;
       this.amountOfProximalSynapses = amountOfProximalSynapses;
       this.minOverlap = minOverlap;

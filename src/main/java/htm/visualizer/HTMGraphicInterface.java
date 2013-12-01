@@ -396,47 +396,19 @@ public class HTMGraphicInterface extends JPanel {
       toolBar.add(new JButton(runAction));
       toolBar.add(new JButton(stepAction));
       toolBar.add(new JButton(stopAction));
+      /*
+      toolBar.add(new JButton(new AbstractAction("test") {
+        @Override public void actionPerformed(ActionEvent e) {
+          List<Column> selectedColumns = region.getActiveColumns(2);
+          for (Column selectedColumn : selectedColumns) {
+            selectedColumn.setMarked(true);
+          }
+          sdrInput.repaint();
+        }
+      }));*/
       toolBar.addSeparator();
       toolBar.add(infoPane);
       this.add(toolBar);
-      /*this.setLayout(new GridLayout(0, 2, 10, 10));
-      processInfo.setBackground(Color.BLUE);
-      setBorder(BorderFactory.createCompoundBorder(
-              BorderFactory.createTitledBorder("Controls"),
-              BorderFactory.createEmptyBorder(0, 0, 0, 0)));
-      this.add(new JPanel() {
-                 private JPanel init() {
-                   this.add(toolBar);
-                   return this;
-                 }
-               }.init());
-      this.add(processInfo);
-       /*this.add(new Container() {
-       private Container init() {
-          this.setLayout(new GridBagLayout());
-          GridBagConstraints c = new GridBagConstraints();
-          c.gridx = 0;
-          c.gridy = 0;
-          c.weightx = 2;
-          c.anchor = GridBagConstraints.SOUTH;
-          c.fill = GridBagConstraints.BASELINE;
-          this.add(new JToolBar() {
-            private JToolBar init() {
-              add(new JButton(cleanInputSpaceAction));
-              add(new JButton(addPatternAction));
-              add(new JButton(resetPatternsAction));
-              add(new JButton(runAction));
-              add(new JButton(stepAction));
-              add(new JButton(stopAction));
-              return this;
-            }
-          }.init(), c);
-          c.gridx = 1;
-          c.weightx = 1;
-          this.add(processInfo, c);
-          return this;
-        }
-      }.init());*/
     }
 
 
