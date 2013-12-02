@@ -48,6 +48,7 @@ public class DistalDendriteSegment extends ArrayList<Synapse.DistalSynapse> {
   public DistalDendriteSegment(Cell belongsToCell) {
     super(AMOUNT_OF_SYNAPSES);
     this.belongsToCell = belongsToCell;
+    belongsToCell.segments.add(this);
   }
 
 
@@ -67,11 +68,11 @@ public class DistalDendriteSegment extends ArrayList<Synapse.DistalSynapse> {
    * state at time t is greater than activationThreshold. The parameter state can be activeState, or learnState.
    */
   public boolean segmentActive(int time, Cell.State state) {
-    return getConnectedWithStateCellAmount(time, state) > ACTIVATION_THRESHOLD;
+    return getConnectedWithStateCell(time, state).size() > ACTIVATION_THRESHOLD;
   }
 
-  public int getConnectedWithStateCellAmount(int time, Cell.State state) {
-    return CollectionUtils.filter(this, new ConnectedCellStateByTimePredicate(time, state)).size();
+  public List<Synapse.DistalSynapse> getConnectedWithStateCell(int time, Cell.State state) {
+    return CollectionUtils.filter(this, new ConnectedCellStateByTimePredicate(time, state));
   }
 
   public List<Synapse.DistalSynapse> getActiveCellSynapses(int time) {
@@ -129,6 +130,10 @@ public class DistalDendriteSegment extends ArrayList<Synapse.DistalSynapse> {
 
     public boolean isNewSegment() {
       return target == null;
+    }
+
+    public DistalDendriteSegment getTarget(){
+      return target;
     }
   }
 }

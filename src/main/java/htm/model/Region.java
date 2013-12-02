@@ -21,14 +21,14 @@ public class Region extends ColumnSpace {
   private final double inputRadius;
 
   /**
-  *Furthest number of columns away (in this Region's Column grid space) to allow new distal
-  *synapse connections.  If set to 0 then there is no restriction and connections
-  *can form between any two columns in the region.
-
-  *WP
-  *
-  *learningRadius The area around a temporal pooler cell from which it can get lateral connections.
-  */
+   * Furthest number of columns away (in this Region's Column grid space) to allow new distal
+   * synapse connections.  If set to 0 then there is no restriction and connections
+   * can form between any two columns in the region.
+   * <p/>
+   * WP
+   * <p/>
+   * learningRadius The area around a temporal pooler cell from which it can get lateral connections.
+   */
   private final double learningRadius = 4.0;
 
 
@@ -73,7 +73,7 @@ public class Region extends ColumnSpace {
     return convertPositionToOtherSpace(inputPosition, inputSpace.getDimension(), this.getDimension());
   }
 
-  public boolean getTemporalLearning(){
+  public boolean getTemporalLearning() {
     return true;
   }
 
@@ -82,22 +82,24 @@ public class Region extends ColumnSpace {
    * activeColumns(t) t=0
    * List of column indices that are winners due to bottom-up input
    * (this is the output of the spatial pooler).
+   *
    * @return
    */
 
   public List<Column> getActiveColumns() {
-     return CollectionUtils.filter(this.getElements(), BOTTOM_UP_WINNING_COLUMNS_PREDICATE);
-   }
+    return CollectionUtils.filter(this.getElements(), BOTTOM_UP_WINNING_COLUMNS_PREDICATE);
+  }
 
   /**
-  * WP
-  * activeColumns(t)
-  * List of column indices that are winners due to bottom-up input
-  * (this is the output of the spatial pooler).
+   * WP
+   * activeColumns(t)
+   * List of column indices that are winners due to bottom-up input
+   * (this is the output of the spatial pooler).
+   *
    * @param time (t - 0) - current step, (t - 1) - previous step, (t- n) - n step
    * @return
    */
-  public List<Column> getActiveColumns(final int time){
+  public List<Column> getActiveColumns(final int time) {
     return CollectionUtils.filter(this.getElements(), new CollectionUtils.Predicate<Column>() {
       @Override public boolean apply(Column column) {
         return column.isActive(time);
@@ -218,15 +220,44 @@ public class Region extends ColumnSpace {
    * If the bottom-up input was not predicted, then all cells in the become active (lines 32-34).
    * In addition, the best matching cell is chosen as the learning cell (lines 36-41) and a
    * new segment is added to that cell.
+   * <p/>
+   * Phase 2:
+   * Compute the predicted state, predictiveState(t), for each cell.
+   * The second phase calculates the predictive state for each cell.
+   * A cell will turn on its predictive state output if one of its segments becomes active,
+   * i.e. if enough of its lateral inputs are currently active due to feed-forward input.
+   * In this case, the cell queues up the following changes:
+   * a) reinforcement of the currently active segment (lines 47-48), and
+   * b) reinforcement of a segment that could have predicted this activation, i.e. a segment that has a (potentially weak)
+   * match to activity during the previous time step (lines 50-53).
+   * <p/>
+   * Phase 3:
+   * Update synapses. The third and last phase actually carries out learning. In this
+   * phase segmentUpdateList updates that have been queued up are actually implemented
+   * once we get feed-forward input and the cell is chosen as a learning cell
+   * (lines 56-57). Otherwise, if the cell ever stops predicting for any reason, we
    */
   public void performTemporalPooling() {
     //Phase 1:Compute the active state, activeState(t), for each cell.
     List<Column> activeColumns = this.getActiveColumns();
     for (Column activeColumn : activeColumns) {
-
+      activeColumn.computeCellsActiveState();
     }
+    //Phase 2:Compute the predicted state, predictiveState(t), for each cell.
+    for (Column column : elementList) {
+      column.computeCellsPredictiveState();
+    }
+    //Phase 3:Run synapses updates accumulated in previous step
+    for (Column column : elementList) {
+      column.updateDistalSynapses();
+    }
+  }
 
-
+  /*Reset cells*/
+  public void nextTimeStep() {
+    for (Column column : elementList) {
+      column.nextTimeStep();
+    }
   }
 
   public Dimension getInputSpaceDimension() {
@@ -241,7 +272,7 @@ public class Region extends ColumnSpace {
     return inputRadius;
   }
 
-  public double getLearningRadius(){
+  public double getLearningRadius() {
     return learningRadius;
   }
 

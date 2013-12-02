@@ -504,7 +504,9 @@ public class HTMGraphicInterface extends JPanel {
     public boolean step() {
       if (patterns.size() != 0) {
         sensoryInputSurface.setSensoryInputValues(patterns.get(currentPatternIndex));
+        region.nextTimeStep();
         region.performSpatialPooling();
+        region.performTemporalPooling();
         try {
           Thread.sleep(500);
         } catch (Exception e) {

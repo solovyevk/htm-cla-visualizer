@@ -42,9 +42,9 @@ public class Cell {
    */
   private CellStateBuffer learnState = new CellStateBuffer();
 
-  private final List<DistalDendriteSegment> segments = new ArrayList<DistalDendriteSegment>();
+  final List<DistalDendriteSegment> segments = new ArrayList<DistalDendriteSegment>();
 
-  final List<DistalDendriteSegment.Update> segmentUpdateList = new ArrayList<DistalDendriteSegment.Update>();
+  private final List<DistalDendriteSegment.Update> segmentUpdateList = new ArrayList<DistalDendriteSegment.Update>();
 
   public Cell(Column belongsToColumn, int cellIndex) {
     this.belongsToColumn = belongsToColumn;
@@ -141,9 +141,8 @@ public class Cell {
     Collections.sort(activeSegments, new Comparator<DistalDendriteSegment>() {
       @Override
       public int compare(DistalDendriteSegment segment, DistalDendriteSegment segmentToCompare) {
-        int amountActiveCells = segment.getConnectedWithStateCellAmount(time, state);
-        int amountActiveCellsToCompare = segmentToCompare.getConnectedWithStateCellAmount(time, state);
-
+        int amountActiveCells = segment.getConnectedWithStateCell(time, state).size();
+        int amountActiveCellsToCompare = segmentToCompare.getConnectedWithStateCell(time, state).size();
         if (segment.isSequenceSegment() == segmentToCompare.isSequenceSegment()
             && amountActiveCells == amountActiveCellsToCompare) {
           return 0;
@@ -236,6 +235,13 @@ public class Cell {
       for (Column neighborColumn : neighbors) {
         List<Cell> cellList = neighborColumn.getCells();
         for (Cell cell : cellList) {
+           /*NOTE: There is no indication in the Numenta pseudocode that a cell shouldn't be able to have a
+           *distal synapse from another cell in the same column. Therefore the below check is commented out.
+           * Skip cells in our own col (don't connect to ourself)
+           * */
+          if (cell.belongsToColumn == this.belongsToColumn) {
+            continue;
+          }
           if (cell.getLearnState(time)) {
             cellWithLearnStateList.add(cell);
           }
@@ -251,6 +257,72 @@ public class Cell {
     return result;
   }
 
+  /**
+   * WP
+   * <p/>
+   * adaptSegments(segmentList, positiveReinforcement)
+   * <p/>
+   * This function iterates through a list of segmentUpdate's and reinforces each segment.
+   * For each segmentUpdate element, the following changes are performed.
+   * If positiveReinforcement is true then synapses on the active list get
+   * their permanence counts incremented by permanenceInc. All other synapses
+   * get their permanence counts decremented by permanenceDec. If positiveReinforcement
+   * is false, then synapses on the active list get their permanence counts decremented by permanenceDec.
+   * After this step, any synapses in segmentUpdate that do yet exist get added with a permanence count of initialPerm.
+   */
+  public void adaptSegments(boolean positiveReinforcement) {
+    for (DistalDendriteSegment.Update segmentUpdate : segmentUpdateList) {
+      DistalDendriteSegment segment;
+      if (segmentUpdate.isNewSegment()) {
+        segment = new DistalDendriteSegment(this);
+      } else {
+        segment = segmentUpdate.getTarget();
+      }
+      segment.setSequenceSegment(segmentUpdate.isSequenceSegment());
+
+      for (Synapse.DistalSynapse distalSynapse : segment) {
+        if (positiveReinforcement) {
+          if (segmentUpdate.contains(distalSynapse)) {
+            distalSynapse.setPermanence(distalSynapse.getPermanence() + Synapse.DistalSynapse.PERMANENCE_INCREASE);
+          } else {
+            distalSynapse.setPermanence(distalSynapse.getPermanence() - Synapse.DistalSynapse.PERMANENCE_DECREASE);
+          }
+        } else {
+          if (segmentUpdate.contains(distalSynapse)) {
+            distalSynapse.setPermanence(distalSynapse.getPermanence() - Synapse.DistalSynapse.PERMANENCE_DECREASE);
+          }
+        }
+      }
+
+      for (Synapse.DistalSynapse distalSynapse : segmentUpdate) {
+        if (!segment.contains(distalSynapse)) {
+          segment.add(distalSynapse);
+        }
+      }
+
+      //DELETE processed segmentUpdate
+      this.segmentUpdateList.remove(segmentUpdate);
+    }
+  }
+
+   /*
+  *Advances this cell to the next time step.
+  *The current state of this cell (active, learning, predicting) will be set as the
+  *previous state and the current state will be reset to no cell activity by
+  *default until it can be determined.
+  *Call this function before each temporal cycle
+   */
+  public void nextTimeStep() {
+    this.activeState.add(Cell.NOW, false);
+    this.predictiveState.add(Cell.NOW, false);
+    this.learnState.add(Cell.NOW, false);
+    //TODO CHECK
+    /* Need to reset sequenceSegment flag, since it is only make sense in current time step
+     and all predictions  has been done by now*/
+    /*for (DendriteSegment segment : segments) {
+      segment.setSequenceSegment(false);
+    }*/
+  }
 
   private static class CellStateBuffer extends CircularArrayList<Boolean> {
     public CellStateBuffer() {
