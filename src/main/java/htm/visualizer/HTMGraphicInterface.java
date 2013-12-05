@@ -5,10 +5,7 @@ import htm.model.Column;
 import htm.model.Region;
 import htm.model.Synapse;
 import htm.utils.UIUtils;
-import htm.visualizer.surface.BaseSurface;
-import htm.visualizer.surface.ColumnCellsByIndexSurface;
-import htm.visualizer.surface.ColumnSDRSurface;
-import htm.visualizer.surface.SensoryInputSurface;
+import htm.visualizer.surface.*;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
@@ -73,7 +70,7 @@ public class HTMGraphicInterface extends JPanel {
 
 
   private Region region;
-  private final HTMRegionSlicedView slicedView;
+  private final RegionSlicedView slicedView;
   private final ControlPanel control;
   private final SensoryInputSurface sensoryInputSurface;
   private final ColumnSDRSurface sdrInput;
@@ -104,7 +101,13 @@ public class HTMGraphicInterface extends JPanel {
     this.region = new Region(cfg.getRegionConfig());
     this.sensoryInputSurface = new SensoryInputSurface(region.getInputSpace());
     this.sdrInput = new ColumnSDRSurface(region);
-    this.slicedView = new HTMRegionSlicedView();
+    this.slicedView = new RegionSlicedView(region) {
+      @Override
+      public Dimension getPreferredSize() {
+        int prefWidth = super.getPreferredSize().width;
+        return new Dimension(prefWidth, 270 * Column.CELLS_PER_COLUMN);
+      }
+    };
     this.control = new ControlPanel();
     if (!region.isSkipSpatial()) {
       this.spatialInfo = new SpatialInfo();
@@ -149,27 +152,28 @@ public class HTMGraphicInterface extends JPanel {
       @Override
       public void onElementMouseEnter(BaseSurface.ElementMouseEnterEvent e) {
         detailsInfo.getTabs().setSelectedComponent(temporalInfo);
-        Cell cell = ((ColumnCellsByIndexSurface)e.getSource()).getCell(e.getIndex());
+        Cell cell = ((RegionSlicedView.ColumnCellsByIndexSurface)e.getSource()).getCell(e.getIndex());
         System.out.println("Cell was clicked:" + cell);
         temporalInfo.setCurrentCell(cell);
       }
     });
     //backward selection from synapses temporal info to Region Slice;
     temporalInfo.getSegmentDistalSynapsesTable().getSelectionModel().addListSelectionListener(
-      new ListSelectionListener() {
-        @Override public void valueChanged(ListSelectionEvent e) {
-          int rowViewInx = temporalInfo.getSegmentDistalSynapsesTable().getSelectedRow();
-          if (rowViewInx == -1) {
-            slicedView.getLayer(0).setSelectedSynapseInx(-1);
-          } else {
-            int rowColumnModelInx = temporalInfo.getSegmentDistalSynapsesTable().convertRowIndexToModel(rowViewInx);
-            Synapse.DistalSynapse selectedSynapse = ((TemporalInfo.SegmentDistalSynapsesModel)temporalInfo.getSegmentDistalSynapsesTable().getModel()).getSynapse(
-                    rowColumnModelInx);
-            slicedView.getLayer(selectedSynapse.getFromCell().getCellIndex()).setSelectedSynapseInx(
-                    selectedSynapse.getFromCell().getBelongsToColumn().getIndex());
-          }
-        }
-    });
+            new ListSelectionListener() {
+              @Override public void valueChanged(ListSelectionEvent e) {
+                int rowViewInx = temporalInfo.getSegmentDistalSynapsesTable().getSelectedRow();
+                if (rowViewInx == -1) {
+                  slicedView.getLayer(0).setSelectedSynapseColumnIndex(-1);
+                } else {
+                  int rowColumnModelInx = temporalInfo.getSegmentDistalSynapsesTable().convertRowIndexToModel(
+                          rowViewInx);
+                  Synapse.DistalSynapse selectedSynapse = ((TemporalInfo.SegmentDistalSynapsesModel)temporalInfo.getSegmentDistalSynapsesTable().getModel()).getSynapse(
+                          rowColumnModelInx);
+                  slicedView.getLayer(selectedSynapse.getFromCell().getCellIndex()).setSelectedSynapseColumnIndex(
+                          selectedSynapse.getFromCell().getBelongsToColumn().getIndex());
+                }
+              }
+            });
     if (!region.isSkipSpatial()) {
       //select column to view spatial details
       sdrInput.addElementMouseEnterListener(new BaseSurface.ElementMouseEnterListener() {
@@ -254,6 +258,9 @@ public class HTMGraphicInterface extends JPanel {
           }
         }.init(), c);
         c.weightx = 1.5;
+        slicedView.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createTitledBorder("Region Slices"),
+                UIUtils.DEFAULT_BORDER));
         JScrollPane sp = new JScrollPane(slicedView);
         sp.setBorder(UIUtils.DEFAULT_BORDER);
         this.add(sp, c);
@@ -451,59 +458,6 @@ public class HTMGraphicInterface extends JPanel {
     @Override
     public Dimension getMaximumSize() {
       return getPreferredSize();
-    }
-
-
-  }
-
-
-  private class HTMRegionSlicedView extends JPanel {
-    private List<ColumnCellsByIndexSurface> layers = new ArrayList<ColumnCellsByIndexSurface>();
-
-    public List<ColumnCellsByIndexSurface> getLayers() {
-      return Collections.unmodifiableList(layers);
-    }
-
-    public ColumnCellsByIndexSurface getLayer(int layerInx) {
-      return layers.get(layerInx);
-    }
-
-    public void addElementMouseEnterListener(BaseSurface.ElementMouseEnterListener listener) {
-      for (BaseSurface layer : layers) {
-        layer.addElementMouseEnterListener(listener);
-      }
-    }
-
-
-    public HTMRegionSlicedView() {
-      super(new GridLayout(0, 1));
-      setBorder(BorderFactory.createCompoundBorder(
-              BorderFactory.createTitledBorder("Region Slices"),
-              UIUtils.DEFAULT_BORDER));
-      for (int i = 0; i < Column.CELLS_PER_COLUMN; i++) {
-        final ColumnCellsByIndexSurface cellLayer = new ColumnCellsByIndexSurface(region, i);
-        layers.add(i, cellLayer);
-        cellLayer.setBorder(UIUtils.LIGHT_GRAY_BORDER);
-        this.add(new Container() {
-          private Container init(String caption) {
-            this.setLayout(new BorderLayout());
-            this.add(new JLabel(caption), BorderLayout.NORTH);
-            this.add(cellLayer, BorderLayout.CENTER);
-            return this;
-          }
-        }.init("Layer #" + i));
-      }
-    }
-
-    @Override
-    public Dimension getPreferredSize() {
-      int prefWidth = super.getPreferredSize().width;
-      /*LOG.debug("HTMRegionSlicedView width:" + getSize().width);
-      double cof = getSize().width != 0 ? 1.0 * getSize().width/300 : 1;
-      LOG.debug("Coef:" +cof);
-      return new Dimension(prefWidth,
-                           (int)(270 * Column.CELLS_PER_COLUMN * cof));  */
-      return new Dimension(prefWidth, 270 * Column.CELLS_PER_COLUMN);
     }
 
 
