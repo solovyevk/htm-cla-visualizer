@@ -550,7 +550,10 @@ public class Column extends BaseSpace.Element {
       if (cell.getSegments().size() < minSegmentListCell.getSegments().size()) {
         minSegmentListCell = cell;
       }
-      bestMatchingSegmentsFromCells.add(cell.getBestMatchingSegment(time));
+      DistalDendriteSegment bestMatchingSegment = cell.getBestMatchingSegment(time);
+      if(bestMatchingSegment != null){
+         bestMatchingSegmentsFromCells.add(bestMatchingSegment);
+      }
     }
     DistalDendriteSegment columnBestMatchingSegment = Cell.getBestMatchingSegment(bestMatchingSegmentsFromCells, time);
     return columnBestMatchingSegment != null ? columnBestMatchingSegment.getBelongsToCell() : minSegmentListCell;

@@ -10,6 +10,18 @@ import java.util.List;
 
 public class Cell {
 
+  public int getCellIndex() {
+    return cellIndex;
+  }
+
+  public Column getBelongsToColumn() {
+    return belongsToColumn;
+  }
+
+  public List<DistalDendriteSegment.Update> getSegmentUpdates() {
+    return segmentUpdates;
+  }
+
   public enum State {
     ACTIVE,
     LEARN
@@ -42,13 +54,17 @@ public class Cell {
    */
   private CellStateBuffer learnState = new CellStateBuffer();
 
-  final List<DistalDendriteSegment> segments = new ArrayList<DistalDendriteSegment>();
+  protected final List<DistalDendriteSegment> segments = new ArrayList<DistalDendriteSegment>();
 
-  private final List<DistalDendriteSegment.Update> segmentUpdateList = new ArrayList<DistalDendriteSegment.Update>();
+  private final List<DistalDendriteSegment.Update> segmentUpdates = new ArrayList<DistalDendriteSegment.Update>();
 
   public Cell(Column belongsToColumn, int cellIndex) {
     this.belongsToColumn = belongsToColumn;
     this.cellIndex = cellIndex;
+    //TODO REMOVE
+    /*    for (int i = 0; i < 10; i++) {
+          new DistalDendriteSegment(this);
+        }  */
   }
 
   /*
@@ -172,7 +188,7 @@ public class Cell {
    * @return
    */
   public DistalDendriteSegment getBestMatchingSegment(final int time) {
-    return getBestMatchingSegment(this.getSegments(), time);
+    return getBestMatchingSegment(new ArrayList<DistalDendriteSegment>(this.getSegments()), time);
   }
 
   public static DistalDendriteSegment getBestMatchingSegment(List<DistalDendriteSegment> segmentList, final int time) {
@@ -223,7 +239,6 @@ public class Cell {
   public DistalDendriteSegment.Update getSegmentActiveSynapses(DistalDendriteSegment segment, int time,
                                                                boolean newSynapses) {
     DistalDendriteSegment.Update result = new DistalDendriteSegment.Update(this, segment);
-    this.segmentUpdateList.add(result);
     if (segment != null) {
       result.addAll(segment.getActiveCellSynapses(time));
     }
@@ -271,7 +286,7 @@ public class Cell {
    * After this step, any synapses in segmentUpdate that do yet exist get added with a permanence count of initialPerm.
    */
   public void adaptSegments(boolean positiveReinforcement) {
-    for (DistalDendriteSegment.Update segmentUpdate : segmentUpdateList) {
+    for (DistalDendriteSegment.Update segmentUpdate : segmentUpdates) {
       DistalDendriteSegment segment;
       if (segmentUpdate.isNewSegment()) {
         segment = new DistalDendriteSegment(this);
@@ -299,10 +314,11 @@ public class Cell {
           segment.add(distalSynapse);
         }
       }
-
       //DELETE processed segmentUpdate
-      this.segmentUpdateList.remove(segmentUpdate);
+      //this.segmentUpdates.remove(segmentUpdate);
     }
+    //Clear segmentUpdates after adaption;
+    this.segmentUpdates.clear();
   }
 
    /*

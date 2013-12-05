@@ -13,17 +13,12 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import javax.swing.*;
-import javax.swing.border.Border;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
-import javax.swing.plaf.basic.BasicSplitPaneDivider;
-import javax.swing.plaf.basic.BasicSplitPaneUI;
 import java.awt.*;
 import java.awt.event.ActionEvent;
-import java.util.ArrayList;
+import java.util.*;
 import java.util.List;
-import java.util.Observable;
-import java.util.Observer;
 
 public class HTMGraphicInterface extends JPanel {
   private static final Log LOG = LogFactory.getLog(HTMGraphicInterface.class);
@@ -67,9 +62,6 @@ public class HTMGraphicInterface extends JPanel {
   public static double DISTAL_SYNAPSE_PERMANENCE_DECREASE = 0.005;
 
 
-  private static Border DEFAULT_BORDER = BorderFactory.createEmptyBorder(0, 4, 0, 4);
-  private static Border LIGHT_GRAY_BORDER = BorderFactory.createLineBorder(Color.lightGray);
-
   static {
     Column.BOOST_RATE = BOOST_RATE;
   }
@@ -81,11 +73,13 @@ public class HTMGraphicInterface extends JPanel {
 
 
   private Region region;
-  private final JComponent slicedView;
+  private final HTMRegionSlicedView slicedView;
   private final ControlPanel control;
   private final SensoryInputSurface sensoryInputSurface;
   private final ColumnSDRSurface sdrInput;
   private SpatialInfo spatialInfo;
+  private TemporalInfo temporalInfo;
+  private SelectedDetails detailsInfo;
 
 
   public HTMGraphicInterface() {
@@ -115,6 +109,8 @@ public class HTMGraphicInterface extends JPanel {
     if (!region.isSkipSpatial()) {
       this.spatialInfo = new SpatialInfo();
     }
+    this.temporalInfo = new TemporalInfo();
+    this.detailsInfo = new SelectedDetails(spatialInfo, temporalInfo);
     initLayout();
     initProcess();
     initListeners();
@@ -123,7 +119,6 @@ public class HTMGraphicInterface extends JPanel {
     }
     LOG.debug("Finish initialization");
   }
-
 
 
   public java.util.List<boolean[]> getPatterns() {
@@ -149,10 +144,38 @@ public class HTMGraphicInterface extends JPanel {
   }
 
   private void initListeners() {
-    //select column to view details
+    //select cell to view temporal details
+    slicedView.addElementMouseEnterListener(new BaseSurface.ElementMouseEnterListener() {
+      @Override
+      public void onElementMouseEnter(BaseSurface.ElementMouseEnterEvent e) {
+        detailsInfo.getTabs().setSelectedComponent(temporalInfo);
+        Cell cell = ((ColumnCellsByIndexSurface)e.getSource()).getCell(e.getIndex());
+        System.out.println("Cell was clicked:" + cell);
+        temporalInfo.setCurrentCell(cell);
+      }
+    });
+    //backward selection from synapses temporal info to Region Slice;
+    temporalInfo.getSegmentDistalSynapsesTable().getSelectionModel().addListSelectionListener(
+      new ListSelectionListener() {
+        @Override public void valueChanged(ListSelectionEvent e) {
+          int rowViewInx = temporalInfo.getSegmentDistalSynapsesTable().getSelectedRow();
+          if (rowViewInx == -1) {
+            slicedView.getLayer(0).setSelectedSynapseInx(-1);
+          } else {
+            int rowColumnModelInx = temporalInfo.getSegmentDistalSynapsesTable().convertRowIndexToModel(rowViewInx);
+            Synapse.DistalSynapse selectedSynapse = ((TemporalInfo.SegmentDistalSynapsesModel)temporalInfo.getSegmentDistalSynapsesTable().getModel()).getSynapse(
+                    rowColumnModelInx);
+            slicedView.getLayer(selectedSynapse.getFromCell().getCellIndex()).setSelectedSynapseInx(
+                    selectedSynapse.getFromCell().getBelongsToColumn().getIndex());
+          }
+        }
+    });
     if (!region.isSkipSpatial()) {
+      //select column to view spatial details
       sdrInput.addElementMouseEnterListener(new BaseSurface.ElementMouseEnterListener() {
-        @Override public void onElementMouseEnter(BaseSurface.ElementMouseEnterEvent e) {
+        @Override
+        public void onElementMouseEnter(BaseSurface.ElementMouseEnterEvent e) {
+          detailsInfo.getTabs().setSelectedComponent(spatialInfo);
           int index = e.getIndex();
           Column column = sdrInput.getColumn(index);
           sensoryInputSurface.setCurrentColumn(column);
@@ -209,31 +232,30 @@ public class HTMGraphicInterface extends JPanel {
             this.add(control, c);
             c.weighty = 1.55;
             c.weightx = 1.0;
-            JComponent bottom = new SelectedCellsAndDetails(spatialInfo);
             c.gridy = 1;
             this.add(new JComponent() {
               private Container init() {
                 this.setLayout(new GridLayout(0, 2, 10, 10));
                 this.setBorder(BorderFactory.createCompoundBorder(
                         BorderFactory.createTitledBorder("Sensory Input & SD Representation"),
-                        DEFAULT_BORDER));
+                        UIUtils.DEFAULT_BORDER));
 
-                sensoryInputSurface.setBorder(LIGHT_GRAY_BORDER);
+                sensoryInputSurface.setBorder(UIUtils.LIGHT_GRAY_BORDER);
                 add(sensoryInputSurface);
-                sdrInput.setBorder(LIGHT_GRAY_BORDER);
+                sdrInput.setBorder(UIUtils.LIGHT_GRAY_BORDER);
                 add(sdrInput);
                 return this;
               }
             }.init(), c);
             c.gridy = 2;
             c.weighty = 0.45;
-            this.add(bottom, c);
+            this.add(detailsInfo, c);
             return this;
           }
         }.init(), c);
         c.weightx = 1.5;
         JScrollPane sp = new JScrollPane(slicedView);
-        sp.setBorder(DEFAULT_BORDER);
+        sp.setBorder(UIUtils.DEFAULT_BORDER);
         this.add(sp, c);
         return this;
       }
@@ -263,25 +285,29 @@ public class HTMGraphicInterface extends JPanel {
   }
 
 
-  private static class SelectedCellsAndDetails extends JPanel {
-    public SelectedCellsAndDetails(SpatialInfo spatialInfo) {
+  private static class SelectedDetails extends JPanel {
+    private JTabbedPane tabs;
+
+    public JTabbedPane getTabs() {
+      return tabs;
+    }
+
+    public SelectedDetails(SpatialInfo spatialInfo, TemporalInfo temporalInfo) {
       super(new BorderLayout());
       setBorder(BorderFactory.createCompoundBorder(
-              BorderFactory.createTitledBorder("Selected/Active Column & Details"),
-              DEFAULT_BORDER));
+              BorderFactory.createTitledBorder("Selected Column/Cell Detail Info"),
+              UIUtils.DEFAULT_BORDER));
       final SensoryInputSurface top = new SensoryInputSurface(5, 3);
-      top.setBorder(LIGHT_GRAY_BORDER);
-      JComponent test = new JPanel();
-      test.setBackground(Color.WHITE);
-      final JTabbedPane bottom = new JTabbedPane();
+      top.setBorder(UIUtils.LIGHT_GRAY_BORDER);
+      tabs = new JTabbedPane();
       if (spatialInfo != null) {
-        bottom.addTab("Spatial Info", spatialInfo);
+        tabs.addTab("Spatial Info", spatialInfo);
       }
-      bottom.addTab("Temporal Info", test);
-      bottom.setBorder(LIGHT_GRAY_BORDER);
-      bottom.setBackground(Color.WHITE);
-      JSplitPane splitPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT,
-                                            top, bottom);
+      tabs.addTab("Temporal Info", temporalInfo);
+      tabs.setBorder(UIUtils.LIGHT_GRAY_BORDER);
+      tabs.setBackground(Color.WHITE);
+     /* JSplitPane splitPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT,
+                                            top, tabs);
       splitPane.setOneTouchExpandable(true);
       splitPane.setDividerLocation(0);
       //TODO REVIEW THIS
@@ -294,7 +320,8 @@ public class HTMGraphicInterface extends JPanel {
         }
       });
       splitPane.setBorder(null);
-      this.add(splitPane, BorderLayout.CENTER);
+      this.add(splitPane, BorderLayout.CENTER);*/
+      this.add(tabs);
     }
   }
 
@@ -323,7 +350,7 @@ public class HTMGraphicInterface extends JPanel {
       cycleInfo.setText("Cycle: " + process.getCycle());
     }
 
-    private void enableActions(){
+    private void enableActions() {
       resetPatternsAction.setEnabled(patterns.size() > 0);
       runAction.setEnabled(patterns.size() > 0 && !process.isRunning());
       stepAction.setEnabled(patterns.size() > 0);
@@ -331,55 +358,54 @@ public class HTMGraphicInterface extends JPanel {
     }
 
 
-
     private void initActions() {
-        cleanInputSpaceAction = new AbstractAction("Clean", UIUtils.INSTANCE.createImageIcon(
-                "/images/cleanup.png")) {
-          @Override public void actionPerformed(ActionEvent e) {
-            sensoryInputSurface.reset();
-          }
-        };
+      cleanInputSpaceAction = new AbstractAction("Clean", UIUtils.INSTANCE.createImageIcon(
+              "/images/cleanup.png")) {
+        @Override public void actionPerformed(ActionEvent e) {
+          sensoryInputSurface.reset();
+        }
+      };
 
-        addPatternAction = new AbstractAction("Add", UIUtils.INSTANCE.createImageIcon(
-                "/images/add.png")) {
-          @Override public void actionPerformed(ActionEvent e) {
-            addPattern();
-          }
+      addPatternAction = new AbstractAction("Add", UIUtils.INSTANCE.createImageIcon(
+              "/images/add.png")) {
+        @Override public void actionPerformed(ActionEvent e) {
+          addPattern();
+        }
 
-        };
+      };
 
-        resetPatternsAction = new AbstractAction("Reset", UIUtils.INSTANCE.createImageIcon(
-                "/images/refresh.png")) {
-          @Override public void actionPerformed(ActionEvent e) {
-            resetPatterns();
-          }
-        };
+      resetPatternsAction = new AbstractAction("Reset", UIUtils.INSTANCE.createImageIcon(
+              "/images/refresh.png")) {
+        @Override public void actionPerformed(ActionEvent e) {
+          resetPatterns();
+        }
+      };
 
-        runAction = new AbstractAction("Run", UIUtils.INSTANCE.createImageIcon(
-                "/images/play.png")) {
-          @Override public void actionPerformed(ActionEvent e) {
-            process.run();
-          }
-        };
+      runAction = new AbstractAction("Run", UIUtils.INSTANCE.createImageIcon(
+              "/images/play.png")) {
+        @Override public void actionPerformed(ActionEvent e) {
+          process.run();
+        }
+      };
 
-        stepAction = new AbstractAction("Step", UIUtils.INSTANCE.createImageIcon(
-                "/images/step.png")) {
+      stepAction = new AbstractAction("Step", UIUtils.INSTANCE.createImageIcon(
+              "/images/step.png")) {
 
-          @Override public void actionPerformed(ActionEvent e) {
-            process.step();
-          }
+        @Override public void actionPerformed(ActionEvent e) {
+          process.step();
+        }
 
-        };
+      };
 
-        stopAction = new AbstractAction("Stop", UIUtils.INSTANCE.createImageIcon(
-                "/images/stop.png")) {
-          @Override public void actionPerformed(ActionEvent e) {
-            process.stop();
-          }
-        };
-        enableActions();
+      stopAction = new AbstractAction("Stop", UIUtils.INSTANCE.createImageIcon(
+              "/images/stop.png")) {
+        @Override public void actionPerformed(ActionEvent e) {
+          process.stop();
+        }
+      };
+      enableActions();
 
-      }
+    }
 
 
     public ControlPanel() {
@@ -411,17 +437,19 @@ public class HTMGraphicInterface extends JPanel {
       this.add(toolBar);
     }
 
-
+    @Override
     public Dimension getMinimumSize() {
       return getPreferredSize();
     }
 
+    @Override
     public Dimension getPreferredSize() {
       return new Dimension(400,
                            40);
     }
 
-   public Dimension getMaximumSize() {
+    @Override
+    public Dimension getMaximumSize() {
       return getPreferredSize();
     }
 
@@ -430,27 +458,32 @@ public class HTMGraphicInterface extends JPanel {
 
 
   private class HTMRegionSlicedView extends JPanel {
+    private List<ColumnCellsByIndexSurface> layers = new ArrayList<ColumnCellsByIndexSurface>();
+
+    public List<ColumnCellsByIndexSurface> getLayers() {
+      return Collections.unmodifiableList(layers);
+    }
+
+    public ColumnCellsByIndexSurface getLayer(int layerInx) {
+      return layers.get(layerInx);
+    }
+
+    public void addElementMouseEnterListener(BaseSurface.ElementMouseEnterListener listener) {
+      for (BaseSurface layer : layers) {
+        layer.addElementMouseEnterListener(listener);
+      }
+    }
+
+
     public HTMRegionSlicedView() {
       super(new GridLayout(0, 1));
       setBorder(BorderFactory.createCompoundBorder(
               BorderFactory.createTitledBorder("Region Slices"),
-              DEFAULT_BORDER));
-      Column[] columns = region.getColumns();
+              UIUtils.DEFAULT_BORDER));
       for (int i = 0; i < Column.CELLS_PER_COLUMN; i++) {
-        Cell[] layer = new Cell[columns.length];
-        for (int j = 0; j < columns.length; j++) {
-          layer[j] = columns[j].getCellByIndex(i);
-        }
-        final BaseSurface cellLayer = new ColumnCellsByIndexSurface(region.getDimension().width,
-                                                                    region.getDimension().height,
-                                                                    layer);
-        cellLayer.setBorder(LIGHT_GRAY_BORDER);
-        cellLayer.addElementMouseEnterListener(new BaseSurface.ElementMouseEnterListener() {
-          @Override public void onElementMouseEnter(BaseSurface.ElementMouseEnterEvent e) {
-            Cell cell = ((ColumnCellsByIndexSurface)e.getSource()).getCell(e.getIndex());
-            System.out.println("Cell was clicked:" + cell);
-          }
-        });
+        final ColumnCellsByIndexSurface cellLayer = new ColumnCellsByIndexSurface(region, i);
+        layers.add(i, cellLayer);
+        cellLayer.setBorder(UIUtils.LIGHT_GRAY_BORDER);
         this.add(new Container() {
           private Container init(String caption) {
             this.setLayout(new BorderLayout());
@@ -472,6 +505,7 @@ public class HTMGraphicInterface extends JPanel {
                            (int)(270 * Column.CELLS_PER_COLUMN * cof));  */
       return new Dimension(prefWidth, 270 * Column.CELLS_PER_COLUMN);
     }
+
 
   }
 

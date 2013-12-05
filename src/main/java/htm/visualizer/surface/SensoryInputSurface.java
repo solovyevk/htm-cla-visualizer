@@ -3,6 +3,7 @@ package htm.visualizer.surface;
 import htm.model.Column;
 import htm.model.Synapse;
 import htm.model.space.InputSpace;
+import htm.utils.UIUtils;
 
 import java.awt.*;
 import java.util.List;
@@ -11,8 +12,6 @@ import java.util.List;
 This is our Sensory Input Interface, bits activated on mouse enter
  */
 public class SensoryInputSurface extends BaseSurface.SquareElementsSurface {
-
-  private final static Color LIGHT_BLUE = new Color(153, 204, 255);
 
   private final InputSpace sensoryInput;
   private Column currentColumn;
@@ -110,7 +109,7 @@ public class SensoryInputSurface extends BaseSurface.SquareElementsSurface {
     if (selectedInputIndex != null) {
       Composite original = g2d.getComposite();
       Rectangle aroundRec = getElementAreaWithScale(selectedInputIndex, 1 / (Math.PI / 4) * 1.5);
-      g2d.setColor(LIGHT_BLUE);
+      g2d.setColor(UIUtils.LIGHT_BLUE);
       g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER,
                                                   0.5f));
       g2d.fillOval(aroundRec.x, aroundRec.y, aroundRec.width, aroundRec.height);

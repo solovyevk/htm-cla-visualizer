@@ -15,7 +15,7 @@ import java.util.List;
 
 public class DistalDendriteSegment extends ArrayList<Synapse.DistalSynapse> {
 
-  private final Cell belongsToCell;
+  protected final Cell belongsToCell;
   private boolean sequenceSegment;
 
 
@@ -40,7 +40,7 @@ public class DistalDendriteSegment extends ArrayList<Synapse.DistalSynapse> {
    * WP
    * minThreshold Minimum segment activity for learning.
    */
-  public static int MIN_THRESHOLD = 1;
+  public static int MIN_THRESHOLD = 0;//1;
 
   public static int AMOUNT_OF_SYNAPSES = 30;
 
@@ -48,6 +48,14 @@ public class DistalDendriteSegment extends ArrayList<Synapse.DistalSynapse> {
   public DistalDendriteSegment(Cell belongsToCell) {
     super(AMOUNT_OF_SYNAPSES);
     this.belongsToCell = belongsToCell;
+    attachToCell();
+    //TODO REMOVE
+        /*    for (int i = 0; i < 10; i++) {
+              this.add(new Synapse.DistalSynapse(belongsToCell));
+            } */
+  }
+
+  protected void attachToCell(){
     belongsToCell.segments.add(this);
   }
 
@@ -126,6 +134,10 @@ public class DistalDendriteSegment extends ArrayList<Synapse.DistalSynapse> {
     public Update(Cell belongsToCell, DistalDendriteSegment target) {
       super(belongsToCell);
       this.target = target;
+    }
+
+    @Override protected void attachToCell() {
+     this.belongsToCell.getSegmentUpdates().add(this);
     }
 
     public boolean isNewSegment() {

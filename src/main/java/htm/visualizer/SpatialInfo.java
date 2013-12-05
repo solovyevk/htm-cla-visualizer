@@ -3,25 +3,17 @@ package htm.visualizer;
 import htm.model.Column;
 import htm.model.Synapse;
 import htm.model.space.BaseSpace;
-import htm.visualizer.surface.SensoryInputSurface;
+import htm.utils.UIUtils;
 
 import javax.swing.*;
 import javax.swing.border.TitledBorder;
 import javax.swing.table.AbstractTableModel;
-import javax.swing.table.DefaultTableCellRenderer;
-import javax.swing.table.TableCellRenderer;
 import java.awt.*;
-import java.awt.font.FontRenderContext;
-import java.awt.font.TextLayout;
-import java.text.DecimalFormat;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.Set;
 
 
 public class SpatialInfo extends JPanel {
-  DecimalFormat DF_4 = new DecimalFormat("##0.0000");
-  DecimalFormat DF_2 = new DecimalFormat("##0.00");
   private Column currentColumn;
   private JTable proximalSynapsesTable;
   private JTable neighborColumnsTable;
@@ -75,11 +67,11 @@ public class SpatialInfo extends JPanel {
     table.setPreferredScrollableViewportSize(new Dimension(100, 50));
     table.setFillsViewportHeight(true);
     table.setAutoCreateRowSorter(true);
-    table.getColumnModel().getColumn(0).setCellRenderer(new PermanenceRenderer());
-    table.getColumnModel().getColumn(1).setCellRenderer(new SmallDoubleRenderer());
+    table.getColumnModel().getColumn(0).setCellRenderer(new UIUtils.PermanenceRenderer());
+    table.getColumnModel().getColumn(1).setCellRenderer(new UIUtils.SmallDoubleRenderer());
     table.getColumnModel().getColumn(2).setPreferredWidth(50);
     table.getColumnModel().getColumn(3).setPreferredWidth(50);
-    table.getColumnModel().getColumn(4).setCellRenderer(new PositionRenderer());
+    table.getColumnModel().getColumn(4).setCellRenderer(new UIUtils.PositionRenderer());
     return table;
   }
 
@@ -97,16 +89,16 @@ public class SpatialInfo extends JPanel {
     table.setPreferredScrollableViewportSize(new Dimension(100, 50));
     table.setFillsViewportHeight(true);
     table.setAutoCreateRowSorter(true);
-    table.getColumnModel().getColumn(0).setCellRenderer(new SmallDoubleRenderer());
-    table.getColumnModel().getColumn(1).setCellRenderer(new SmallDoubleRenderer());
+    table.getColumnModel().getColumn(0).setCellRenderer(new UIUtils.SmallDoubleRenderer());
+    table.getColumnModel().getColumn(1).setCellRenderer(new UIUtils.SmallDoubleRenderer());
     table.getColumnModel().getColumn(1).setPreferredWidth(50);
-    table.getColumnModel().getColumn(2).setCellRenderer(new SmallDoubleRenderer());
-    table.getColumnModel().getColumn(3).setCellRenderer(new SmallDoubleRenderer());
-    table.getColumnModel().getColumn(4).setCellRenderer(new SmallDoubleRenderer());
+    table.getColumnModel().getColumn(2).setCellRenderer(new UIUtils.SmallDoubleRenderer());
+    table.getColumnModel().getColumn(3).setCellRenderer(new UIUtils.SmallDoubleRenderer());
+    table.getColumnModel().getColumn(4).setCellRenderer(new UIUtils.SmallDoubleRenderer());
     table.getColumnModel().getColumn(4).setPreferredWidth(50);
     table.getColumnModel().getColumn(5).setPreferredWidth(40);
     table.getColumnModel().getColumn(6).setPreferredWidth(40);
-    table.getColumnModel().getColumn(7).setCellRenderer(new PositionRenderer());
+    table.getColumnModel().getColumn(7).setCellRenderer(new UIUtils.PositionRenderer());
     return table;
   }
 
@@ -118,64 +110,28 @@ public class SpatialInfo extends JPanel {
     this.repaint();
   }
 
-  private class ColumnAttributesInfo extends JPanel {
+  private class ColumnAttributesInfo extends UIUtils.TextColumnInfo {
 
-    private ColumnAttributesInfo() {
-      setBackground(Color.WHITE);
-    }
-
-    @Override public void paint(Graphics g) {
-      super.paint(g);
-      Graphics2D graphics2D = (Graphics2D)g;
-      Map<String, String> columnAttributes = getColumnAttributeMap(currentColumn);
-      drawPropertyParagraph(graphics2D, columnAttributes, 100, 5, 20);
-    }
-
-
-    private Map<String, String> getColumnAttributeMap(Column column) {
+    @Override
+    protected Map<String, String> getAttributeMap() {
+      Column column = currentColumn;
       Map<String, String> result = new LinkedHashMap<String, String>();
       if (column != null) {
         double inhibitionRadius = column.getRegion().getAverageReceptiveFieldSize();
         result.put("Index", column.getIndex() + "");
         result.put("Position", "X:" + (column.getPosition().x) + ", Y:" + column.getPosition().y);
         result.put("Active", column.isActive() ? "Yes" : "No");
-        result.put("Active Duty Cycle", DF_4.format(column.getActiveDutyCycle()));
-        result.put("Max Duty Cycle", DF_4.format(column.getMaxDutyCycle(inhibitionRadius)));
-        result.put("Boost", DF_2.format(column.getBoost()));
-        result.put("Overlap", DF_2.format(column.getOverlap()));
-        result.put("Over. Duty Cycle", DF_4.format(column.getOverlapDutyCycle()));
+        result.put("Active Duty Cycle", UIUtils.DF_4.format(column.getActiveDutyCycle()));
+        result.put("Max Duty Cycle", UIUtils.DF_4.format(column.getMaxDutyCycle(inhibitionRadius)));
+        result.put("Boost", UIUtils.DF_2.format(column.getBoost()));
+        result.put("Overlap", UIUtils.DF_2.format(column.getOverlap()));
+        result.put("Over. Duty Cycle", UIUtils.DF_4.format(column.getOverlapDutyCycle()));
         result.put("Neighbors Count", column.getNeighbors(inhibitionRadius).size() + "");
         result.put("Connected Syn.", column.getConnectedSynapses().size() + "");
         result.put("Active Syn.", column.getActiveConnectedSynapses().size() + "");
-        result.put("Avg. Rec. Field", DF_2.format(inhibitionRadius) + "");
+        result.put("Avg. Rec. Field", UIUtils.DF_2.format(inhibitionRadius) + "");
       }
       return result;
-    }
-
-    protected float drawPropertyParagraph(Graphics2D g2, Map<String, String> properties, float width, float x,
-                                          float y) {
-      FontRenderContext frc = g2.getFontRenderContext();
-      float drawPosY = y;
-      Font nameFont = new Font("Helvetica", Font.BOLD, 12);
-      Font valueFont = new Font("Helvetica", Font.PLAIN, 12);
-      Set<String> names = properties.keySet();
-      for (String name : names) {
-        String value = properties.get(name);
-        TextLayout nameLayout = new TextLayout(name + ":", nameFont, frc);
-        TextLayout valueLayout = new TextLayout(value, valueFont, frc);
-        // Set position to the index of the first character in the paragraph.
-        float drawPosX;
-        drawPosX = (float)x + width - nameLayout.getAdvance();
-        // Move y-coordinate by the ascent of the layout.
-        drawPosY += nameLayout.getAscent();
-        // Draw the TextLayout at (drawPosX, drawPosY).
-        nameLayout.draw(g2, drawPosX, drawPosY);
-        double newX = (float)x + width + 4;
-        valueLayout.draw(g2, (float)newX, drawPosY);
-        // Move y-coordinate in preparation for next layout.
-        drawPosY += nameLayout.getDescent() + nameLayout.getLeading();
-      }
-      return drawPosY;
     }
 
   }
@@ -239,7 +195,7 @@ public class SpatialInfo extends JPanel {
             value = row.getIndex();
             break;
           case 7:
-            value = new SortablePoint(row.getPosition());
+            value = new UIUtils.SortablePoint(row.getPosition());
             break;
           default:
             value = null;
@@ -273,7 +229,7 @@ public class SpatialInfo extends JPanel {
           result = Integer.class;
           break;
         case 7:
-          result = SortablePoint.class;
+          result = UIUtils.SortablePoint.class;
           break;
         default:
           result = super.getColumnClass(
@@ -329,7 +285,7 @@ public class SpatialInfo extends JPanel {
             value = row.getConnectedSensoryInput().getIndex();
             break;
           case 4:
-            value = new SortablePoint(row.getConnectedSensoryInput().getPosition());
+            value = new UIUtils.SortablePoint(row.getConnectedSensoryInput().getPosition());
             break;
           default:
             value = null;
@@ -354,7 +310,7 @@ public class SpatialInfo extends JPanel {
           result = Integer.class;
           break;
         case 4:
-          result = SortablePoint.class;
+          result = UIUtils.SortablePoint.class;
           break;
         default:
           result = super.getColumnClass(
@@ -364,72 +320,6 @@ public class SpatialInfo extends JPanel {
     }
   }
 
-
-  static class SortablePoint extends Point implements Comparable<SortablePoint> {
-    SortablePoint(Point p) {
-      super(p);
-    }
-
-    @Override public int compareTo(SortablePoint point) {
-      return this.getSquare() - point.getSquare();
-    }
-
-    int getSquare() {
-      return (int)(Math.pow(x, 2) + Math.pow(y, 2));
-    }
-  }
-
-  class SmallDoubleRenderer extends DefaultTableCellRenderer {
-    {
-      this.setHorizontalAlignment(SwingConstants.RIGHT);
-    }
-
-    @Override protected void setValue(Object value) {
-      super.setValue(DF_2.format(value));
-    }
-  }
-
-  class PositionRenderer extends DefaultTableCellRenderer {
-    {
-      this.setHorizontalAlignment(SwingConstants.CENTER);
-    }
-
-    @Override protected void setValue(Object value) {
-      Point point = (Point)value;
-      super.setValue("X:" + (point.x) + ", Y:" + point.y);
-    }
-  }
-
-
-  class PermanenceRenderer extends DefaultTableCellRenderer
-          implements TableCellRenderer {
-    private double permanence = 0;
-
-    { // initializer block
-      this.setHorizontalAlignment(SwingConstants.RIGHT);
-    }
-   /* public PermanenceRenderer() {
-      this.setHorizontalAlignment(SwingConstants.CENTER);
-    }*/
-
-    @Override public void paint(Graphics g) {
-      super.paint(g);
-      Dimension size = this.getSize();
-      Rectangle insideRec = new Rectangle(2, 2, size.height - 4, size.height - 4);
-      Graphics2D g2d = (Graphics2D)g;
-      SensoryInputSurface.renderSynapse(g2d, permanence, insideRec);
-      g2d.setColor(Color.BLACK);
-      //g2d.drawString(DF_4.format(permanence) + "", size.height + 4, 12);
-    }
-
-    @Override
-    public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus,
-                                                   int row, int column) {
-      this.permanence = (Double)value;
-      return super.getTableCellRendererComponent(table, DF_4.format(value), isSelected, hasFocus, row,
-                                                 column);
-    }
-  }
 
 }
 

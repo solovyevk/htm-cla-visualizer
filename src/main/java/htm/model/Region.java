@@ -233,7 +233,7 @@ public class Region extends ColumnSpace {
    * <p/>
    * Phase 3:
    * Update synapses. The third and last phase actually carries out learning. In this
-   * phase segmentUpdateList updates that have been queued up are actually implemented
+   * phase segmentUpdates updates that have been queued up are actually implemented
    * once we get feed-forward input and the cell is chosen as a learning cell
    * (lines 56-57). Otherwise, if the cell ever stops predicting for any reason, we
    */

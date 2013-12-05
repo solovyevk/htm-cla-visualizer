@@ -58,18 +58,19 @@ public class ColumnSDRSurface extends BaseSurface.CircleElementsSurface {
 
   public void drawInhibitedColumns(Column currentColumn, Graphics2D g2d) {
     java.util.List<Column> inhibitedColumn = currentColumn.getNeighbors(region.getAverageReceptiveFieldSize());
+    g2d.setColor(Color.LIGHT_GRAY);
+    Composite original = g2d.getComposite();
+    g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER,
+                                                0.4f));
     for (Column column : inhibitedColumn) {
       Rectangle columnRec = this.getElementArea(column.getPosition());
-      g2d.setColor(Color.LIGHT_GRAY);
-      Composite original = g2d.getComposite();
-      g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER,
-                                                  0.4f));
       g2d.fillOval(columnRec.x, columnRec.y, columnRec.width, columnRec.height);
-      g2d.setComposite(original);
     }
+    g2d.setComposite(original);
   }
 
-  @Override protected void doDrawing(Graphics2D g2d) {
+  @Override
+  protected void doDrawing(Graphics2D g2d) {
     super.doDrawing(g2d);
     if (currentColumn != null) {
       drawInhibitedColumns(currentColumn, g2d);
