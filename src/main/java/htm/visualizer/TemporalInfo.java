@@ -86,7 +86,7 @@ public class TemporalInfo extends JPanel {
 
   private JTable initDistalDendriteSegmentsTable() {
     JTable table = new JTable(new DistalDendriteSegmentsModel());
-    table.setPreferredScrollableViewportSize(new Dimension(100, 50));
+    table.setPreferredScrollableViewportSize(new Dimension(100, 20));
     table.setFillsViewportHeight(true);
     table.setAutoCreateRowSorter(true);
     return table;
@@ -94,7 +94,7 @@ public class TemporalInfo extends JPanel {
 
   private JTable initSegmentDistalSynapsesTable() {
     JTable table = new JTable(new SegmentDistalSynapsesModel());
-    table.setPreferredScrollableViewportSize(new Dimension(100, 50));
+    table.setPreferredScrollableViewportSize(new Dimension(100, 20));
     table.setFillsViewportHeight(true);
     table.setAutoCreateRowSorter(true);
     table.getColumnModel().getColumn(0).setCellRenderer(new UIUtils.PermanenceRenderer());

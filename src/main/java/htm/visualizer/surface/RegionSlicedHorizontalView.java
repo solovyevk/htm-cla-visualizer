@@ -21,11 +21,16 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-public class RegionSlicedView extends JPanel {
-  private final Region region;
+public class RegionSlicedHorizontalView extends JPanel {
+  private static final Log LOG = LogFactory.getLog(RegionSlicedHorizontalView.class);
   private List<ColumnCellsByIndexSurface> layers = new ArrayList<ColumnCellsByIndexSurface>();
   private CellPosition clickedOnCellPosition = null;
   private CellPosition selectedSynapseCellPosition = null;
+
+  protected void paintComponent(Graphics g) {
+    LOG.debug("paint RegionSlicedHorizontalView");
+    super.paintComponent(g);
+  }
 
 
   public List<ColumnCellsByIndexSurface> getLayers() {
@@ -43,11 +48,10 @@ public class RegionSlicedView extends JPanel {
   }
 
 
-  public RegionSlicedView(Region region) {
+  public RegionSlicedHorizontalView(Region region) {
     super(new GridLayout(0, 1));
-    this.region = region;
     for (int i = 0; i < Column.CELLS_PER_COLUMN; i++) {
-      final ColumnCellsByIndexSurface cellLayer = new ColumnCellsByIndexSurface(this, i);
+      final ColumnCellsByIndexSurface cellLayer = new ColumnCellsByIndexSurface(this, region, i);
       layers.add(i, cellLayer);
       cellLayer.setBorder(UIUtils.LIGHT_GRAY_BORDER);
       this.add(new Container() {
@@ -103,62 +107,42 @@ public class RegionSlicedView extends JPanel {
     }
   }
 
-
-  public Region getRegion() {
-    return region;
-  }
-
-  public static class ColumnCellsByIndexSurface extends BaseSurface.CircleElementsSurface {
+  public static class ColumnCellsByIndexSurface extends CellSurface {
     private static final Log LOG = LogFactory.getLog(ColumnCellsByIndexSurface.class);
 
-    public static final Color DEFAULT_PREDICTED_COLOR = Color.BLUE;
-    public static final Color DEFAULT_LEARNING_COLOR = Color.RED;
 
-    private RegionSlicedView parentView;
-    private final int layerIndex;
-
-
-    protected final Cell[] cells;
-
-
-    protected Color predictedColor = DEFAULT_PREDICTED_COLOR;
-    protected Color learningColor = DEFAULT_LEARNING_COLOR;
-
-    private int time = Cell.NOW;
-
-    private Region getRegion() {
-      return parentView.getRegion();
-    }
-
-    private CellPosition getClickedOnCellPosition() {
-      return parentView.getClickedOnCellPosition();
-    }
-
-    private CellPosition getSelectedSynapseCellPosition(){
-      return parentView.getSelectedSynapseCellPosition();
-    }
-
-    public ColumnCellsByIndexSurface(RegionSlicedView view, int sliceIndex) {
-      super(view.getRegion().getDimension().width, view.getRegion().getDimension().height);
+    public ColumnCellsByIndexSurface(RegionSlicedHorizontalView view, Region region, int sliceIndex) {
+      super(region.getDimension().width, region.getDimension().height, region);
       this.parentView = view;
-      Column[] columns = getRegion().getColumns();
-      cells = new Cell[columns.length];
-      for (int j = 0; j < columns.length; j++) {
-        cells[j] = columns[j].getCellByIndex(sliceIndex);
-      }
       this.layerIndex = sliceIndex;
       this.addElementMouseEnterListener(new ElementMouseEnterListener() {
         @Override
         public void onElementMouseEnter(ElementMouseEnterEvent e) {
           CellPosition clickedOnPosition = new CellPosition(e.getIndex(), layerIndex);
-          parentView.setClickedOnCellPosition(clickedOnPosition.equals(parentView.getClickedOnCellPosition()) ? null : clickedOnPosition);
-          //clickedOnCellPosition = clickedOnCellInx == e.getIndex() ? -1 : e.getIndex();
-          //clickedOnLayerInx = layerIndex;
-         // selectedSynapseInx = -1;
+          parentView.setClickedOnCellPosition(clickedOnPosition.equals(
+                  parentView.getClickedOnCellPosition()) ? null : clickedOnPosition);
           parentView.setSelectedSynapseCellPosition(null);
           repaintAll();
         }
       });
+    }
+
+    @Override
+    public Cell getCell(int columnIndex) {
+      return region.getElementByIndex(columnIndex).getCellByIndex(layerIndex);
+    }
+
+
+    private RegionSlicedHorizontalView parentView;
+    private final int layerIndex;
+
+
+    private CellPosition getClickedOnCellPosition() {
+      return parentView.getClickedOnCellPosition();
+    }
+
+    private CellPosition getSelectedSynapseCellPosition() {
+      return parentView.getSelectedSynapseCellPosition();
     }
 
     private void repaintAll() {
@@ -168,37 +152,11 @@ public class RegionSlicedView extends JPanel {
     }
 
     public void setSelectedSynapseColumnIndex(int selectedSynapseInx) {
-      parentView.setSelectedSynapseCellPosition(selectedSynapseInx == -1 ? null : new CellPosition(selectedSynapseInx, this.layerIndex));
+      parentView.setSelectedSynapseCellPosition(selectedSynapseInx == -1 ? null : new CellPosition(selectedSynapseInx,
+                                                                                                   this.layerIndex));
       repaintAll();
     }
 
-
-    @Override
-    protected void drawElement(Graphics2D g2d, int columnIndex, int x, int y, int width, int height) {
-      Cell currentCell = getCell(columnIndex);
-      if (currentCell.getPredictiveState(time) && currentCell.getActiveState(time)) {
-        drawCell(g2d, x, y, width, height, predictedColor, activeColor);
-      } else if (currentCell.getPredictiveState(time)) {
-        drawCell(g2d, x, y, width, height, predictedColor, predictedColor);
-      } else if (currentCell.getActiveState(time)) {
-        drawCell(g2d, x, y, width, height, activeColor, activeColor);
-      } else {
-        drawCell(g2d, x, y, width, height, getBackground(), activeColor);
-      }
-      if (currentCell.getLearnState(time)) {
-        //third of cell width
-        int newWidth = width / 3;
-        g2d.setColor(learningColor);
-        g2d.fillRect(x + newWidth + 1, y + newWidth + 1, newWidth, newWidth);
-      }
-    }
-
-    private void drawCell(Graphics2D g2d, int x, int y, int width, int height, Color fillColor, Color borderColor) {
-      g2d.setColor(fillColor);
-      g2d.fillOval(x, y, width, height);
-      g2d.setColor(borderColor);
-      g2d.drawOval(x, y, width, height);
-    }
 
     public void drawNeighbors(int columnIndex, Graphics2D g2d) {
       Cell clickedOnCell = this.getCell(columnIndex);
@@ -217,13 +175,25 @@ public class RegionSlicedView extends JPanel {
 
     }
 
-    @Override protected void doDrawing(Graphics2D g2d) {
+    @Override
+    protected void doDrawing(Graphics2D g2d) {
       super.doDrawing(g2d);
+      //LOG.debug("Draw Sliced Region");
       CellPosition clickedOn = getClickedOnCellPosition(), selectedSynapse = getSelectedSynapseCellPosition();
-      if (clickedOn != null && clickedOn.getCellIndex() == layerIndex) {
-        Rectangle aroundRec = getElementAreaWithScale(clickedOn.getColumnIndex(), 1 / (Math.PI / 4));
-        g2d.setColor(Color.ORANGE);
-        g2d.drawOval(aroundRec.x, aroundRec.y, aroundRec.width, aroundRec.height);
+      if (clickedOn != null) {
+        if (clickedOn.getCellIndex() == layerIndex) {
+
+          g2d.setColor(Color.RED);
+          Rectangle aroundRec = getElementAreaWithScale(clickedOn.getColumnIndex(), 1 / (Math.PI / 4) * 1.05);
+          //Rectangle aroundRec = getElementAreaByIndex(clickedOn.getColumnIndex());
+          //g2d.drawLine(aroundRec.x  + aroundRec.width/2, aroundRec.y, aroundRec.x + aroundRec.width/2, aroundRec.y + aroundRec.height);
+          //g2d.drawLine(aroundRec.x, aroundRec.y + aroundRec.height/2, aroundRec.x + aroundRec.width, aroundRec.y + aroundRec.height/2);
+          g2d.drawOval(aroundRec.x, aroundRec.y, aroundRec.width, aroundRec.height);
+        } else {
+          Rectangle aroundRec = getElementAreaWithScale(clickedOn.getColumnIndex(), 1 / (Math.PI / 4) *  1.05);
+          g2d.setColor(Color.ORANGE);
+          g2d.drawOval(aroundRec.x, aroundRec.y, aroundRec.width, aroundRec.height);
+        }
       }
       if (clickedOn != null) {
         drawNeighbors(clickedOn.getColumnIndex(), g2d);
@@ -237,15 +207,6 @@ public class RegionSlicedView extends JPanel {
         g2d.fillOval(aroundRec.x, aroundRec.y, aroundRec.width, aroundRec.height);
         g2d.setComposite(original);
       }
-    }
-
-    public Cell getCell(int columnIndex) {
-      return cells[columnIndex];
-    }
-
-    public void setTime(int time) {
-      this.time = time;
-      repaint();
     }
 
   }

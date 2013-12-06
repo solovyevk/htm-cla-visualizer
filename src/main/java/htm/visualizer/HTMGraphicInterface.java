@@ -5,7 +5,10 @@ import htm.model.Column;
 import htm.model.Region;
 import htm.model.Synapse;
 import htm.utils.UIUtils;
-import htm.visualizer.surface.*;
+import htm.visualizer.surface.BaseSurface;
+import htm.visualizer.surface.ColumnSDRSurface;
+import htm.visualizer.surface.RegionSlicedHorizontalView;
+import htm.visualizer.surface.SensoryInputSurface;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
@@ -14,8 +17,11 @@ import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
 import java.awt.*;
 import java.awt.event.ActionEvent;
-import java.util.*;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Observable;
+import java.util.Observer;
+import java.util.concurrent.CountDownLatch;
 
 public class HTMGraphicInterface extends JPanel {
   private static final Log LOG = LogFactory.getLog(HTMGraphicInterface.class);
@@ -70,13 +76,15 @@ public class HTMGraphicInterface extends JPanel {
 
 
   private Region region;
-  private final RegionSlicedView slicedView;
+  private final RegionSlicedHorizontalView slicedView;
   private final ControlPanel control;
   private final SensoryInputSurface sensoryInputSurface;
   private final ColumnSDRSurface sdrInput;
   private SpatialInfo spatialInfo;
   private TemporalInfo temporalInfo;
   private SelectedDetails detailsInfo;
+  //Need this to ensure sliced view update before region cells reset for next step
+  private CountDownLatch slicedRegionViewUpdateLatch = new CountDownLatch(0);
 
 
   public HTMGraphicInterface() {
@@ -101,7 +109,7 @@ public class HTMGraphicInterface extends JPanel {
     this.region = new Region(cfg.getRegionConfig());
     this.sensoryInputSurface = new SensoryInputSurface(region.getInputSpace());
     this.sdrInput = new ColumnSDRSurface(region);
-    this.slicedView = new RegionSlicedView(region) {
+    this.slicedView = new RegionSlicedHorizontalView(region) {
       @Override
       public Dimension getPreferredSize() {
         int prefWidth = super.getPreferredSize().width;
@@ -141,7 +149,22 @@ public class HTMGraphicInterface extends JPanel {
     final JComponent win = this;
     process.addObserver(new Observer() {
       @Override public void update(Observable o, Object arg) {
-        win.repaint();
+        LOG.debug("Repaint Window on PROCESS update");
+        SwingUtilities.invokeLater(new Runnable() {
+          public void run() {
+            //LOG.debug("Is EDT process:" + SwingUtilities.isEventDispatchThread());
+            LOG.debug("Start Painted View in step:#" + process.getCycle() + ", " + process.currentPatternIndex);
+            win.repaint();
+            LOG.debug("Stop Painted View in step:#" + process.getCycle() + ", " + process.currentPatternIndex);
+            win.repaint();
+         /*   try {
+              Thread.sleep(1000);
+            } catch (Exception e) {
+              System.out.println("fucked");
+            } */
+
+          }
+        });
       }
     });
   }
@@ -152,8 +175,8 @@ public class HTMGraphicInterface extends JPanel {
       @Override
       public void onElementMouseEnter(BaseSurface.ElementMouseEnterEvent e) {
         detailsInfo.getTabs().setSelectedComponent(temporalInfo);
-        Cell cell = ((RegionSlicedView.ColumnCellsByIndexSurface)e.getSource()).getCell(e.getIndex());
-        System.out.println("Cell was clicked:" + cell);
+        Cell cell = ((RegionSlicedHorizontalView.ColumnCellsByIndexSurface)e.getSource()).getCell(e.getIndex());
+        LOG.debug("Cell was clicked:" + cell);
         temporalInfo.setCurrentCell(cell);
       }
     });
@@ -261,7 +284,12 @@ public class HTMGraphicInterface extends JPanel {
         slicedView.setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createTitledBorder("Region Slices"),
                 UIUtils.DEFAULT_BORDER));
-        JScrollPane sp = new JScrollPane(slicedView);
+        JScrollPane sp = new JScrollPane(slicedView){
+          @Override public void paint(Graphics g) {
+            super.paint(g);
+            slicedRegionViewUpdateLatch.countDown();
+          }
+        };
         sp.setBorder(UIUtils.DEFAULT_BORDER);
         this.add(sp, c);
         return this;
@@ -308,9 +336,9 @@ public class HTMGraphicInterface extends JPanel {
       top.setBorder(UIUtils.LIGHT_GRAY_BORDER);
       tabs = new JTabbedPane();
       if (spatialInfo != null) {
-        tabs.addTab("Spatial Info", spatialInfo);
+        tabs.addTab("Spatial Column Info", spatialInfo);
       }
-      tabs.addTab("Temporal Info", temporalInfo);
+      tabs.addTab("Temporal Cell Info", temporalInfo);
       tabs.setBorder(UIUtils.LIGHT_GRAY_BORDER);
       tabs.setBackground(Color.WHITE);
      /* JSplitPane splitPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT,
@@ -492,13 +520,19 @@ public class HTMGraphicInterface extends JPanel {
     public boolean step() {
       if (patterns.size() != 0) {
         sensoryInputSurface.setSensoryInputValues(patterns.get(currentPatternIndex));
+        try {
+          slicedRegionViewUpdateLatch.await();
+        } catch (InterruptedException e) {
+          LOG.error("slicedRegionViewUpdateLatch interrupted", e);
+        }
+        LOG.debug("Start step #" + process.getCycle() + ", " + process.currentPatternIndex);
         region.nextTimeStep();
         region.performSpatialPooling();
         region.performTemporalPooling();
         try {
           Thread.sleep(500);
         } catch (Exception e) {
-          System.out.println("fucked");
+          LOG.error("Process sleep interrupted", e);
         }
         if (currentPatternIndex < patterns.size() - 1) {
           currentPatternIndex++;
@@ -506,6 +540,7 @@ public class HTMGraphicInterface extends JPanel {
           cycleCounter++;
           currentPatternIndex = 0;
         }
+        slicedRegionViewUpdateLatch = new CountDownLatch(1);
         sendUpdateNotification();
         return true;
       } else {
