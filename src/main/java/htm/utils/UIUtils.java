@@ -256,6 +256,7 @@ public enum UIUtils {
   }
 
   public static abstract class TextColumnInfo extends JPanel {
+    protected float finishParagraphY;
 
     public TextColumnInfo() {
       setBackground(Color.WHITE);
@@ -266,7 +267,7 @@ public enum UIUtils {
       super.paint(g);
       Graphics2D graphics2D = (Graphics2D)g;
       Map<String, String> cellAttributes = getAttributeMap();
-      drawPropertyParagraph(graphics2D, cellAttributes, 100, 5, 20);
+      finishParagraphY = drawPropertyParagraph(graphics2D, cellAttributes, 100, 5, 20);
     }
 
 

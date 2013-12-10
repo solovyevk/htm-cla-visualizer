@@ -35,7 +35,7 @@ public class Cell {
   /**
    * cell will keep a buffer of its last TIME_STEPS states
    */
-  private static int TIME_STEPS = 10;
+ public static int TIME_STEPS = 10;
 
   private final Column belongsToColumn;
   private final int cellIndex;

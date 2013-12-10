@@ -69,8 +69,14 @@ public class RegionSlicedHorizontalView extends JPanel {
     return clickedOnCellPosition;
   }
 
+  public void setClickedOnCell(Cell clickedOnCell){
+    this.setClickedOnCellPosition(new CellPosition(clickedOnCell.getBelongsToColumn().getIndex(), clickedOnCell.getCellIndex()));
+  }
+
   public void setClickedOnCellPosition(CellPosition clickedOnCellPosition) {
-    this.clickedOnCellPosition = clickedOnCellPosition;
+    this.clickedOnCellPosition = clickedOnCellPosition.equals(this.clickedOnCellPosition) ? null : clickedOnCellPosition;
+    setSelectedSynapseCellPosition(null);
+    repaint();
   }
 
   public CellPosition getSelectedSynapseCellPosition() {
@@ -119,10 +125,7 @@ public class RegionSlicedHorizontalView extends JPanel {
         @Override
         public void onElementMouseEnter(ElementMouseEnterEvent e) {
           CellPosition clickedOnPosition = new CellPosition(e.getIndex(), layerIndex);
-          parentView.setClickedOnCellPosition(clickedOnPosition.equals(
-                  parentView.getClickedOnCellPosition()) ? null : clickedOnPosition);
-          parentView.setSelectedSynapseCellPosition(null);
-          repaintAll();
+          parentView.setClickedOnCellPosition(clickedOnPosition);
         }
       });
     }
@@ -190,7 +193,7 @@ public class RegionSlicedHorizontalView extends JPanel {
           //g2d.drawLine(aroundRec.x, aroundRec.y + aroundRec.height/2, aroundRec.x + aroundRec.width, aroundRec.y + aroundRec.height/2);
           g2d.drawOval(aroundRec.x, aroundRec.y, aroundRec.width, aroundRec.height);
         } else {
-          Rectangle aroundRec = getElementAreaWithScale(clickedOn.getColumnIndex(), 1 / (Math.PI / 4) *  1.05);
+          Rectangle aroundRec = getElementAreaWithScale(clickedOn.getColumnIndex(), 1 / (Math.PI / 4) * 1.05);
           g2d.setColor(Color.ORANGE);
           g2d.drawOval(aroundRec.x, aroundRec.y, aroundRec.width, aroundRec.height);
         }

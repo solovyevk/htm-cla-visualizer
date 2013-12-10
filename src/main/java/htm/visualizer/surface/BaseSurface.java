@@ -12,11 +12,10 @@ import java.util.Collection;
 import java.util.Iterator;
 
 public abstract class BaseSurface extends JPanel {
-  public static final int SPACE_BETWEEN_ELEMENTS = 4;
-  public static final Color DEFAULT_BACKGROUND_COLOR = Color.WHITE;
-  public static final Color DEFAULT_ACTIVE_COLOR = Color.BLACK;
+  protected static int SPACE_BETWEEN_ELEMENTS = 4;
+  public static final Color BACKGROUND_COLOR = Color.WHITE;
+  public static final Color ACTIVE_COLOR = Color.BLACK;
 
-  protected Color activeColor = DEFAULT_ACTIVE_COLOR;
   protected final Dimension dimension;
   /**
    * need two following parameters to buffer input on mouse drag event
@@ -26,7 +25,7 @@ public abstract class BaseSurface extends JPanel {
 
   protected BaseSurface(int xSize, int ySize) {
     this.dimension = new Dimension(xSize, ySize);
-    setBackground(DEFAULT_BACKGROUND_COLOR);
+    setBackground(BACKGROUND_COLOR);
     addMouseListener(new MouseAdapter() {
 
       @Override
@@ -218,7 +217,7 @@ public abstract class BaseSurface extends JPanel {
     Just draw empty circle.
      */
     @Override protected void drawElement(Graphics2D g2d, int index, int x, int y, int width, int height) {
-      g2d.setColor(activeColor);
+      g2d.setColor(ACTIVE_COLOR);
       g2d.drawOval(x, y, width, height);
     }
 
@@ -238,7 +237,7 @@ public abstract class BaseSurface extends JPanel {
 
     /*Just draw empty square*/
     @Override protected void drawElement(Graphics2D g2d, int index, int x, int y, int width, int height) {
-      g2d.setColor(activeColor);
+      g2d.setColor(ACTIVE_COLOR);
       g2d.drawRect(x, y, width, height);
     }
 

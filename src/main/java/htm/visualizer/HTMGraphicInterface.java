@@ -84,7 +84,7 @@ public class HTMGraphicInterface extends JPanel {
   private TemporalInfo temporalInfo;
   private SelectedDetails detailsInfo;
   //Need this to ensure sliced view update before region cells reset for next step
-  private CountDownLatch slicedRegionViewUpdateLatch = new CountDownLatch(0);
+  private CountDownLatch viewsUpdateLatch = new CountDownLatch(0);
 
 
   public HTMGraphicInterface() {
@@ -120,7 +120,7 @@ public class HTMGraphicInterface extends JPanel {
     if (!region.isSkipSpatial()) {
       this.spatialInfo = new SpatialInfo();
     }
-    this.temporalInfo = new TemporalInfo();
+    this.temporalInfo = new TemporalInfo(region);
     this.detailsInfo = new SelectedDetails(spatialInfo, temporalInfo);
     initLayout();
     initProcess();
@@ -149,20 +149,12 @@ public class HTMGraphicInterface extends JPanel {
     final JComponent win = this;
     process.addObserver(new Observer() {
       @Override public void update(Observable o, Object arg) {
+        temporalInfo.getRegionColumnsVerticalView().updateColumns();
         LOG.debug("Repaint Window on PROCESS update");
         SwingUtilities.invokeLater(new Runnable() {
           public void run() {
-            //LOG.debug("Is EDT process:" + SwingUtilities.isEventDispatchThread());
             LOG.debug("Start Painted View in step:#" + process.getCycle() + ", " + process.currentPatternIndex);
             win.repaint();
-            LOG.debug("Stop Painted View in step:#" + process.getCycle() + ", " + process.currentPatternIndex);
-            win.repaint();
-         /*   try {
-              Thread.sleep(1000);
-            } catch (Exception e) {
-              System.out.println("fucked");
-            } */
-
           }
         });
       }
@@ -178,6 +170,15 @@ public class HTMGraphicInterface extends JPanel {
         Cell cell = ((RegionSlicedHorizontalView.ColumnCellsByIndexSurface)e.getSource()).getCell(e.getIndex());
         LOG.debug("Cell was clicked:" + cell);
         temporalInfo.setCurrentCell(cell);
+      }
+    });
+    //backward selection from active columns temporal info info to Region Slice;
+    temporalInfo.getRegionColumnsVerticalView().addElementMouseEnterListener(new BaseSurface.ElementMouseEnterListener() {
+      @Override
+      public void onElementMouseEnter(BaseSurface.ElementMouseEnterEvent e) {
+        Cell selectedCell = temporalInfo.getRegionColumnsVerticalView().getCell(e.getIndex());
+        slicedView.setClickedOnCell(selectedCell);
+        temporalInfo.setCurrentCell(selectedCell);
       }
     });
     //backward selection from synapses temporal info to Region Slice;
@@ -261,6 +262,12 @@ public class HTMGraphicInterface extends JPanel {
             c.weightx = 1.0;
             c.gridy = 1;
             this.add(new JComponent() {
+
+              @Override public void paint(Graphics g) {
+                super.paint(g);
+                viewsUpdateLatch.countDown();
+              }
+
               private Container init() {
                 this.setLayout(new GridLayout(0, 2, 10, 10));
                 this.setBorder(BorderFactory.createCompoundBorder(
@@ -284,10 +291,10 @@ public class HTMGraphicInterface extends JPanel {
         slicedView.setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createTitledBorder("Region Slices"),
                 UIUtils.DEFAULT_BORDER));
-        JScrollPane sp = new JScrollPane(slicedView){
+        JScrollPane sp = new JScrollPane(slicedView) {
           @Override public void paint(Graphics g) {
             super.paint(g);
-            slicedRegionViewUpdateLatch.countDown();
+            viewsUpdateLatch.countDown();
           }
         };
         sp.setBorder(UIUtils.DEFAULT_BORDER);
@@ -496,6 +503,7 @@ public class HTMGraphicInterface extends JPanel {
   private void addPattern() {
     patterns.add(sensoryInputSurface.getSensoryInputValues());
     region.performSpatialPooling();
+    region.performTemporalPooling();
     process.sendUpdateNotification();
     this.repaint();
   }
@@ -521,9 +529,9 @@ public class HTMGraphicInterface extends JPanel {
       if (patterns.size() != 0) {
         sensoryInputSurface.setSensoryInputValues(patterns.get(currentPatternIndex));
         try {
-          slicedRegionViewUpdateLatch.await();
+          viewsUpdateLatch.await();
         } catch (InterruptedException e) {
-          LOG.error("slicedRegionViewUpdateLatch interrupted", e);
+          LOG.error("viewsUpdateLatch interrupted", e);
         }
         LOG.debug("Start step #" + process.getCycle() + ", " + process.currentPatternIndex);
         region.nextTimeStep();
@@ -540,7 +548,7 @@ public class HTMGraphicInterface extends JPanel {
           cycleCounter++;
           currentPatternIndex = 0;
         }
-        slicedRegionViewUpdateLatch = new CountDownLatch(1);
+        viewsUpdateLatch = new CountDownLatch(2);
         sendUpdateNotification();
         return true;
       } else {

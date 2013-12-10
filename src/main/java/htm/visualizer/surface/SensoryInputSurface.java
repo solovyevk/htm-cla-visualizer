@@ -34,7 +34,7 @@ public class SensoryInputSurface extends BaseSurface.SquareElementsSurface {
 
   @Override
   protected void drawElement(Graphics2D g2d, int index, int x, int y, int width, int height) {
-    g2d.setColor(getInputValue(index) ? activeColor : this.getBackground());
+    g2d.setColor(getInputValue(index) ? ACTIVE_COLOR : this.getBackground());
     g2d.fillRect(x, y, width, height);
     super.drawElement(g2d, index, x, y, width,
                       height);

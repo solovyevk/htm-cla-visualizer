@@ -10,8 +10,11 @@ package htm.visualizer;
 
 import htm.model.Cell;
 import htm.model.DistalDendriteSegment;
+import htm.model.Region;
 import htm.model.Synapse;
 import htm.utils.UIUtils;
+import htm.visualizer.surface.CellSurface;
+import htm.visualizer.surface.RegionColumnsVerticalView;
 
 import javax.swing.*;
 import javax.swing.border.TitledBorder;
@@ -19,6 +22,8 @@ import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
 import javax.swing.table.AbstractTableModel;
 import java.awt.*;
+import java.awt.font.FontRenderContext;
+import java.awt.font.TextLayout;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -26,8 +31,9 @@ public class TemporalInfo extends JPanel {
   private Cell currentCell;
   private JTable distalDendriteSegmentsTable;
   private JTable segmentDistalSynapsesTable;
+  private RegionColumnsVerticalView regionColumnsVerticalView;
 
-  public TemporalInfo() {
+  public TemporalInfo(Region region) {
     this.setLayout(new GridBagLayout());
     GridBagConstraints c = new GridBagConstraints();
     c.fill = GridBagConstraints.BOTH;
@@ -35,17 +41,18 @@ public class TemporalInfo extends JPanel {
     c.gridx = 0;
     c.weighty = 1.0;
     c.weightx = 1.0;
-    CellAttributesInfo left = new CellAttributesInfo();
+
+    distalDendriteSegmentsTable = initDistalDendriteSegmentsTable();
+    segmentDistalSynapsesTable = initSegmentDistalSynapsesTable();
+    JPanel left = new CellAttributesInfo();
+    left.setBackground(Color.WHITE);
     left.setBorder(BorderFactory.createTitledBorder(BorderFactory.createEtchedBorder(),
                                                     "Cell Properties",
                                                     TitledBorder.CENTER,
                                                     TitledBorder.TOP));
     this.add(left, c);
     c.gridx = 1;
-    c.weightx = 2.0;
-    //Create the scroll pane and add the table to it.
-    distalDendriteSegmentsTable = initDistalDendriteSegmentsTable();
-    segmentDistalSynapsesTable = initSegmentDistalSynapsesTable();
+    c.weightx = 1.0;
     distalDendriteSegmentsTable.getSelectionModel().addListSelectionListener(new ListSelectionListener() {
       @Override public void valueChanged(ListSelectionEvent e) {
         SegmentDistalSynapsesModel synapsesModel = (SegmentDistalSynapsesModel)segmentDistalSynapsesTable.getModel();
@@ -74,13 +81,32 @@ public class TemporalInfo extends JPanel {
                                                       "Segments & Synapses",
                                                       TitledBorder.CENTER,
                                                       TitledBorder.TOP));
-    //Add the scroll pane to this panel.
     this.add(center, c);
+    c.gridx = 2;
+    c.weightx = 2.0;
+
+    regionColumnsVerticalView = new RegionColumnsVerticalView(region);
+    JPanel right = (new JPanel() {
+      private JPanel init() {
+        this.setLayout(new BorderLayout());
+        this.add(regionColumnsVerticalView, BorderLayout.CENTER);
+        return this;
+      }
+    }.init());
+    right.setBackground(Color.WHITE);
+    right.setBorder(BorderFactory.createTitledBorder(BorderFactory.createEtchedBorder(),
+                                                     "Active Columns",
+                                                     TitledBorder.CENTER,
+                                                     TitledBorder.TOP));
+    this.add(right, c);
+
+
   }
 
   public void setCurrentCell(Cell currentCell) {
     this.currentCell = this.currentCell != currentCell ? currentCell : null;
     ((DistalDendriteSegmentsModel)distalDendriteSegmentsTable.getModel()).setCell(this.currentCell);
+    regionColumnsVerticalView.setSelectedCell(currentCell);
     this.repaint();
   }
 
@@ -106,21 +132,48 @@ public class TemporalInfo extends JPanel {
     return segmentDistalSynapsesTable;
   }
 
+  public RegionColumnsVerticalView getRegionColumnsVerticalView() {
+    return regionColumnsVerticalView;
+  }
+
   private class CellAttributesInfo extends UIUtils.TextColumnInfo {
+    @Override public void paint(Graphics g) {
+      super.paint(g);
+      if (currentCell != null) {
+        Graphics2D g2 = (Graphics2D)g;
+        FontRenderContext frc = g2.getFontRenderContext();
+        float drawPosY = finishParagraphY + 2;
+        Font timeFont = new Font("Helvetica", Font.BOLD, 11);
+        float x = 105;
+        for (int i = 0; i < 6/*SHOW just 6 steps back*/; i++) {
+          TextLayout timeLayout = new TextLayout("t - " + i + ":", timeFont, frc);
+          CellSurface.drawCell(g2, 105, (int)drawPosY + 1, 11, 11, currentCell, i);
+          float drawPosX;
+          drawPosX = (float)x - timeLayout.getAdvance();
+          // Move y-coordinate by the ascent of the layout.
+          drawPosY += timeLayout.getAscent();
+          // Draw the TextLayout at (drawPosX, drawPosY).
+          timeLayout.draw(g2, drawPosX, drawPosY);
+          drawPosY += timeLayout.getDescent() + timeLayout.getLeading();
+        }
+      }
+      //g.fillOval(10, (int)finishParagraphY + 10, 10, 10);
+    }
 
     @Override
     protected Map<String, String> getAttributeMap() {
       Cell cell = currentCell;
       Map<String, String> result = new LinkedHashMap<String, String>();
       if (cell != null) {
-        result.put("Index", cell.getCellIndex() + "");
+        result.put("Column Index", cell.getBelongsToColumn().getIndex() + "");
+        result.put("Cell Index", cell.getCellIndex() + "");
         result.put("Position",
                    "X:" + (cell.getBelongsToColumn().getPosition().x) + ", Y:" + cell.getBelongsToColumn().getPosition().y);
         result.put("Active", cell.getActiveState(Cell.NOW) ? "Yes" : "No");
         result.put("Predictive", cell.getPredictiveState(Cell.NOW) ? "Yes" : "No");
         result.put("Learn", cell.getLearnState(Cell.NOW) ? "Yes" : "No");
-        result.put("Seg. Num", cell.getSegments().size() + "");
-        result.put("Seg. Updates Num", cell.getSegmentUpdates().size() + "");
+        result.put("Seg.", cell.getSegments().size() + "");
+        result.put("Seg. Updates", cell.getSegmentUpdates().size() + "");
       }
       return result;
     }
