@@ -28,8 +28,10 @@ public enum UIUtils {
   public static final DecimalFormat DF_4 = new DecimalFormat("##0.0000");
   public static final DecimalFormat DF_2 = new DecimalFormat("##0.00");
 
+
   private static final Log LOG = LogFactory.getLog(UIUtils.class);
   public final static Color LIGHT_BLUE = new Color(153, 204, 255);
+
   public static Border DEFAULT_BORDER = BorderFactory.createEmptyBorder(0, 4, 0, 4);
   public static Border LIGHT_GRAY_BORDER = BorderFactory.createLineBorder(Color.lightGray);
 

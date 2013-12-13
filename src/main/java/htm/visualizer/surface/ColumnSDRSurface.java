@@ -11,12 +11,12 @@ package htm.visualizer.surface;
 
 import htm.model.Column;
 import htm.model.Region;
+import htm.utils.UIUtils;
 
 import java.awt.*;
 
 public class ColumnSDRSurface extends BaseSurface.CircleElementsSurface {
 
-  private final static Color LIGHT_BLUE = new Color(153, 204, 255);
 
   protected final Region region;
   private Column currentColumn; //clicked on
@@ -27,16 +27,10 @@ public class ColumnSDRSurface extends BaseSurface.CircleElementsSurface {
     this.region = region;
   }
 
-  @Override protected void drawElement(Graphics2D g2d, int index, int x, int y, int width, int height) {
+  @Override
+  protected void drawElement(Graphics2D g2d, int index, int x, int y, int width, int height) {
     g2d.setColor(getColumn(index).isActive() ? ACTIVE_COLOR : this.getBackground());
     g2d.fillOval(x, y, width, height);
-
-    //TODO REMOVE
-    if (getColumn(index).isMarked()) {
-      g2d.setColor(Color.RED);
-      g2d.fillOval(x, y, width, height);
-    }
-
     super.drawElement(g2d, index, x, y, width,
                       height);
   }
@@ -78,7 +72,7 @@ public class ColumnSDRSurface extends BaseSurface.CircleElementsSurface {
     if (selectedColumnIndex != null) {
       Composite original = g2d.getComposite();
       Rectangle aroundRec = getElementAreaWithScale(selectedColumnIndex, 1 / (Math.PI / 4) * 1.5);
-      g2d.setColor(LIGHT_BLUE);
+      g2d.setColor(UIUtils.LIGHT_BLUE);
       g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER,
                                                   0.5f));
       g2d.fillOval(aroundRec.x, aroundRec.y, aroundRec.width, aroundRec.height);

@@ -11,17 +11,21 @@ package htm.visualizer.surface;
 import htm.model.Cell;
 import htm.model.Column;
 import htm.model.Region;
-import htm.utils.MathUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
+import javax.swing.*;
 import java.awt.*;
+import java.awt.font.FontRenderContext;
+import java.awt.font.TextLayout;
 import java.util.List;
 
-public class RegionColumnsVerticalView extends CellSurface {
+public class RegionColumnsVerticalView extends CellSurface implements Scrollable {
   private int selectedCellIndex = -1;
   private static final Log LOG = LogFactory.getLog(RegionColumnsVerticalView.class);
   protected List<Column> columns;
+  private static final int MIN_CELL_SIZE = 28;
+  private int columnIndexHeight = 12;
 
   public RegionColumnsVerticalView(Region region) {
     super(1, Column.CELLS_PER_COLUMN, region);
@@ -38,14 +42,36 @@ public class RegionColumnsVerticalView extends CellSurface {
     selectedCellIndex = -1;
     columns = region.getActiveColumns();
     this.dimension.width = columns.size();
+    resizeAndRepaint();
   }
 
-  @Override protected int getElementSpaceAllocation() {
-    Dimension size = this.getSize();
-    double result = MathUtils.findMin((size.getHeight() - 50) / dimension.height,
-                                      (size.getWidth() - 2) / dimension.width);
-    return result < 1 ? 1 : (int)result - 1;
+  @Override
+  public Dimension getPreferredSize() {
+    int elementSpaceAllocation = getElementSpaceAllocation(),
+            prefHeight = super.getPreferredSize().height,
+            prefWidth = super.getPreferredSize().width,
+            columnWidthAllocation = elementSpaceAllocation * dimension.width,
+            columnHeightAllocation = elementSpaceAllocation * dimension.height + columnIndexHeight;
+    return new Dimension(columnWidthAllocation < prefWidth ? prefWidth : columnWidthAllocation,
+                         columnHeightAllocation < prefHeight ? prefHeight : columnHeightAllocation);
   }
+
+  protected void resizeAndRepaint() {
+    revalidate();
+    repaint();
+  }
+
+  @Override
+  protected int getElementSpaceAllocation() {
+    return Math.max(MIN_CELL_SIZE, (40 - Column.CELLS_PER_COLUMN * 2));
+
+  }
+
+  @Override protected Point getElementStartPoint(int elementSpaceAllocation) {
+    int y = super.getElementStartPoint(elementSpaceAllocation).y + columnIndexHeight;
+    return new Point(0, y);
+  }
+
 
   @Override
   protected void doDrawing(Graphics2D g2d) {
@@ -53,11 +79,8 @@ public class RegionColumnsVerticalView extends CellSurface {
     //Draw column index
     for (int i = 0; i < columns.size(); i++) {
       Rectangle area = getElementAreaByIndex(i);
-      int strX = area.x + area.width / 2 - SPACE_BETWEEN_ELEMENTS;
-      int strY = area.y - SPACE_BETWEEN_ELEMENTS;
-      LOG.debug("Draw Column Index at:" + strX + ", " + strY);
       g2d.setColor(ACTIVE_COLOR);
-      g2d.drawString(columns.get(i).getIndex() + "", strX, strY);
+      drawColumnIndex(g2d, columns.get(i).getIndex(), area);
     }
     //Draw selection
     if (selectedCellIndex != -1) {
@@ -68,13 +91,29 @@ public class RegionColumnsVerticalView extends CellSurface {
       List<Cell> columnCells = column.getCells();
       for (Cell columnCell : columnCells) {
         int cellInx = indexOf(columnCell);
-        if(cellInx != selectedCellIndex){
-          aroundRec = getElementAreaWithScale(cellInx, 1 / (Math.PI / 4) *  0.95);
+        if (cellInx != selectedCellIndex) {
+          aroundRec = getElementAreaWithScale(cellInx, 1 / (Math.PI / 4) * 0.95);
           g2d.setColor(Color.ORANGE);
           g2d.drawOval(aroundRec.x, aroundRec.y, aroundRec.width, aroundRec.height);
         }
       }
     }
+  }
+
+  protected int getIndexCaptionYPosShift(){
+    return SPACE_BETWEEN_ELEMENTS;
+  }
+
+  protected void drawColumnIndex(Graphics2D g2, int columnIndex, Rectangle firstCellArea) {
+    FontRenderContext frc = g2.getFontRenderContext();
+    Font indexFont = new Font("Helvetica", Font.BOLD, 12);
+    TextLayout indexLayout = new TextLayout(columnIndex + "", indexFont, frc);
+    int drawPosX = (int)(firstCellArea.getX() + (firstCellArea.getWidth() - indexLayout.getAdvance()) / 2);
+    int drawPosY = firstCellArea.y - getIndexCaptionYPosShift();
+    // Move y-coordinate by the ascent of the layout.
+    //drawPosY += indexLayout.getAscent();
+    // Draw the TextLayout at (drawPosX, drawPosY).
+    indexLayout.draw(g2, drawPosX, drawPosY);
   }
 
   @Override
@@ -98,10 +137,33 @@ public class RegionColumnsVerticalView extends CellSurface {
 
   public void setSelectedCellIndex(int selectedCellIndex) {
     this.selectedCellIndex = this.selectedCellIndex != selectedCellIndex ? selectedCellIndex : -1;
-           repaint();
+    repaint();
   }
 
   public void setSelectedCell(Cell cell) {
-     setSelectedCellIndex(indexOf(cell));
-   }
+    setSelectedCellIndex(indexOf(cell));
+  }
+
+  @Override public Dimension getPreferredScrollableViewportSize() {
+    return getParent() instanceof JViewport ? getParent().getSize() : getPreferredSize();
+  }
+
+  @Override public int getScrollableUnitIncrement(Rectangle visibleRect, int orientation, int direction) {
+    return getElementSpaceAllocation();
+  }
+
+  @Override public int getScrollableBlockIncrement(Rectangle visibleRect, int orientation, int direction) {
+    return getElementSpaceAllocation();
+  }
+
+  @Override public boolean getScrollableTracksViewportWidth() {
+    return getParent() instanceof JViewport
+           && (getParent().getWidth() > getPreferredSize().width);
+  }
+
+  @Override public boolean getScrollableTracksViewportHeight() {
+    return getParent() instanceof JViewport
+           && (getParent().getHeight() > getPreferredSize().height);
+  }
+
 }

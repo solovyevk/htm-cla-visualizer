@@ -27,10 +27,6 @@ public class RegionSlicedHorizontalView extends JPanel {
   private CellPosition clickedOnCellPosition = null;
   private CellPosition selectedSynapseCellPosition = null;
 
-  protected void paintComponent(Graphics g) {
-    LOG.debug("paint RegionSlicedHorizontalView");
-    super.paintComponent(g);
-  }
 
 
   public List<ColumnCellsByIndexSurface> getLayers() {

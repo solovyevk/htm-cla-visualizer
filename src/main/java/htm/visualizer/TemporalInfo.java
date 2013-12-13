@@ -8,10 +8,7 @@
 
 package htm.visualizer;
 
-import htm.model.Cell;
-import htm.model.DistalDendriteSegment;
-import htm.model.Region;
-import htm.model.Synapse;
+import htm.model.*;
 import htm.utils.UIUtils;
 import htm.visualizer.surface.CellSurface;
 import htm.visualizer.surface.RegionColumnsVerticalView;
@@ -52,7 +49,7 @@ public class TemporalInfo extends JPanel {
                                                     TitledBorder.TOP));
     this.add(left, c);
     c.gridx = 1;
-    c.weightx = 1.0;
+    c.weightx = 1.5;
     distalDendriteSegmentsTable.getSelectionModel().addListSelectionListener(new ListSelectionListener() {
       @Override public void valueChanged(ListSelectionEvent e) {
         SegmentDistalSynapsesModel synapsesModel = (SegmentDistalSynapsesModel)segmentDistalSynapsesTable.getModel();
@@ -72,7 +69,9 @@ public class TemporalInfo extends JPanel {
       private JPanel init() {
         this.setLayout(new GridLayout(2, 0, 5, 5));
         add(new JScrollPane(distalDendriteSegmentsTable));
+        distalDendriteSegmentsTable.setFillsViewportHeight(true);
         add(new JScrollPane(segmentDistalSynapsesTable));
+        segmentDistalSynapsesTable.setFillsViewportHeight(true);
         return this;
       }
     }.init());
@@ -84,15 +83,8 @@ public class TemporalInfo extends JPanel {
     this.add(center, c);
     c.gridx = 2;
     c.weightx = 2.0;
-
     regionColumnsVerticalView = new RegionColumnsVerticalView(region);
-    JPanel right = (new JPanel() {
-      private JPanel init() {
-        this.setLayout(new BorderLayout());
-        this.add(regionColumnsVerticalView, BorderLayout.CENTER);
-        return this;
-      }
-    }.init());
+    final JScrollPane  right = new JScrollPane(regionColumnsVerticalView);
     right.setBackground(Color.WHITE);
     right.setBorder(BorderFactory.createTitledBorder(BorderFactory.createEtchedBorder(),
                                                      "Active Columns",
@@ -112,7 +104,7 @@ public class TemporalInfo extends JPanel {
 
   private JTable initDistalDendriteSegmentsTable() {
     JTable table = new JTable(new DistalDendriteSegmentsModel());
-    table.setPreferredScrollableViewportSize(new Dimension(100, 20));
+    //table.setPreferredScrollableViewportSize(new Dimension(100, 20));
     table.setFillsViewportHeight(true);
     table.setAutoCreateRowSorter(true);
     return table;
@@ -120,7 +112,7 @@ public class TemporalInfo extends JPanel {
 
   private JTable initSegmentDistalSynapsesTable() {
     JTable table = new JTable(new SegmentDistalSynapsesModel());
-    table.setPreferredScrollableViewportSize(new Dimension(100, 20));
+    //table.setPreferredScrollableViewportSize(new Dimension(100, 20));
     table.setFillsViewportHeight(true);
     table.setAutoCreateRowSorter(true);
     table.getColumnModel().getColumn(0).setCellRenderer(new UIUtils.PermanenceRenderer());
@@ -145,19 +137,16 @@ public class TemporalInfo extends JPanel {
         float drawPosY = finishParagraphY + 2;
         Font timeFont = new Font("Helvetica", Font.BOLD, 11);
         float x = 105;
-        for (int i = 0; i < 6/*SHOW just 6 steps back*/; i++) {
+        for (int i = 0; i < Cell.TIME_STEPS; i++) {
           TextLayout timeLayout = new TextLayout("t - " + i + ":", timeFont, frc);
           CellSurface.drawCell(g2, 105, (int)drawPosY + 1, 11, 11, currentCell, i);
           float drawPosX;
           drawPosX = (float)x - timeLayout.getAdvance();
-          // Move y-coordinate by the ascent of the layout.
           drawPosY += timeLayout.getAscent();
-          // Draw the TextLayout at (drawPosX, drawPosY).
           timeLayout.draw(g2, drawPosX, drawPosY);
           drawPosY += timeLayout.getDescent() + timeLayout.getLeading();
         }
       }
-      //g.fillOval(10, (int)finishParagraphY + 10, 10, 10);
     }
 
     @Override

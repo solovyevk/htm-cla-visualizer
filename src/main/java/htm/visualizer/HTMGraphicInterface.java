@@ -183,21 +183,21 @@ public class HTMGraphicInterface extends JPanel {
     });
     //backward selection from synapses temporal info to Region Slice;
     temporalInfo.getSegmentDistalSynapsesTable().getSelectionModel().addListSelectionListener(
-            new ListSelectionListener() {
-              @Override public void valueChanged(ListSelectionEvent e) {
-                int rowViewInx = temporalInfo.getSegmentDistalSynapsesTable().getSelectedRow();
-                if (rowViewInx == -1) {
-                  slicedView.getLayer(0).setSelectedSynapseColumnIndex(-1);
-                } else {
-                  int rowColumnModelInx = temporalInfo.getSegmentDistalSynapsesTable().convertRowIndexToModel(
-                          rowViewInx);
-                  Synapse.DistalSynapse selectedSynapse = ((TemporalInfo.SegmentDistalSynapsesModel)temporalInfo.getSegmentDistalSynapsesTable().getModel()).getSynapse(
-                          rowColumnModelInx);
-                  slicedView.getLayer(selectedSynapse.getFromCell().getCellIndex()).setSelectedSynapseColumnIndex(
-                          selectedSynapse.getFromCell().getBelongsToColumn().getIndex());
-                }
-              }
-            });
+      new ListSelectionListener() {
+        @Override public void valueChanged(ListSelectionEvent e) {
+          int rowViewInx = temporalInfo.getSegmentDistalSynapsesTable().getSelectedRow();
+          if (rowViewInx == -1) {
+            slicedView.getLayer(0).setSelectedSynapseColumnIndex(-1);
+          } else {
+            int rowColumnModelInx = temporalInfo.getSegmentDistalSynapsesTable().convertRowIndexToModel(
+                    rowViewInx);
+            Synapse.DistalSynapse selectedSynapse = ((TemporalInfo.SegmentDistalSynapsesModel)temporalInfo.getSegmentDistalSynapsesTable().getModel()).getSynapse(
+                    rowColumnModelInx);
+            slicedView.getLayer(selectedSynapse.getFromCell().getCellIndex()).setSelectedSynapseColumnIndex(
+                    selectedSynapse.getFromCell().getBelongsToColumn().getIndex());
+          }
+        }
+      });
     if (!region.isSkipSpatial()) {
       //select column to view spatial details
       sdrInput.addElementMouseEnterListener(new BaseSurface.ElementMouseEnterListener() {
@@ -311,19 +311,19 @@ public class HTMGraphicInterface extends JPanel {
 
   Config getParameters() {
     return new Config(patterns, new Region.Config(region.getDimension(), region.getInputSpaceDimension(),
-                                                  region.getInputRadius(), region.isSkipSpatial()),
-                      new Column.Config(Column.CELLS_PER_COLUMN,
-                                        Column.AMOUNT_OF_PROXIMAL_SYNAPSES,
-                                        Column.MIN_OVERLAP,
-                                        Column.DESIRED_LOCAL_ACTIVITY, Column.BOOST_RATE),
-                      new Synapse.Config(Synapse.ProximalSynapse.CONNECTED_PERMANENCE,
-                                         Synapse.ProximalSynapse.PERMANENCE_INCREASE,
-                                         Synapse.ProximalSynapse.PERMANENCE_DECREASE
-                      ),
-                      new Synapse.Config(Synapse.DistalSynapse.CONNECTED_PERMANENCE,
-                                         Synapse.DistalSynapse.PERMANENCE_INCREASE,
-                                         Synapse.DistalSynapse.PERMANENCE_DECREASE
-                      ));
+                                  region.getInputRadius(), region.isSkipSpatial()),
+      new Column.Config(Column.CELLS_PER_COLUMN,
+                        Column.AMOUNT_OF_PROXIMAL_SYNAPSES,
+                        Column.MIN_OVERLAP,
+                        Column.DESIRED_LOCAL_ACTIVITY, Column.BOOST_RATE),
+      new Synapse.Config(Synapse.ProximalSynapse.CONNECTED_PERMANENCE,
+                         Synapse.ProximalSynapse.PERMANENCE_INCREASE,
+                         Synapse.ProximalSynapse.PERMANENCE_DECREASE
+      ),
+      new Synapse.Config(Synapse.DistalSynapse.CONNECTED_PERMANENCE,
+                         Synapse.DistalSynapse.PERMANENCE_INCREASE,
+                         Synapse.DistalSynapse.PERMANENCE_DECREASE
+      ));
   }
 
 
@@ -502,6 +502,7 @@ public class HTMGraphicInterface extends JPanel {
   /*Control Methods*/
   private void addPattern() {
     patterns.add(sensoryInputSurface.getSensoryInputValues());
+    region.nextTimeStep();
     region.performSpatialPooling();
     region.performTemporalPooling();
     process.sendUpdateNotification();
