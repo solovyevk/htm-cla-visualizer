@@ -83,21 +83,24 @@ public class RegionColumnsVerticalView extends CellSurface implements Scrollable
       drawColumnIndex(g2d, columns.get(i).getIndex(), area);
     }
     //Draw selection
+    Stroke originalStroke = g2d.getStroke();
+    g2d.setStroke(new BasicStroke(2));
     if (selectedCellIndex != -1) {
       g2d.setColor(Color.RED);
-      Rectangle aroundRec = getElementAreaWithScale(selectedCellIndex, 1 / (Math.PI / 4) * 0.95);
+      Rectangle aroundRec = getElementAreaWithScale(selectedCellIndex, 1 / (Math.PI / 4) * 0.9);
       g2d.drawOval(aroundRec.x, aroundRec.y, aroundRec.width, aroundRec.height);
       Column column = getCell(selectedCellIndex).getBelongsToColumn();
       List<Cell> columnCells = column.getCells();
       for (Cell columnCell : columnCells) {
         int cellInx = indexOf(columnCell);
         if (cellInx != selectedCellIndex) {
-          aroundRec = getElementAreaWithScale(cellInx, 1 / (Math.PI / 4) * 0.95);
+          aroundRec = getElementAreaWithScale(cellInx, 1 / (Math.PI / 4) * 0.9);
           g2d.setColor(Color.ORANGE);
           g2d.drawOval(aroundRec.x, aroundRec.y, aroundRec.width, aroundRec.height);
         }
       }
     }
+    g2d.setStroke(originalStroke);
   }
 
   protected int getIndexCaptionYPosShift(){
@@ -110,9 +113,6 @@ public class RegionColumnsVerticalView extends CellSurface implements Scrollable
     TextLayout indexLayout = new TextLayout(columnIndex + "", indexFont, frc);
     int drawPosX = (int)(firstCellArea.getX() + (firstCellArea.getWidth() - indexLayout.getAdvance()) / 2);
     int drawPosY = firstCellArea.y - getIndexCaptionYPosShift();
-    // Move y-coordinate by the ascent of the layout.
-    //drawPosY += indexLayout.getAscent();
-    // Draw the TextLayout at (drawPosX, drawPosY).
     indexLayout.draw(g2, drawPosX, drawPosY);
   }
 

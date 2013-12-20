@@ -36,9 +36,15 @@ public class SpatialInfo extends JPanel {
     c.weightx = 1.8;
     //Create the scroll pane and add the table to it.
     proximalSynapsesTable = initSynapsesTable();
-    JScrollPane center = new JScrollPane(proximalSynapsesTable);
-    center.setBackground(Color.WHITE);
-    //Add the scroll pane to this panel.
+    JComponent center = (new JPanel() {
+      private JPanel init() {
+        this.setBackground(Color.WHITE);
+        this.setLayout(new BorderLayout());
+        add(new JScrollPane(proximalSynapsesTable), BorderLayout.CENTER);
+        proximalSynapsesTable.setFillsViewportHeight(true);
+        return this;
+      }
+    }.init());
     add(center);
     center.setBorder(BorderFactory.createTitledBorder(BorderFactory.createEtchedBorder(),
                                                       "Proximal Synapses",
@@ -50,8 +56,15 @@ public class SpatialInfo extends JPanel {
     c.gridx = 2;
     c.weightx = 2.2;
     neighborColumnsTable = initNeighborColumnsTable();
-    JScrollPane right = new JScrollPane(neighborColumnsTable);
-    right.setBackground(Color.WHITE);
+    JComponent right = (new JPanel() {
+      private JPanel init() {
+        this.setBackground(Color.WHITE);
+        this.setLayout(new BorderLayout());
+        add(new JScrollPane(neighborColumnsTable), BorderLayout.CENTER);
+        neighborColumnsTable.setFillsViewportHeight(true);
+        return this;
+      }
+    }.init());
     add(right);
     right.setBorder(BorderFactory.createTitledBorder(BorderFactory.createEtchedBorder(),
                                                      "Neighbor Columns",
@@ -64,8 +77,6 @@ public class SpatialInfo extends JPanel {
 
   private JTable initSynapsesTable() {
     JTable table = new JTable(new ProximalSynapsesModel());
-    table.setPreferredScrollableViewportSize(new Dimension(100, 50));
-    table.setFillsViewportHeight(true);
     table.setAutoCreateRowSorter(true);
     table.getColumnModel().getColumn(0).setCellRenderer(new UIUtils.PermanenceRenderer());
     table.getColumnModel().getColumn(1).setCellRenderer(new UIUtils.SmallDoubleRenderer());
@@ -86,8 +97,6 @@ public class SpatialInfo extends JPanel {
 
   private JTable initNeighborColumnsTable() {
     JTable table = new JTable(new NeighborColumnsModel());
-    table.setPreferredScrollableViewportSize(new Dimension(100, 50));
-    table.setFillsViewportHeight(true);
     table.setAutoCreateRowSorter(true);
     table.getColumnModel().getColumn(0).setCellRenderer(new UIUtils.SmallDoubleRenderer());
     table.getColumnModel().getColumn(1).setCellRenderer(new UIUtils.SmallDoubleRenderer());
@@ -109,6 +118,7 @@ public class SpatialInfo extends JPanel {
     ((NeighborColumnsModel)neighborColumnsTable.getModel()).setColumn(this.currentColumn);
     this.repaint();
   }
+
 
   private class ColumnAttributesInfo extends UIUtils.TextColumnInfo {
 

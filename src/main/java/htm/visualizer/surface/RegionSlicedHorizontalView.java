@@ -28,7 +28,6 @@ public class RegionSlicedHorizontalView extends JPanel {
   private CellPosition selectedSynapseCellPosition = null;
 
 
-
   public List<ColumnCellsByIndexSurface> getLayers() {
     return Collections.unmodifiableList(layers);
   }
@@ -65,12 +64,14 @@ public class RegionSlicedHorizontalView extends JPanel {
     return clickedOnCellPosition;
   }
 
-  public void setClickedOnCell(Cell clickedOnCell){
-    this.setClickedOnCellPosition(new CellPosition(clickedOnCell.getBelongsToColumn().getIndex(), clickedOnCell.getCellIndex()));
+  public void setClickedOnCell(Cell clickedOnCell) {
+    this.setClickedOnCellPosition(new CellPosition(clickedOnCell.getBelongsToColumn().getIndex(),
+                                                   clickedOnCell.getCellIndex()));
   }
 
   public void setClickedOnCellPosition(CellPosition clickedOnCellPosition) {
-    this.clickedOnCellPosition = clickedOnCellPosition.equals(this.clickedOnCellPosition) ? null : clickedOnCellPosition;
+    this.clickedOnCellPosition = clickedOnCellPosition.equals(
+            this.clickedOnCellPosition) ? null : clickedOnCellPosition;
     setSelectedSynapseCellPosition(null);
     repaint();
   }
@@ -180,8 +181,9 @@ public class RegionSlicedHorizontalView extends JPanel {
       //LOG.debug("Draw Sliced Region");
       CellPosition clickedOn = getClickedOnCellPosition(), selectedSynapse = getSelectedSynapseCellPosition();
       if (clickedOn != null) {
+        Stroke originalStroke = g2d.getStroke();
+        g2d.setStroke(new BasicStroke(1.5f));
         if (clickedOn.getCellIndex() == layerIndex) {
-
           g2d.setColor(Color.RED);
           Rectangle aroundRec = getElementAreaWithScale(clickedOn.getColumnIndex(), 1 / (Math.PI / 4) * 1.05);
           //Rectangle aroundRec = getElementAreaByIndex(clickedOn.getColumnIndex());
@@ -193,6 +195,7 @@ public class RegionSlicedHorizontalView extends JPanel {
           g2d.setColor(Color.ORANGE);
           g2d.drawOval(aroundRec.x, aroundRec.y, aroundRec.width, aroundRec.height);
         }
+        g2d.setStroke(originalStroke);
       }
       if (clickedOn != null) {
         drawNeighbors(clickedOn.getColumnIndex(), g2d);

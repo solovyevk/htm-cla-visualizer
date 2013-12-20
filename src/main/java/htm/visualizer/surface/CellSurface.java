@@ -38,11 +38,11 @@ public abstract class CellSurface extends BaseSurface.CircleElementsSurface {
     if (cell.getPredictiveState(time) && cell.getActiveState(time)) {
       drawCell(g2d, x, y, width, height, PREDICTED_COLOR, ACTIVE_COLOR);
     } else if (cell.getPredictiveState(time)) {
-      drawCell(g2d, x, y, width, height, PREDICTED_COLOR, PREDICTED_COLOR);
+      drawCell(g2d, x, y, width, height, PREDICTED_COLOR);
     } else if (cell.getActiveState(time)) {
-      drawCell(g2d, x, y, width, height, ACTIVE_COLOR, ACTIVE_COLOR);
+      drawCell(g2d, x, y, width, height, ACTIVE_COLOR);
     } else {
-      drawCell(g2d, x, y, width, height, BACKGROUND_COLOR, ACTIVE_COLOR);
+      drawCell(g2d, x, y, width, height);
     }
     if (cell.getLearnState(time)) {
       //third of cell width
@@ -52,10 +52,19 @@ public abstract class CellSurface extends BaseSurface.CircleElementsSurface {
     }
   }
 
-  private static void drawCell(Graphics2D g2d, int x, int y, int width, int height, Color fillColor, Color borderColor) {
-    g2d.setColor(fillColor);
-    g2d.fillOval(x, y, width, height);
-    g2d.setColor(borderColor);
+  private static void drawCell(Graphics2D g2d, int x, int y, int width, int height, Color... stateColors) {
+    int cellStates = stateColors.length;
+    if (cellStates > 0) {
+      int startAngle = 0, arcAngle = 360 / cellStates;
+      for (Color stateColor : stateColors) {
+        g2d.setColor(stateColor);
+        g2d.fillArc(x, y, width, height, startAngle, arcAngle);
+        startAngle = startAngle + arcAngle;
+      }
+    }
+    // g2d.setColor(fillColor);
+    //  g2d.fillOval(x, y, width, height);
+    g2d.setColor(Color.BLACK);
     g2d.drawOval(x, y, width, height);
   }
 
