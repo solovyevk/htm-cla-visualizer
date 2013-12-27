@@ -69,7 +69,7 @@ public class RegionColumnsVerticalView extends CellSurface implements Scrollable
 
   @Override protected Point getElementStartPoint(int elementSpaceAllocation) {
     int y = super.getElementStartPoint(elementSpaceAllocation).y + columnIndexHeight;
-    return new Point(0, y);
+    return new Point(2, y);
   }
 
 
