@@ -44,6 +44,16 @@ public class DistalDendriteSegment extends ArrayList<Synapse.DistalSynapse> {
 
   public static int AMOUNT_OF_SYNAPSES = 30;
 
+  //We need to check if synapse connected to this cell is already exist before adding new one
+  @Override public boolean add(Synapse.DistalSynapse distalSynapse) {
+    Cell newSynapseCell = distalSynapse.getFromCell();
+    for (Synapse.DistalSynapse existingSynapse : this) {
+     if (existingSynapse.getFromCell() == newSynapseCell){
+       return false;
+     }
+    }
+    return super.add(distalSynapse);
+  }
 
   public DistalDendriteSegment(Cell belongsToCell) {
     super(AMOUNT_OF_SYNAPSES);

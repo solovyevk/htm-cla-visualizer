@@ -35,7 +35,7 @@ public class Cell {
   /**
    * cell will keep a buffer of its last TIME_STEPS states
    */
- public static int TIME_STEPS = 6;
+  public static int TIME_STEPS = 6;
 
   private final Column belongsToColumn;
   private final int cellIndex;
@@ -288,30 +288,34 @@ public class Cell {
   public void adaptSegments(boolean positiveReinforcement) {
     for (DistalDendriteSegment.Update segmentUpdate : segmentUpdates) {
       DistalDendriteSegment segment;
-      if (segmentUpdate.isNewSegment()) {
+      if (segmentUpdate.isNewSegment() && segmentUpdate.size() > 0) {
+        //Only create segment if there are synapses
         segment = new DistalDendriteSegment(this);
       } else {
         segment = segmentUpdate.getTarget();
       }
-      segment.setSequenceSegment(segmentUpdate.isSequenceSegment());
 
-      for (Synapse.DistalSynapse distalSynapse : segment) {
-        if (positiveReinforcement) {
-          if (segmentUpdate.contains(distalSynapse)) {
-            distalSynapse.setPermanence(distalSynapse.getPermanence() + Synapse.DistalSynapse.PERMANENCE_INCREASE);
+      if (segment != null) {
+        segment.setSequenceSegment(segmentUpdate.isSequenceSegment());
+
+        for (Synapse.DistalSynapse distalSynapse : segment) {
+          if (positiveReinforcement) {
+            if (segmentUpdate.contains(distalSynapse)) {
+              distalSynapse.setPermanence(distalSynapse.getPermanence() + Synapse.DistalSynapse.PERMANENCE_INCREASE);
+            } else {
+              distalSynapse.setPermanence(distalSynapse.getPermanence() - Synapse.DistalSynapse.PERMANENCE_DECREASE);
+            }
           } else {
-            distalSynapse.setPermanence(distalSynapse.getPermanence() - Synapse.DistalSynapse.PERMANENCE_DECREASE);
-          }
-        } else {
-          if (segmentUpdate.contains(distalSynapse)) {
-            distalSynapse.setPermanence(distalSynapse.getPermanence() - Synapse.DistalSynapse.PERMANENCE_DECREASE);
+            if (segmentUpdate.contains(distalSynapse)) {
+              distalSynapse.setPermanence(distalSynapse.getPermanence() - Synapse.DistalSynapse.PERMANENCE_DECREASE);
+            }
           }
         }
-      }
 
-      for (Synapse.DistalSynapse distalSynapse : segmentUpdate) {
-        if (!segment.contains(distalSynapse)) {
-          segment.add(distalSynapse);
+        for (Synapse.DistalSynapse distalSynapse : segmentUpdate) {
+          if (!segment.contains(distalSynapse)) {
+            segment.add(distalSynapse);
+          }
         }
       }
       //DELETE processed segmentUpdate
@@ -321,13 +325,13 @@ public class Cell {
     this.segmentUpdates.clear();
   }
 
-   /*
-  *Advances this cell to the next time step.
-  *The current state of this cell (active, learning, predicting) will be set as the
-  *previous state and the current state will be reset to no cell activity by
-  *default until it can be determined.
-  *Call this function before each temporal cycle
-   */
+  /*
+ *Advances this cell to the next time step.
+ *The current state of this cell (active, learning, predicting) will be set as the
+ *previous state and the current state will be reset to no cell activity by
+ *default until it can be determined.
+ *Call this function before each temporal cycle
+  */
   public void nextTimeStep() {
     this.activeState.add(Cell.NOW, false);
     this.predictiveState.add(Cell.NOW, false);
