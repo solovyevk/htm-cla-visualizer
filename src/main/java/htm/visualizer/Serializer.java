@@ -8,6 +8,7 @@
 
 package htm.visualizer;
 
+import htm.model.Cell;
 import htm.model.Column;
 import htm.model.Region;
 import htm.model.Synapse;
@@ -27,21 +28,31 @@ public enum Serializer {
   private static final String HTM_ELEMENT = "htm-config";
   private static final String REGION_ELEMENT = "region";
   private static final String COLUMN_ELEMENT = "column";
+  private static final String CELL_ELEMENT = "cell";
   private static final String PROXIMAL_SYNAPSE_ELEMENT = "proximalSynapse";
   private static final String DISTAL_SYNAPSE_ELEMENT = "distalSynapse";
 
   private static final String SKIP_SPATIAL_POOLING_ELEMENT = "skipSpatial";
   private static final String INPUT_SPACE_ELEMENT = "inputSpace";
   private static final String INPUT_RADIUS_ELEMENT = "inputRadius";
+  private static final String LEARNING_RADIUS_ELEMENT = "learningRadius";
   private static final String X_SIZE = "sizeX";
   private static final String Y_SIZE = "sizeY";
+  private static final String CELLS_IN_COLUMN_ELEMENT = "cellsInColumn";
   private static final String PATTERNS_LIST_ELEMENT_NAME = "patternsList";
 
-  private static final String CELLS_IN_COLUMN_ELEMENT = "cellsInColumn";
+
   private static final String AMOUNT_OF_PROXIMAL_SYNAPSES_ELEMENT = "amountOfProximalSynapses";
   private static final String MIN_OVERLAP_ELEMENT = "minOverlap";
   private static final String DESIRED_LOCAL_ACTIVITY_ELEMENT = "desiredLocalActivity";
   private static final String BOOST_RATE_ELEMENT = "boostRate";
+
+
+  private static final String NEW_SYNAPSE_COUNT_ELEMENT = "newSynapseCount";
+  private static final String ACTIVATION_THRESHOLD_ELEMENT = "activationThreshold";
+  private static final String MIN_THRESHOLD_ELEMENT = "minThreshold";
+  private static final String AMOUNT_OF_DISTAL_SYNAPSES_ELEMENT = "amountOfSynapses";
+  private static final String TIME_STEPS = "timeSteps";
 
   private static final String CONNECTED_PERMANENCE_ELEMENT = "connectedPerm";
   private static final String PERMANENCE_INCREASE_ELEMENT = "permanenceInc";
@@ -62,6 +73,7 @@ public enum Serializer {
   public HTMGraphicInterface.Config loadHTMParameters(InputStream in) throws Exception {
     List<boolean[]> patterns = new ArrayList<boolean[]>();
     double inputRadius = -1;
+    double learningRadius = -1;
     Dimension regionDimension = new Dimension(-1, -1);
     Dimension inputSpaceDimension = new Dimension(-1, -1);
     int cellsInColumn = -1;
@@ -76,6 +88,11 @@ public enum Serializer {
     double distalPermanenceInc = -1.0;
     double distalPermanenceDec = -1.0;
     boolean skipSpatialPooling = false;
+    int newSynapseCount = -1;
+    int activationThreshold = -1;
+    int minThreshold = -1;
+    int amountOfDistalSynapses = -1;
+    int timeSteps = -1;
 
 
     boolean parseRegion = false;
@@ -90,6 +107,12 @@ public enum Serializer {
                 .equals(INPUT_RADIUS_ELEMENT)) {
           event = eventReader.nextEvent();
           inputRadius = Double.parseDouble(event.asCharacters().getData());
+          continue;
+        }
+        if (event.asStartElement().getName().getLocalPart()
+                .equals(LEARNING_RADIUS_ELEMENT)) {
+          event = eventReader.nextEvent();
+          learningRadius = Double.parseDouble(event.asCharacters().getData());
           continue;
         }
         if (event.asStartElement().getName().getLocalPart()
@@ -168,6 +191,37 @@ public enum Serializer {
           continue;
         }
 
+        if (event.asStartElement().getName().getLocalPart()
+                .equals(NEW_SYNAPSE_COUNT_ELEMENT)) {
+          event = eventReader.nextEvent();
+          newSynapseCount = Integer.parseInt(event.asCharacters().getData());
+          continue;
+        }
+        if (event.asStartElement().getName().getLocalPart()
+                .equals(ACTIVATION_THRESHOLD_ELEMENT)) {
+          event = eventReader.nextEvent();
+          activationThreshold = Integer.parseInt(event.asCharacters().getData());
+          continue;
+        }
+        if (event.asStartElement().getName().getLocalPart()
+                .equals(MIN_THRESHOLD_ELEMENT)) {
+          event = eventReader.nextEvent();
+          minThreshold = Integer.parseInt(event.asCharacters().getData());
+          continue;
+        }
+        if (event.asStartElement().getName().getLocalPart()
+                .equals(AMOUNT_OF_DISTAL_SYNAPSES_ELEMENT)) {
+          event = eventReader.nextEvent();
+          amountOfDistalSynapses = Integer.parseInt(event.asCharacters().getData());
+          continue;
+        }
+        if (event.asStartElement().getName().getLocalPart()
+                .equals(TIME_STEPS)) {
+          event = eventReader.nextEvent();
+          timeSteps = Integer.parseInt(event.asCharacters().getData());
+          continue;
+        }
+
 
         if (event.asStartElement().getName().getLocalPart()
                 .equals(SKIP_SPATIAL_POOLING_ELEMENT)) {
@@ -219,16 +273,28 @@ public enum Serializer {
         || cellsInColumn == -1 || amountOfProximalSynapses == -1 || minOverlap == -1 || desiredLocalActivity == -1
         || boostRate == -1.0 || proximalConnectedPerm == -1.0 || proximalPermanenceInc == -1.0
         || proximalPermanenceDec == -1.0 || distalConnectedPerm == -1.0 || distalPermanenceInc == -1.0
-        || distalPermanenceDec == -1.0) {
+        || distalPermanenceDec == -1.0 || newSynapseCount == -1 || activationThreshold == -1 || minThreshold == -1
+        || amountOfDistalSynapses == -1 || timeSteps == -1) {
       throw new IllegalArgumentException("Can't find HTM necessary parameters in input file");
     }
     return new HTMGraphicInterface.Config(patterns, new Region.Config(regionDimension, inputSpaceDimension, inputRadius,
-                                                                      skipSpatialPooling), new Column.Config(
-            cellsInColumn,
-            amountOfProximalSynapses,
-            minOverlap,
-            desiredLocalActivity, boostRate), new Synapse.Config(proximalConnectedPerm, proximalPermanenceInc,
-                                                                 proximalPermanenceDec),
+                                                                      learningRadius,
+                                                                      skipSpatialPooling, cellsInColumn),
+                                          new Column.Config(
+                                                  amountOfProximalSynapses,
+                                                  minOverlap,
+                                                  desiredLocalActivity,
+                                                  boostRate),
+                                          new Cell.Config(
+                                                  newSynapseCount,
+                                                  activationThreshold,
+                                                  minThreshold,
+                                                  amountOfDistalSynapses,
+                                                  timeSteps
+                                          ),
+                                          new Synapse.Config(
+                                                  proximalConnectedPerm, proximalPermanenceInc,
+                                                  proximalPermanenceDec),
                                           new Synapse.Config(distalConnectedPerm, distalPermanenceInc,
                                                              distalPermanenceDec));
   }
@@ -245,6 +311,7 @@ public enum Serializer {
   public void saveHTMParameters(OutputStream out, HTMGraphicInterface.Config parameters) throws Exception {
     Region.Config regionCfg = parameters.getRegionConfig();
     Column.Config columnCfg = parameters.getColumnConfig();
+    Cell.Config cellCfg = parameters.getCellConfig();
     Synapse.Config proximalSynapseCfg = parameters.getProximalSynapseConfig();
     Synapse.Config distalSynapseCfg = parameters.getDistalSynapseConfig();
     XMLOutputFactory outputFactory = XMLOutputFactory.newInstance();
@@ -262,6 +329,8 @@ public enum Serializer {
     eventWriter.add(end);
     createNode(eventWriter, SKIP_SPATIAL_POOLING_ELEMENT, regionCfg.isSkipSpatial() + "");
     createNode(eventWriter, INPUT_RADIUS_ELEMENT, regionCfg.getInputRadius() + "");
+    createNode(eventWriter, LEARNING_RADIUS_ELEMENT, regionCfg.getLearningRadius() + "");
+    createNode(eventWriter, CELLS_IN_COLUMN_ELEMENT, regionCfg.getCellsInColumn() + "");
     createNode(eventWriter, X_SIZE, regionCfg.getRegionDimension().width + "");
     createNode(eventWriter, Y_SIZE, regionCfg.getRegionDimension().height + "");
     eventWriter.add(eventFactory.createEndElement("", "", REGION_ELEMENT));
@@ -274,9 +343,9 @@ public enum Serializer {
     eventWriter.add(eventFactory.createEndElement("", "", INPUT_SPACE_ELEMENT));
     eventWriter.add(end);
 
+
     eventWriter.add(eventFactory.createStartElement("", "", COLUMN_ELEMENT));
     eventWriter.add(end);
-    createNode(eventWriter, CELLS_IN_COLUMN_ELEMENT, columnCfg.getCellsInColumn() + "");
     createNode(eventWriter, AMOUNT_OF_PROXIMAL_SYNAPSES_ELEMENT,
                columnCfg.getAmountOfProximalSynapses() + "");
     createNode(eventWriter, MIN_OVERLAP_ELEMENT, columnCfg.getMinOverlap() + "");
@@ -285,6 +354,20 @@ public enum Serializer {
     createNode(eventWriter, BOOST_RATE_ELEMENT,
                columnCfg.getBoostRate() + "");
     eventWriter.add(eventFactory.createEndElement("", "", COLUMN_ELEMENT));
+    eventWriter.add(end);
+
+    eventWriter.add(eventFactory.createStartElement("", "", CELL_ELEMENT));
+    eventWriter.add(end);
+    createNode(eventWriter, NEW_SYNAPSE_COUNT_ELEMENT,
+               cellCfg.getNewSynapseCount() + "");
+    createNode(eventWriter, ACTIVATION_THRESHOLD_ELEMENT, cellCfg.getActivationThreshold() + "");
+    createNode(eventWriter, MIN_THRESHOLD_ELEMENT,
+               cellCfg.getMinThreshold() + "");
+    createNode(eventWriter, AMOUNT_OF_DISTAL_SYNAPSES_ELEMENT,
+               cellCfg.getAmountOfSynapses() + "");
+    createNode(eventWriter, TIME_STEPS,
+               cellCfg.getTimeSteps() + "");
+    eventWriter.add(eventFactory.createEndElement("", "", CELL_ELEMENT));
     eventWriter.add(end);
 
     eventWriter.add(eventFactory.createStartElement("", "", PROXIMAL_SYNAPSE_ELEMENT));

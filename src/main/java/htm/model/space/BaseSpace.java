@@ -18,6 +18,8 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+;
+
 public abstract class BaseSpace<E extends BaseSpace.Element> {
   private static final Log LOG = LogFactory.getLog(
           BaseSpace.class);
@@ -29,6 +31,10 @@ public abstract class BaseSpace<E extends BaseSpace.Element> {
   public BaseSpace(int xSize, int ySize) {
     this.dimension = new Dimension(xSize, ySize);
     elementList = new ArrayList<E>(xSize * ySize);
+  }
+  /*Have to call it after construction and param initialization*/
+  protected void initElementSpace() {
+    int xSize = this.dimension.width; int ySize = this.dimension.height;
     int index = 0;
     for (int y = 0; y < ySize; y++) {
       for (int x = 0; x < xSize; x++) {

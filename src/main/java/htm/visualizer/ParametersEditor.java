@@ -44,10 +44,10 @@ public class ParametersEditor extends JComponent {
     ParametersEditorDialog dialog;
     if (window instanceof Frame) {
       dialog = new ParametersEditorDialog((Frame)window, title, modal, c, chooserPane,
-                                           okListener, cancelListener);
+                                          okListener, cancelListener);
     } else {
       dialog = new ParametersEditorDialog((Dialog)window, title, modal, c, chooserPane,
-                                           okListener, cancelListener);
+                                          okListener, cancelListener);
     }
     return dialog;
   }
@@ -65,6 +65,7 @@ public class ParametersEditor extends JComponent {
 
   private Parameters.RegionParameters regionParameters;
   private Parameters.ColumnParameters columnParameters;
+  private Parameters.CellParameters cellParameters;
   private Parameters.SynapseParameters proximalSynapsesParameters;
   private Parameters.SynapseParameters distalSynapsesParameters;
 
@@ -73,19 +74,66 @@ public class ParametersEditor extends JComponent {
     columnParameters.setParameters(params.getColumnConfig());
     proximalSynapsesParameters.setParameters(params.getProximalSynapseConfig());
     distalSynapsesParameters.setParameters(params.getDistalSynapseConfig());
+    cellParameters.setParameters(params.getCellConfig());
   }
 
   public HTMGraphicInterface.Config getParameters() {
-    return new HTMGraphicInterface.Config(null, regionParameters.getParameters(), columnParameters.getParameters(), proximalSynapsesParameters.getParameters(), distalSynapsesParameters.getParameters());
+    return new HTMGraphicInterface.Config(null, regionParameters.getParameters(), columnParameters.getParameters(), cellParameters.getParameters(),
+                                          proximalSynapsesParameters.getParameters(),
+                                          distalSynapsesParameters.getParameters());
   }
 
   public ParametersEditor(HTMGraphicInterface.Config params) {
     regionParameters = new Parameters.RegionParameters(params.getRegionConfig());
     columnParameters = new Parameters.ColumnParameters(params.getColumnConfig());
+    cellParameters = new Parameters.CellParameters(params.getCellConfig());
     proximalSynapsesParameters = new Parameters.SynapseParameters(params.getProximalSynapseConfig());
     distalSynapsesParameters = new Parameters.SynapseParameters(params.getDistalSynapseConfig());
 
-    this.setLayout(new GridBagLayout());
+    this.setLayout(new BorderLayout());
+    JTabbedPane tabs = new JTabbedPane();
+    tabs.addTab("General", new JComponent() {
+      private Container init() {
+        this.setLayout(new BorderLayout());
+        this.add(decorateWithBorder(regionParameters, "Region Properties"));
+        return this;
+      }
+    }.init());
+    tabs.addTab("Spatial", new JComponent() {
+      private Container init() {
+        this.setLayout(new GridBagLayout());
+        GridBagConstraints c = new GridBagConstraints();
+        c.fill = GridBagConstraints.BOTH;
+        c.gridx = 0;
+        c.gridy = 0;
+        c.weighty = 5.0;
+        this.add(decorateWithBorder(columnParameters, "Column Parameters"), c);
+        c.gridy = 1;
+        c.weighty = 3.0;
+        this.add(decorateWithBorder(proximalSynapsesParameters, "Proximal Synapses"), c);
+        return this;
+      }
+    }.init());
+    tabs.addTab("Temporal", new JComponent() {
+      private Container init() {
+        this.setLayout(new GridBagLayout());
+        GridBagConstraints c = new GridBagConstraints();
+        c.fill = GridBagConstraints.BOTH;
+        c.gridx = 0;
+        c.gridy = 0;
+        c.weighty = 5.0;
+        this.add(decorateWithBorder(cellParameters, "Cell Parameters"), c);
+        c.gridy = 1;
+        c.weighty = 3.0;
+        this.add(decorateWithBorder(distalSynapsesParameters, "Distal Synapses"), c);
+        return this;
+      }
+    }.init());
+    /*c.gridy = 3;
+    this.add(decorateWithBorder(distalSynapsesParameters, "Distal Synapses"), c); */
+    this.add(tabs);
+
+   /* this.setLayout(new GridBagLayout());
     GridBagConstraints c = new GridBagConstraints();
     c.fill = GridBagConstraints.BOTH;
     c.gridx = 0;
@@ -100,12 +148,13 @@ public class ParametersEditor extends JComponent {
     c.weighty = 3.0;
     this.add(decorateWithBorder(proximalSynapsesParameters,"Proximal Synapses"), c);
     c.gridy = 3;
-    this.add(decorateWithBorder(distalSynapsesParameters, "Distal Synapses"), c);
+    this.add(decorateWithBorder(distalSynapsesParameters, "Distal Synapses"), c); */
   }
 
   private JComponent decorateWithBorder(JComponent component, String title) {
     component.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createTitledBorder(null, title, TitledBorder.CENTER, TitledBorder.TOP, LABEL_FONT, TITLE_COLOR ),
+            BorderFactory.createTitledBorder(null, title, TitledBorder.CENTER, TitledBorder.TOP, LABEL_FONT,
+                                             TITLE_COLOR),
             DEFAULT_BORDER));
     return component;
   }

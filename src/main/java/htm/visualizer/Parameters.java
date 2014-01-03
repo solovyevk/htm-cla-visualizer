@@ -8,6 +8,7 @@
 
 package htm.visualizer;
 
+import htm.model.Cell;
 import htm.model.Column;
 import htm.model.Region;
 import htm.model.Synapse;
@@ -168,7 +169,9 @@ public class Parameters {
     private Parameters.IntegerParameter regionHeightParam;
     private Parameters.IntegerParameter inputSpaceWidthParam;
     private Parameters.IntegerParameter inputSpaceHeightParam;
+    private DoubleParameter learningRadiusParam;
     private DoubleParameter inputRadiusParam;
+    private Parameters.IntegerParameter cellsInColumnParam;
     private JCheckBox skipSpatialCb;
 
     RegionParameters(Region.Config cfg) {
@@ -178,7 +181,9 @@ public class Parameters {
       regionHeightParam = new IntegerParameter(1, 50, cfg.getRegionDimension().height);
       inputSpaceWidthParam = new IntegerParameter(1, 50, cfg.getSensoryInputDimension().width);
       inputSpaceHeightParam = new IntegerParameter(1, 50, cfg.getSensoryInputDimension().height);
+      learningRadiusParam = new DoubleParameter(1.0, 25.0, cfg.getInputRadius(), 200);
       inputRadiusParam = new DoubleParameter(1.0, 25.0, cfg.getInputRadius(), 200);
+      cellsInColumnParam = new IntegerParameter(1, 20, cfg.getCellsInColumn());
       skipSpatialCb = new JCheckBox(null, null, cfg.isSkipSpatial());
       JLabel l = new FixedWidthLabel("Region Width");
       this.add(l);
@@ -195,11 +200,17 @@ public class Parameters {
       l = new FixedWidthLabel("Input Radius");
       this.add(l);
       this.add(inputRadiusParam);
+      l = new FixedWidthLabel("Learning Radius");
+      this.add(l);
+      this.add(learningRadiusParam);
+      l = new FixedWidthLabel("Cells per Column");
+      this.add(l);
+      this.add(cellsInColumnParam);
       l = new FixedWidthLabel("Skip Spatial");
       this.add(l);
       this.add(skipSpatialCb);
       UIUtils.makeSpringCompactGrid(this,
-                                    6, 2, //rows, cols
+                                    8, 2, //rows, cols
                                     6, 6,        //initX, initY
                                     6, 6);       //xPad, yPad
     }
@@ -210,7 +221,9 @@ public class Parameters {
                                new Dimension(inputSpaceWidthParam.getValue(),
                                              inputSpaceHeightParam.getValue()),
                                inputRadiusParam.getValue(),
-                               skipSpatialCb.isSelected());
+                               learningRadiusParam.getValue(),
+                               skipSpatialCb.isSelected(),
+                               cellsInColumnParam.getValue());
     }
 
     void setParameters(Region.Config cfg) {
@@ -225,7 +238,6 @@ public class Parameters {
 
   static class ColumnParameters extends JPanel {
     private final Column.Config cfg;
-    private Parameters.IntegerParameter cellsInColumnParam;
     private Parameters.IntegerParameter amountOfProximalSynapsesParam;
     private Parameters.IntegerParameter minOverlapParam;
     private Parameters.IntegerParameter desiredLocalActivityParam;
@@ -234,15 +246,11 @@ public class Parameters {
     ColumnParameters(Column.Config cfg) {
       this.cfg = cfg;
       setLayout(new SpringLayout());
-      cellsInColumnParam = new IntegerParameter(1, 20, cfg.getCellsInColumn());
       amountOfProximalSynapsesParam = new IntegerParameter(2, 60, cfg.getAmountOfProximalSynapses());
       minOverlapParam = new IntegerParameter(1, 10, cfg.getMinOverlap());
       desiredLocalActivityParam = new IntegerParameter(1, 10, cfg.getDesiredLocalActivity());
       boostRateParam = new Parameters.DoubleParameter(0.005, 0.2, cfg.getBoostRate(), 200);
-      JLabel l = new FixedWidthLabel("Cells per Column");
-      this.add(l);
-      this.add(cellsInColumnParam);
-      l = new FixedWidthLabel("N of Proximal Synapses");
+      JLabel l = new FixedWidthLabel("N of Proximal Synapses");
       this.add(l);
       this.add(amountOfProximalSynapsesParam);
       l = new FixedWidthLabel("Min Overlap");
@@ -255,23 +263,78 @@ public class Parameters {
       this.add(l);
       this.add(boostRateParam);
       UIUtils.makeSpringCompactGrid(this,
-                                    5, 2, //rows, cols
+                                    4, 2, //rows, cols
                                     6, 6,        //initX, initY
                                     6, 6);       //xPad, yPad
     }
 
     Column.Config getParameters() {
-      return new Column.Config(cellsInColumnParam.getValue(), amountOfProximalSynapsesParam.getValue(),
-                               minOverlapParam.getValue(), desiredLocalActivityParam.getValue(),
+      return new Column.Config(amountOfProximalSynapsesParam.getValue(),
+                               minOverlapParam.getValue(),
+                               desiredLocalActivityParam.getValue(),
                                boostRateParam.getValue());
     }
 
     void setParameters(Column.Config cfg) {
-      cellsInColumnParam.setValue(cfg.getCellsInColumn());
       amountOfProximalSynapsesParam.setValue(cfg.getAmountOfProximalSynapses());
       minOverlapParam.setValue(cfg.getMinOverlap());
       desiredLocalActivityParam.setValue(cfg.getDesiredLocalActivity());
       boostRateParam.setValue(cfg.getBoostRate());
+    }
+  }
+
+  static class CellParameters extends JPanel {
+    private final Cell.Config cfg;
+    private Parameters.IntegerParameter newSynapseCountParam;
+    private Parameters.IntegerParameter activationThresholdParam;
+    private Parameters.IntegerParameter minThresholdParam;
+    private Parameters.IntegerParameter amountOfSynapsesParam;
+    private Parameters.IntegerParameter timeStepsParam;
+
+    CellParameters(Cell.Config cfg) {
+      this.cfg = cfg;
+      setLayout(new SpringLayout());
+      newSynapseCountParam = new IntegerParameter(1, 10, cfg.getNewSynapseCount());
+      activationThresholdParam = new IntegerParameter(0, 15, cfg.getActivationThreshold());
+      minThresholdParam = new IntegerParameter(0, 5, cfg.getMinThreshold());
+      amountOfSynapsesParam = new IntegerParameter(5, 60, cfg.getAmountOfSynapses());
+      timeStepsParam = new IntegerParameter(2, 30, cfg.getTimeSteps());
+
+      JLabel l = new FixedWidthLabel("N of New Synapses");
+      this.add(l);
+      this.add(newSynapseCountParam);
+      l = new FixedWidthLabel("Activation Threshold");
+      this.add(l);
+      this.add(activationThresholdParam);
+      l = new FixedWidthLabel("Minimum Threshold");
+      this.add(l);
+      this.add(minThresholdParam);
+      l = new FixedWidthLabel("Amount of Synapses");
+      this.add(l);
+      this.add(amountOfSynapsesParam);
+      l = new FixedWidthLabel("Time Buffer");
+      this.add(l);
+      this.add(timeStepsParam);
+      UIUtils.makeSpringCompactGrid(this,
+                                    5, 2, //rows, cols
+                                    6, 6,        //initX, initY
+                                    6, 6);       //xPad, yPad
+    }
+
+    Cell.Config getParameters() {
+      return new Cell.Config(newSynapseCountParam.getValue(),
+                             activationThresholdParam.getValue(),
+                             minThresholdParam.getValue(),
+                             amountOfSynapsesParam.getValue(),
+                             timeStepsParam.getValue());
+    }
+
+    void setParameters(Cell.Config cfg) {
+      newSynapseCountParam.setValue(cfg.getNewSynapseCount());
+      activationThresholdParam.setValue(cfg.getActivationThreshold());
+      minThresholdParam.setValue(cfg.getMinThreshold());
+      amountOfSynapsesParam.setValue(cfg.getAmountOfSynapses());
+      timeStepsParam.setValue(cfg.getTimeSteps());
     }
   }
 
@@ -308,10 +371,10 @@ public class Parameters {
                                 decPermanenceParam.getValue());
     }
 
-    void setParameters(Synapse.Config cfg){
-       connectedPermanenceParam.setValue(cfg.getConnectedPerm());
-       incPermanenceParam.setValue(cfg.getPermanenceInc());
-       decPermanenceParam.setValue(cfg.getPermanenceDec());
+    void setParameters(Synapse.Config cfg) {
+      connectedPermanenceParam.setValue(cfg.getConnectedPerm());
+      incPermanenceParam.setValue(cfg.getPermanenceInc());
+      decPermanenceParam.setValue(cfg.getPermanenceDec());
     }
 
 

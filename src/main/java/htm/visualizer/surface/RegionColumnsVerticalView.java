@@ -28,7 +28,7 @@ public class RegionColumnsVerticalView extends CellSurface implements Scrollable
   private int columnIndexHeight = 12;
 
   public RegionColumnsVerticalView(Region region) {
-    super(1, Column.CELLS_PER_COLUMN, region);
+    super(1, region.getCellsInColumn(), region);
     this.updateColumns();
    /* this.addElementMouseEnterListener(new ElementMouseEnterListener() {
       @Override
@@ -63,7 +63,7 @@ public class RegionColumnsVerticalView extends CellSurface implements Scrollable
 
   @Override
   protected int getElementSpaceAllocation() {
-    return Math.max(MIN_CELL_SIZE, (40 - Column.CELLS_PER_COLUMN * 2));
+    return Math.max(MIN_CELL_SIZE, (40 - region.getCellsInColumn()* 2));
 
   }
 

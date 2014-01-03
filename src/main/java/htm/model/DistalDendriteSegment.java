@@ -19,31 +19,6 @@ public class DistalDendriteSegment extends ArrayList<Synapse.DistalSynapse> {
   private boolean sequenceSegment;
 
 
-  /**
-   * WP
-   * <p/>
-   * newSynapseCount
-   * The maximum number of synapses added to a segment during learning.
-   */
-  public static int NEW_SYNAPSE_COUNT = 5;
-
-  /**
-   * WP
-   * activationThreshold
-   * <p/>
-   * Activation threshold for a segment. If the number of active connected
-   * synapses in a segment is greater than activationThreshold, the segment is said to be active.
-   */
-  public static int ACTIVATION_THRESHOLD = 2;
-
-  /**
-   * WP
-   * minThreshold Minimum segment activity for learning.
-   */
-  public static int MIN_THRESHOLD = 0;//1;
-
-  public static int AMOUNT_OF_SYNAPSES = 30;
-
   //We need to check if synapse connected to this cell is already exist before adding new one
   @Override public boolean add(Synapse.DistalSynapse distalSynapse) {
     Cell newSynapseCell = distalSynapse.getFromCell();
@@ -56,7 +31,7 @@ public class DistalDendriteSegment extends ArrayList<Synapse.DistalSynapse> {
   }
 
   public DistalDendriteSegment(Cell belongsToCell) {
-    super(AMOUNT_OF_SYNAPSES);
+    super(Cell.AMOUNT_OF_SYNAPSES);
     this.belongsToCell = belongsToCell;
     attachToCell();
     //TODO REMOVE
@@ -86,7 +61,7 @@ public class DistalDendriteSegment extends ArrayList<Synapse.DistalSynapse> {
    * state at time t is greater than activationThreshold. The parameter state can be activeState, or learnState.
    */
   public boolean segmentActive(int time, Cell.State state) {
-    return getConnectedWithStateCell(time, state).size() > ACTIVATION_THRESHOLD;
+    return getConnectedWithStateCell(time, state).size() > Cell.ACTIVATION_THRESHOLD;
   }
 
   public List<Synapse.DistalSynapse> getConnectedWithStateCell(int time, Cell.State state) {

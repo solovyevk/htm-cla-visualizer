@@ -37,16 +37,27 @@ public class HTMGraphicInterface extends JPanel {
   private static final int SENSORY_INPUT_WIDTH = 12;
   private static final int SENSORY_INPUT_HEIGHT = 12;
   private static final double INPUT_RADIUS = 8;
+  private static final double LEARNING_RADIUS = 4;
+  private static final int CELLS_PER_COLUMN = 3;
 
 
   /*
   Default HTM Column Parameters
    */
-  private static final int CELLS_PER_COLUMN = 3;
+
   private static final int DESIRED_LOCAL_ACTIVITY = 1;
   private static final int MINIMAL_OVERLAP = 2;
-  private static final int AMOUNT_OF_SYNAPSES = 30;
+  private static final int AMOUNT_OF_PROXIMAL_SYNAPSES = 30;
   private static final double BOOST_RATE = 0.01;
+
+  /*
+  Default HTM Cell Parameters
+  */
+  private static final  int NEW_SYNAPSE_COUNT = 5;
+  private static final  int ACTIVATION_THRESHOLD = 2;
+  private static final  int MIN_THRESHOLD = 0;//1;
+  private static final  int AMOUNT_OF_DISTAL_SYNAPSES = 30;
+  private static final  int TIME_STEPS = 6;
 
   /*
   Default Proximal Synapse Parameters
@@ -89,10 +100,11 @@ public class HTMGraphicInterface extends JPanel {
 
   public HTMGraphicInterface() {
     this(new Config(null, new Region.Config(new Dimension(HORIZONTAL_COLUMN_NUMBER, VERTICAL_COLUMN_NUMBER),
-                                            new Dimension(SENSORY_INPUT_WIDTH, SENSORY_INPUT_HEIGHT), INPUT_RADIUS,
-                                            false),
-                    new Column.Config(CELLS_PER_COLUMN, AMOUNT_OF_SYNAPSES,
+                                            new Dimension(SENSORY_INPUT_WIDTH, SENSORY_INPUT_HEIGHT), INPUT_RADIUS, LEARNING_RADIUS,
+                                            false, CELLS_PER_COLUMN),
+                    new Column.Config(AMOUNT_OF_PROXIMAL_SYNAPSES,
                                       MINIMAL_OVERLAP, DESIRED_LOCAL_ACTIVITY, BOOST_RATE),
+                    new Cell.Config(NEW_SYNAPSE_COUNT, ACTIVATION_THRESHOLD, MIN_THRESHOLD, AMOUNT_OF_DISTAL_SYNAPSES, TIME_STEPS),
                     new Synapse.Config(PROXIMAL_SYNAPSE_CONNECTED_PERMANENCE, PROXIMAL_SYNAPSE_PERMANENCE_INCREASE,
                                        PROXIMAL_SYNAPSE_PERMANENCE_DECREASE),
                     new Synapse.Config(DISTAL_SYNAPSE_CONNECTED_PERMANENCE, DISTAL_SYNAPSE_PERMANENCE_INCREASE,
@@ -103,6 +115,7 @@ public class HTMGraphicInterface extends JPanel {
     super(new BorderLayout(0, 0));
     //Set static attributes for HTM Model classes
     Column.updateFromConfig(cfg.getColumnConfig());
+    Cell.updateFromConfig(cfg.getCellConfig());
     Synapse.ProximalSynapse.updateFromConfig(cfg.getProximalSynapseConfig());
     Synapse.DistalSynapse.updateFromConfig(cfg.getDistalSynapseConfig());
     //Initialize region and all related UI
@@ -113,7 +126,7 @@ public class HTMGraphicInterface extends JPanel {
       @Override
       public Dimension getPreferredSize() {
         int prefWidth = super.getPreferredSize().width;
-        return new Dimension(prefWidth, 270 * Column.CELLS_PER_COLUMN);
+        return new Dimension(prefWidth, 270 * region.getCellsInColumn());
       }
     };
     this.control = new ControlPanel();
@@ -311,11 +324,15 @@ public class HTMGraphicInterface extends JPanel {
 
   Config getParameters() {
     return new Config(patterns, new Region.Config(region.getDimension(), region.getInputSpaceDimension(),
-                                  region.getInputRadius(), region.isSkipSpatial()),
-      new Column.Config(Column.CELLS_PER_COLUMN,
-                        Column.AMOUNT_OF_PROXIMAL_SYNAPSES,
+                                  region.getInputRadius(), region.getLearningRadius(), region.isSkipSpatial(), region.getCellsInColumn()),
+      new Column.Config(Column.AMOUNT_OF_PROXIMAL_SYNAPSES,
                         Column.MIN_OVERLAP,
                         Column.DESIRED_LOCAL_ACTIVITY, Column.BOOST_RATE),
+      new Cell.Config(Cell.NEW_SYNAPSE_COUNT,
+                      Cell.ACTIVATION_THRESHOLD,
+                      Cell.MIN_THRESHOLD,
+                      Cell.AMOUNT_OF_SYNAPSES,
+                      Cell.TIME_STEPS),
       new Synapse.Config(Synapse.ProximalSynapse.CONNECTED_PERMANENCE,
                          Synapse.ProximalSynapse.PERMANENCE_INCREASE,
                          Synapse.ProximalSynapse.PERMANENCE_DECREASE
@@ -339,8 +356,6 @@ public class HTMGraphicInterface extends JPanel {
       setBorder(BorderFactory.createCompoundBorder(
               BorderFactory.createTitledBorder("Selected Column/Cell Detail Info"),
               UIUtils.DEFAULT_BORDER));
-      final SensoryInputSurface top = new SensoryInputSurface(5, 3);
-      top.setBorder(UIUtils.LIGHT_GRAY_BORDER);
       tabs = new JTabbedPane();
       if (spatialInfo != null) {
         tabs.addTab("Spatial Column Info", spatialInfo);
@@ -599,16 +614,18 @@ public class HTMGraphicInterface extends JPanel {
     private final java.util.List<boolean[]> patterns;
     private final Region.Config regionConfig;
     private final Column.Config columnConfig;
+    private final Cell.Config cellConfig;
     private final Synapse.Config proximalSynapseConfig;
     private final Synapse.Config distalSynapseConfig;
 
 
-    public Config(List<boolean[]> patterns, Region.Config regionConfig, Column.Config columnConfig,
+    public Config(List<boolean[]> patterns, Region.Config regionConfig, Column.Config columnConfig, Cell.Config cellConfig,
                   Synapse.ProximalSynapse.Config proximalSynapseConfig,
                   Synapse.DistalSynapse.Config distalSynapseConfig) {
       this.patterns = patterns;
       this.regionConfig = regionConfig;
       this.columnConfig = columnConfig;
+      this.cellConfig = cellConfig;
       this.proximalSynapseConfig = proximalSynapseConfig;
       this.distalSynapseConfig = distalSynapseConfig;
     }
@@ -631,6 +648,10 @@ public class HTMGraphicInterface extends JPanel {
 
     public Synapse.Config getDistalSynapseConfig() {
       return distalSynapseConfig;
+    }
+
+    public Cell.Config getCellConfig() {
+      return cellConfig;
     }
   }
 

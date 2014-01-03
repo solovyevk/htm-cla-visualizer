@@ -15,10 +15,12 @@ import java.awt.Point;
 public class InputSpace extends BaseSpace<InputSpace.Input> {
   public InputSpace(int xSize, int ySize) {
     super(xSize, ySize);
+    initElementSpace();
   }
 
   public InputSpace(Dimension dimension) {
     super(dimension);
+    initElementSpace();
   }
 
   @Override

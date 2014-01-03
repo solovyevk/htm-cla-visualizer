@@ -45,7 +45,7 @@ public class RegionSlicedHorizontalView extends JPanel {
 
   public RegionSlicedHorizontalView(Region region) {
     super(new GridLayout(0, 1));
-    for (int i = 0; i < Column.CELLS_PER_COLUMN; i++) {
+    for (int i = 0; i < region.getCellsInColumn(); i++) {
       final ColumnCellsByIndexSurface cellLayer = new ColumnCellsByIndexSurface(this, region, i);
       layers.add(i, cellLayer);
       cellLayer.setBorder(UIUtils.LIGHT_GRAY_BORDER);

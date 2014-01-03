@@ -3,6 +3,8 @@
   <region>
     <skipSpatial>false</skipSpatial>
     <inputRadius>5.0</inputRadius>
+    <learningRadius>4.0</learningRadius>
+    <cellsInColumn>3</cellsInColumn>
     <sizeX>12</sizeX>
     <sizeY>12</sizeY>
   </region>
@@ -11,12 +13,18 @@
     <sizeY>12</sizeY>
   </inputSpace>
   <column>
-    <cellsInColumn>3</cellsInColumn>
     <amountOfProximalSynapses>20</amountOfProximalSynapses>
     <minOverlap>3</minOverlap>
     <desiredLocalActivity>3</desiredLocalActivity>
     <boostRate>0.01</boostRate>
   </column>
+  <cell>
+    <newSynapseCount>5</newSynapseCount>
+    <activationThreshold>2</activationThreshold>
+    <minThreshold>0</minThreshold>
+    <amountOfSynapses>30</amountOfSynapses>
+    <timeSteps>6</timeSteps>
+  </cell>
   <proximalSynapse>
     <connectedPerm>0.2</connectedPerm>
     <permanenceInc>0.005</permanenceInc>

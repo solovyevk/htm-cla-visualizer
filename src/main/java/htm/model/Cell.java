@@ -10,6 +10,32 @@ import java.util.List;
 
 public class Cell {
 
+  /**
+   * WP
+   * <p/>
+   * newSynapseCount
+   * The maximum number of synapses added to a segment during learning.
+   */
+  public static int NEW_SYNAPSE_COUNT = 5;
+  /**
+   * WP
+   * activationThreshold
+   * <p/>
+   * Activation threshold for a segment. If the number of active connected
+   * synapses in a segment is greater than activationThreshold, the segment is said to be active.
+   */
+  public static int ACTIVATION_THRESHOLD = 2;
+  /**
+   * WP
+   * minThreshold Minimum segment activity for learning.
+   */
+  public static int MIN_THRESHOLD = 0;//1;
+  public static int AMOUNT_OF_SYNAPSES = 30;
+  /**
+   * cell will keep a buffer of its last TIME_STEPS states
+   */
+  public static int TIME_STEPS = 6;
+
   public int getCellIndex() {
     return cellIndex;
   }
@@ -32,10 +58,6 @@ public class Cell {
   public static final int BEFORE = 1;
   public static final int NOW = 0;
 
-  /**
-   * cell will keep a buffer of its last TIME_STEPS states
-   */
-  public static int TIME_STEPS = 6;
 
   private final Column belongsToColumn;
   private final int cellIndex;
@@ -58,13 +80,17 @@ public class Cell {
 
   private final List<DistalDendriteSegment.Update> segmentUpdates = new ArrayList<DistalDendriteSegment.Update>();
 
+  public static void updateFromConfig(Config cellCfg) {
+    NEW_SYNAPSE_COUNT = cellCfg.getNewSynapseCount();
+    ACTIVATION_THRESHOLD = cellCfg.getActivationThreshold();
+    MIN_THRESHOLD = cellCfg.getMinThreshold();
+    AMOUNT_OF_SYNAPSES = cellCfg.getAmountOfSynapses();
+    TIME_STEPS = cellCfg.getTimeSteps();
+  }
+
   public Cell(Column belongsToColumn, int cellIndex) {
     this.belongsToColumn = belongsToColumn;
     this.cellIndex = cellIndex;
-    //TODO REMOVE
-    /*    for (int i = 0; i < 10; i++) {
-          new DistalDendriteSegment(this);
-        }  */
   }
 
   /*
@@ -207,7 +233,7 @@ public class Cell {
       }
     });
     return segmentList.size() > 0 && segmentList.get(segmentList.size() - 1).getActiveCellSynapses(
-            time).size() > DistalDendriteSegment.MIN_THRESHOLD ? segmentList.get(segmentList.size() - 1) : null;
+            time).size() > MIN_THRESHOLD ? segmentList.get(segmentList.size() - 1) : null;
   }
 
   public List<DistalDendriteSegment> getSegments() {
@@ -242,7 +268,7 @@ public class Cell {
     if (segment != null) {
       result.addAll(segment.getActiveCellSynapses(time));
     }
-    int numberOfNewSynapsesToAdd = DistalDendriteSegment.NEW_SYNAPSE_COUNT - result.size();
+    int numberOfNewSynapsesToAdd = NEW_SYNAPSE_COUNT - result.size();
     if (newSynapses && numberOfNewSynapsesToAdd > 0) {
       List<Column> neighbors = this.belongsToColumn.getRegion().getAllWithinRadius(this.belongsToColumn.getPosition(),
                                                                                    this.belongsToColumn.getRegion().getLearningRadius());
@@ -361,4 +387,41 @@ public class Cell {
       this.set(NOW, state);
     }
   }
+
+  public static class Config {
+    private final int newSynapseCount;
+    private final int activationThreshold;
+    private final int minThreshold;
+    private final int amountOfSynapses;
+    private final int timeSteps;
+
+    public Config(int newSynapseCount, int activationThreshold, int minThreshold, int amountOfSynapses, int timeSteps) {
+      this.newSynapseCount = newSynapseCount;
+      this.activationThreshold = activationThreshold;
+      this.minThreshold = minThreshold;
+      this.amountOfSynapses = amountOfSynapses;
+      this.timeSteps = timeSteps;
+    }
+
+    public int getNewSynapseCount() {
+      return newSynapseCount;
+    }
+
+    public int getActivationThreshold() {
+      return activationThreshold;
+    }
+
+    public int getMinThreshold() {
+      return minThreshold;
+    }
+
+    public int getAmountOfSynapses() {
+      return amountOfSynapses;
+    }
+
+    public int getTimeSteps() {
+      return timeSteps;
+    }
+  }
+
 }

@@ -91,9 +91,10 @@ public class Viewer extends JFrame {
           HTMGraphicInterface.Config newCfg = new HTMGraphicInterface.Config(oldCfg.getPatterns(), new Region.Config(
                   modRegionCfg.getRegionDimension(),
                   modRegionCfg.getSensoryInputDimension(),
-                  modRegionCfg.getInputRadius(), modRegionCfg.isSkipSpatial()), modCfg.getColumnConfig(),
+                  modRegionCfg.getInputRadius(), modRegionCfg.getLearningRadius(), modRegionCfg.isSkipSpatial(), modRegionCfg.getCellsInColumn()),
+                                                                             modCfg.getColumnConfig(),
+                                                                             modCfg.getCellConfig(),
                                                                              modCfg.getProximalSynapseConfig(),
-
                                                                              modCfg.getDistalSynapseConfig());
           try {
             win.reloadHTMInterface(newCfg);
@@ -116,7 +117,10 @@ public class Viewer extends JFrame {
         HTMGraphicInterface.Config newCfg = new HTMGraphicInterface.Config(oldCfg.getPatterns(), new Region.Config(
                 oldRegionCfg.getRegionDimension(),
                 oldRegionCfg.getSensoryInputDimension(),
-                oldRegionCfg.getInputRadius(), checked), oldCfg.getColumnConfig(), oldCfg.getProximalSynapseConfig(),
+                oldRegionCfg.getInputRadius(), oldRegionCfg.getLearningRadius(), checked, oldRegionCfg.getCellsInColumn()),
+                                                                           oldCfg.getColumnConfig(),
+                                                                           oldCfg.getCellConfig(),
+                                                                           oldCfg.getProximalSynapseConfig(),
                                                                            oldCfg.getDistalSynapseConfig());
         try {
           win.reloadHTMInterface(newCfg);

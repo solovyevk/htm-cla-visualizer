@@ -158,9 +158,9 @@ public class TemporalInfo extends JPanel {
         result.put("Cell Index", cell.getCellIndex() + "");
         result.put("Position",
                    "X:" + (cell.getBelongsToColumn().getPosition().x) + ", Y:" + cell.getBelongsToColumn().getPosition().y);
-        result.put("Active", cell.getActiveState(Cell.NOW) ? "Yes" : "No");
+        /*result.put("Active", cell.getActiveState(Cell.NOW) ? "Yes" : "No");
         result.put("Predictive", cell.getPredictiveState(Cell.NOW) ? "Yes" : "No");
-        result.put("Learn", cell.getLearnState(Cell.NOW) ? "Yes" : "No");
+        result.put("Learn", cell.getLearnState(Cell.NOW) ? "Yes" : "No"); */
         result.put("Seg.", cell.getSegments().size() + "");
         result.put("Seg. Updates", cell.getSegmentUpdates().size() + "");
       }

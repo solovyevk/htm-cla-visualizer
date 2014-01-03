@@ -14,7 +14,6 @@ import java.util.List;
 
 public class Column extends BaseSpace.Element {
   private static final Log LOG = LogFactory.getLog(Column.class);
-  public static int CELLS_PER_COLUMN = 3;
   public static int AMOUNT_OF_PROXIMAL_SYNAPSES = 30;
   /**
    * The amount that is added to a Column's Boost value in a single time step, when it is being boosted.
@@ -71,7 +70,6 @@ public class Column extends BaseSpace.Element {
   };
 
   public static void updateFromConfig(Config columnCfg) {
-    Column.CELLS_PER_COLUMN = columnCfg.getCellsInColumn();
     Column.AMOUNT_OF_PROXIMAL_SYNAPSES = columnCfg.getAmountOfProximalSynapses();
     Column.MIN_OVERLAP = columnCfg.getMinOverlap();
     Column.DESIRED_LOCAL_ACTIVITY = columnCfg.getDesiredLocalActivity();
@@ -115,7 +113,7 @@ public class Column extends BaseSpace.Element {
   public Column(Region region, int columnIndex, Point columnGridPosition) {
     super(columnGridPosition, columnIndex);
     this.region = region;
-    for (int i = 0; i < CELLS_PER_COLUMN; i++) {
+    for (int i = 0; i < region.getCellsInColumn(); i++) {
       cells.add(new Cell(this, i));
     }
   }
@@ -614,24 +612,19 @@ public class Column extends BaseSpace.Element {
   }
 
   public static class Config {
-    private final int cellsInColumn;
     private final int amountOfProximalSynapses;
     private final int minOverlap;
     private final int desiredLocalActivity;
     private final double boostRate;
 
-    public Config(int cellsInColumn, int amountOfProximalSynapses, int minOverlap, int desiredLocalActivity,
+    public Config(int amountOfProximalSynapses, int minOverlap, int desiredLocalActivity,
                   double boostRate) {
-      this.cellsInColumn = cellsInColumn;
       this.amountOfProximalSynapses = amountOfProximalSynapses;
       this.minOverlap = minOverlap;
       this.desiredLocalActivity = desiredLocalActivity;
       this.boostRate = boostRate;
     }
 
-    public int getCellsInColumn() {
-      return cellsInColumn;
-    }
 
     public int getAmountOfProximalSynapses() {
       return amountOfProximalSynapses;

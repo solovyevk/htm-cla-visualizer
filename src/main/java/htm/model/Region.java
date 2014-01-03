@@ -29,8 +29,8 @@ public class Region extends ColumnSpace {
    * <p/>
    * learningRadius The area around a temporal pooler cell from which it can get lateral connections.
    */
-  private final double learningRadius = 4.0;
-
+  private final double learningRadius;
+  private final int cellsInColumn;
 
   private final boolean skipSpatial;
 
@@ -44,9 +44,12 @@ public class Region extends ColumnSpace {
 
   public Region(Config regionCfg) {
     super(regionCfg.getRegionDimension().width, regionCfg.getRegionDimension().height);
+    this.cellsInColumn = regionCfg.getCellsInColumn();
+    this.initElementSpace();
     this.inputSpace = new InputSpace(regionCfg.getSensoryInputDimension().width,
                                      regionCfg.getSensoryInputDimension().height);
     this.inputRadius = regionCfg.getInputRadius();
+    this.learningRadius = regionCfg.getLearningRadius();
     this.skipSpatial = regionCfg.isSkipSpatial();
     if (skipSpatial) {
       if (inputSpace.getDimension().height != this.getDimension().height || inputSpace.getDimension().width != this.getDimension().width) {
@@ -280,21 +283,32 @@ public class Region extends ColumnSpace {
     return skipSpatial;
   }
 
+  public int getCellsInColumn() {
+    return cellsInColumn;
+  }
+
   public static class Config {
     private final Dimension regionDimension;
     private final Dimension sensoryInputDimension;
     private final double inputRadius;
+    private final double learningRadius;
     private final boolean skipSpatial;
+    private final int cellsInColumn;
 
 
     public Config(Dimension regionDimension, Dimension sensoryInputDimension,
-                  double inputRadius, boolean skipSpatial) {
+                  double inputRadius, double learningRadius, boolean skipSpatial, int cellsInColumn) {
       this.regionDimension = regionDimension;
       this.sensoryInputDimension = sensoryInputDimension;
       this.inputRadius = inputRadius;
+      this.learningRadius = learningRadius;
       this.skipSpatial = skipSpatial;
+      this.cellsInColumn = cellsInColumn;
     }
 
+    public double getLearningRadius() {
+      return learningRadius;
+    }
 
     public double getInputRadius() {
       return inputRadius;
@@ -312,6 +326,10 @@ public class Region extends ColumnSpace {
       return skipSpatial;
     }
 
+
+    public int getCellsInColumn() {
+      return cellsInColumn;
+    }
   }
 }
 
