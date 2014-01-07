@@ -15,7 +15,6 @@ import org.apache.commons.logging.LogFactory;
 import javax.swing.*;
 import javax.swing.border.Border;
 import javax.swing.table.DefaultTableCellRenderer;
-import javax.swing.table.TableCellRenderer;
 import java.awt.*;
 import java.awt.font.FontRenderContext;
 import java.awt.font.TextLayout;
@@ -259,6 +258,7 @@ public enum UIUtils {
 
   public static abstract class TextColumnInfo extends JPanel {
     protected float finishParagraphY;
+    protected int startX = 100;
 
     public TextColumnInfo() {
       setBackground(Color.WHITE);
@@ -269,7 +269,7 @@ public enum UIUtils {
       super.paint(g);
       Graphics2D graphics2D = (Graphics2D)g;
       Map<String, String> cellAttributes = getAttributeMap();
-      finishParagraphY = drawPropertyParagraph(graphics2D, cellAttributes, 100, 5, 20);
+      finishParagraphY = drawPropertyParagraph(graphics2D, cellAttributes, startX , 5, 20);
     }
 
 
@@ -338,8 +338,9 @@ public enum UIUtils {
     }
   }
 
-  public static class PermanenceRenderer extends DefaultTableCellRenderer
-          implements TableCellRenderer {
+
+
+  public static class PermanenceRenderer extends DefaultTableCellRenderer {
     private double permanence = 0;
 
     { // initializer block

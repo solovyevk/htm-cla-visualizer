@@ -264,7 +264,7 @@ public class Cell {
    */
   public DistalDendriteSegment.Update getSegmentActiveSynapses(DistalDendriteSegment segment, int time,
                                                                boolean newSynapses) {
-    DistalDendriteSegment.Update result = new DistalDendriteSegment.Update(this, segment);
+    DistalDendriteSegment.Update result = new DistalDendriteSegment.Update(this, segment, time);
     if (segment != null) {
       result.addAll(segment.getActiveCellSynapses(time));
     }
@@ -337,7 +337,6 @@ public class Cell {
             }
           }
         }
-
         for (Synapse.DistalSynapse distalSynapse : segmentUpdate) {
           if (!segment.contains(distalSynapse)) {
             segment.add(distalSynapse);

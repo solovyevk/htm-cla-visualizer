@@ -27,6 +27,7 @@ public class DistalDendriteSegment extends ArrayList<Synapse.DistalSynapse> {
        return false;
      }
     }
+    distalSynapse.setSegment(this);
     return super.add(distalSynapse);
   }
 
@@ -34,10 +35,6 @@ public class DistalDendriteSegment extends ArrayList<Synapse.DistalSynapse> {
     super(Cell.AMOUNT_OF_SYNAPSES);
     this.belongsToCell = belongsToCell;
     attachToCell();
-    //TODO REMOVE
-        /*    for (int i = 0; i < 10; i++) {
-              this.add(new Synapse.DistalSynapse(belongsToCell));
-            } */
   }
 
   protected void attachToCell(){
@@ -115,10 +112,12 @@ public class DistalDendriteSegment extends ArrayList<Synapse.DistalSynapse> {
 
   public static class Update extends DistalDendriteSegment {
     private final DistalDendriteSegment target;
+    private final int time;
 
-    public Update(Cell belongsToCell, DistalDendriteSegment target) {
+    public Update(Cell belongsToCell, DistalDendriteSegment target, int time) {
       super(belongsToCell);
       this.target = target;
+      this.time = time;
     }
 
     @Override protected void attachToCell() {
@@ -131,6 +130,10 @@ public class DistalDendriteSegment extends ArrayList<Synapse.DistalSynapse> {
 
     public DistalDendriteSegment getTarget(){
       return target;
+    }
+
+    public int getTime() {
+      return time;
     }
   }
 }

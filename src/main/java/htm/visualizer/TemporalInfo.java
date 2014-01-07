@@ -21,6 +21,7 @@ import javax.swing.border.TitledBorder;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
 import javax.swing.table.AbstractTableModel;
+import javax.swing.table.DefaultTableCellRenderer;
 import java.awt.*;
 import java.awt.font.FontRenderContext;
 import java.awt.font.TextLayout;
@@ -31,6 +32,8 @@ public class TemporalInfo extends JPanel {
   private Cell currentCell;
   private JTable distalDendriteSegmentsTable;
   private JTable segmentDistalSynapsesTable;
+  private JTable distalDendriteSegmentUpdatesTable;
+  private JTable segmentUpdateDistalSynapsesTable;
   private RegionColumnsVerticalView regionColumnsVerticalView;
 
   public TemporalInfo(Region region) {
@@ -44,15 +47,9 @@ public class TemporalInfo extends JPanel {
 
     distalDendriteSegmentsTable = initDistalDendriteSegmentsTable();
     segmentDistalSynapsesTable = initSegmentDistalSynapsesTable();
-    JPanel left = new CellAttributesInfo();
-    left.setBackground(Color.WHITE);
-    left.setBorder(BorderFactory.createTitledBorder(BorderFactory.createEtchedBorder(),
-                                                    "Cell Properties",
-                                                    TitledBorder.CENTER,
-                                                    TitledBorder.TOP));
-    this.add(left, c);
-    c.gridx = 1;
-    c.weightx = 1.5;
+    distalDendriteSegmentUpdatesTable = initDistalDendriteSegmentUpdatesTable();
+    segmentUpdateDistalSynapsesTable = initSegmentUpdateDistalSynapsesTable();
+    //listeners
     distalDendriteSegmentsTable.getSelectionModel().addListSelectionListener(new ListSelectionListener() {
       @Override public void valueChanged(ListSelectionEvent e) {
         SegmentDistalSynapsesModel synapsesModel = (SegmentDistalSynapsesModel)segmentDistalSynapsesTable.getModel();
@@ -67,8 +64,32 @@ public class TemporalInfo extends JPanel {
         }
       }
     });
+    distalDendriteSegmentUpdatesTable.getSelectionModel().addListSelectionListener(new ListSelectionListener() {
+      @Override public void valueChanged(ListSelectionEvent e) {
+        SegmentDistalSynapsesModel synapsesModel = (SegmentDistalSynapsesModel)segmentUpdateDistalSynapsesTable.getModel();
+        int rowViewInx = distalDendriteSegmentUpdatesTable.getSelectedRow();
+        if (rowViewInx == -1) {
+          synapsesModel.setSegment(null);
+        } else {
+          int rowColumnModelInx = distalDendriteSegmentUpdatesTable.convertRowIndexToModel(rowViewInx);
+          DistalDendriteSegment.Update segmentUpdate = ((DistalDendriteSegmentUpdatesModel)distalDendriteSegmentUpdatesTable.getModel()).getSegmentUpdate(
+                  rowColumnModelInx);
+          synapsesModel.setSegment(segmentUpdate);
+        }
+      }
+    });
 
-    JPanel center = (new JPanel() {
+    JPanel left = new CellAttributesInfo();
+    left.setBackground(Color.WHITE);
+    left.setBorder(BorderFactory.createTitledBorder(BorderFactory.createEtchedBorder(),
+                                                    "Cell Properties",
+                                                    TitledBorder.CENTER,
+                                                    TitledBorder.TOP));
+    this.add(left, c);
+    c.gridx = 1;
+    c.weightx = 1.2;
+
+    JPanel center_left = (new JPanel() {
       private JPanel init() {
         this.setLayout(new GridLayout(2, 0, 5, 5));
         add(new JScrollPane(distalDendriteSegmentsTable));
@@ -78,16 +99,34 @@ public class TemporalInfo extends JPanel {
         return this;
       }
     }.init());
-    center.setBackground(Color.WHITE);
-    center.setBorder(BorderFactory.createTitledBorder(BorderFactory.createEtchedBorder(),
-                                                      "Segments & Synapses",
-                                                      TitledBorder.CENTER,
-                                                      TitledBorder.TOP));
-    this.add(center, c);
+    center_left.setBackground(Color.WHITE);
+    center_left.setBorder(BorderFactory.createTitledBorder(BorderFactory.createEtchedBorder(),
+                                                           "Segments & Synapses",
+                                                           TitledBorder.CENTER,
+                                                           TitledBorder.TOP));
+    this.add(center_left, c);
     c.gridx = 2;
+    c.weightx = 1.2;
+    JPanel center_right = (new JPanel() {
+      private JPanel init() {
+        this.setLayout(new GridLayout(2, 0, 5, 5));
+        add(new JScrollPane(distalDendriteSegmentUpdatesTable));
+        distalDendriteSegmentUpdatesTable.setFillsViewportHeight(true);
+        add(new JScrollPane(segmentUpdateDistalSynapsesTable));
+        segmentUpdateDistalSynapsesTable.setFillsViewportHeight(true);
+        return this;
+      }
+    }.init());
+    center_right.setBackground(Color.WHITE);
+    center_right.setBorder(BorderFactory.createTitledBorder(BorderFactory.createEtchedBorder(),
+                                                            "Updates & Synapses",
+                                                            TitledBorder.CENTER,
+                                                            TitledBorder.TOP));
+    this.add(center_right, c);
+    c.gridx = 3;
     c.weightx = 2.0;
     regionColumnsVerticalView = new RegionColumnsVerticalView(region);
-    final JScrollPane  right = new JScrollPane(regionColumnsVerticalView);
+    final JScrollPane right = new JScrollPane(regionColumnsVerticalView);
     right.setBackground(Color.WHITE);
     right.setBorder(BorderFactory.createTitledBorder(BorderFactory.createEtchedBorder(),
                                                      "Active Columns",
@@ -101,6 +140,7 @@ public class TemporalInfo extends JPanel {
   public void setCurrentCell(Cell currentCell) {
     this.currentCell = this.currentCell != currentCell ? currentCell : null;
     ((DistalDendriteSegmentsModel)distalDendriteSegmentsTable.getModel()).setCell(this.currentCell);
+    ((DistalDendriteSegmentUpdatesModel)distalDendriteSegmentUpdatesTable.getModel()).setCell(this.currentCell);
     regionColumnsVerticalView.setSelectedCell(currentCell);
     this.repaint();
   }
@@ -113,9 +153,45 @@ public class TemporalInfo extends JPanel {
 
   private JTable initSegmentDistalSynapsesTable() {
     JTable table = new JTable(new SegmentDistalSynapsesModel());
+    return getSynapsesTable(table);
+  }
+
+  private JTable initSegmentUpdateDistalSynapsesTable() {
+    JTable table = new JTable(new SegmentUpdateDistalSynapsesModel());
+    table.getColumnModel().getColumn(4).setPreferredWidth(20);
+    return getSynapsesTable(table);
+  }
+
+  private JTable getSynapsesTable(JTable table) {
     table.setAutoCreateRowSorter(true);
     table.getColumnModel().getColumn(0).setCellRenderer(new UIUtils.PermanenceRenderer());
+    table.getColumnModel().getColumn(1).setPreferredWidth(30);
+    table.getColumnModel().getColumn(1).setCellRenderer(new DefaultTableCellRenderer() {
+      private Cell cell;
+
+      @Override public void paint(Graphics g) {
+        super.paint(g);
+        Dimension size = this.getSize();
+        Rectangle insideRec = new Rectangle(size.width / 2 - (size.height - 4) / 2, 2, size.height - 4,
+                                            size.height - 4);
+        Graphics2D g2d = (Graphics2D)g;
+        CellSurface.drawCell(g2d, insideRec, cell, Cell.NOW);
+        g2d.setColor(Color.BLACK);
+      }
+
+      @Override
+      protected void setValue(Object value) {
+        cell = (Cell)value;
+      }
+    });
+    table.getColumnModel().getColumn(2).setPreferredWidth(30);
     table.getColumnModel().getColumn(3).setCellRenderer(new UIUtils.PositionRenderer());
+    return table;
+  }
+
+  private JTable initDistalDendriteSegmentUpdatesTable() {
+    JTable table = new JTable(new DistalDendriteSegmentUpdatesModel());
+    table.setAutoCreateRowSorter(true);
     return table;
   }
 
@@ -123,11 +199,19 @@ public class TemporalInfo extends JPanel {
     return segmentDistalSynapsesTable;
   }
 
+  public JTable getSegmentUpdateDistalSynapsesTable() {
+    return segmentUpdateDistalSynapsesTable;
+  }
+
   public RegionColumnsVerticalView getRegionColumnsVerticalView() {
     return regionColumnsVerticalView;
   }
 
   private class CellAttributesInfo extends UIUtils.TextColumnInfo {
+    {
+      startX = 90;
+    }
+
     @Override public void paint(Graphics g) {
       super.paint(g);
       if (currentCell != null) {
@@ -154,15 +238,99 @@ public class TemporalInfo extends JPanel {
       Cell cell = currentCell;
       Map<String, String> result = new LinkedHashMap<String, String>();
       if (cell != null) {
-        result.put("Column Index", cell.getBelongsToColumn().getIndex() + "");
-        result.put("Cell Index", cell.getCellIndex() + "");
+        result.put("Column Inx", cell.getBelongsToColumn().getIndex() + "");
+        result.put("Cell Inx", cell.getCellIndex() + "");
         result.put("Position",
                    "X:" + (cell.getBelongsToColumn().getPosition().x) + ", Y:" + cell.getBelongsToColumn().getPosition().y);
         /*result.put("Active", cell.getActiveState(Cell.NOW) ? "Yes" : "No");
         result.put("Predictive", cell.getPredictiveState(Cell.NOW) ? "Yes" : "No");
         result.put("Learn", cell.getLearnState(Cell.NOW) ? "Yes" : "No"); */
-        result.put("Seg.", cell.getSegments().size() + "");
-        result.put("Seg. Updates", cell.getSegmentUpdates().size() + "");
+        result.put("Segments", cell.getSegments().size() + "");
+        result.put("Updates", cell.getSegmentUpdates().size() + "");
+      }
+      return result;
+    }
+  }
+
+  class DistalDendriteSegmentUpdatesModel extends AbstractTableModel {
+    private java.util.List<DistalDendriteSegment.Update> segmentUpdates = null;
+    private String[] columnNames = {
+            "Seg Inx",
+            "Seq",
+            "Time",
+            "Syn(*)"
+    };
+
+    public void setCell(Cell cell) {
+      segmentUpdates = cell != null ? cell.getSegmentUpdates() : null;
+      this.fireTableDataChanged();
+    }
+
+    public DistalDendriteSegment.Update getSegmentUpdate(int rowIndex) {
+      DistalDendriteSegment.Update update = null;
+      if (segmentUpdates != null) {
+        update = segmentUpdates.get(rowIndex);
+      }
+      return update;
+    }
+
+
+    @Override public int getRowCount() {
+      return segmentUpdates == null ? 0 : segmentUpdates.size();
+    }
+
+    @Override public int getColumnCount() {
+      return columnNames.length;
+    }
+
+    @Override
+    public String getColumnName(int col) {
+      return columnNames[col];
+    }
+
+
+    @Override public Object getValueAt(int rowIndex, int columnIndex) {
+      Object value = null;
+      if (segmentUpdates != null) {
+        DistalDendriteSegment.Update row = segmentUpdates.get(rowIndex);
+        switch (columnIndex) {
+          case 0:
+            value = row.getTarget() == null ? "new" : currentCell.getSegments().indexOf(row.getTarget()) + "";
+            break;
+          case 1:
+            value = row.isSequenceSegment();
+            break;
+          case 2:
+            value = row.getTime() == Cell.NOW ? "NOW" : "BEF";
+            break;
+          case 3:
+            value = row.size();
+            break;
+          default:
+            value = null;
+        }
+      }
+      return value;
+    }
+
+    @Override public Class<?> getColumnClass(int columnIndex) {
+      Class result;
+      switch (columnIndex) {
+        case 0:
+          result = String.class;
+          break;
+        case 1:
+          result = Boolean.class;
+          break;
+        case 2:
+          result = String.class;
+          break;
+        case 3:
+          result = Integer.class;
+          break;
+        default:
+          result = super.getColumnClass(
+                  columnIndex);
       }
       return result;
     }
@@ -171,10 +339,11 @@ public class TemporalInfo extends JPanel {
   class DistalDendriteSegmentsModel extends AbstractTableModel {
     private java.util.List<DistalDendriteSegment> segments = null;
     private String[] columnNames = {
-            "Sequence",
-            "Active",
+            "Seg Inx",
+            "Seq",
+            "Act",
             "Learn",
-            "Synapses N"
+            "Syn(*)"
     };
 
     public void setCell(Cell cell) {
@@ -209,15 +378,18 @@ public class TemporalInfo extends JPanel {
         DistalDendriteSegment row = segments.get(rowIndex);
         switch (columnIndex) {
           case 0:
-            value = row.isSequenceSegment();
+            value = rowIndex;
             break;
           case 1:
-            value = row.segmentActive(Cell.NOW, Cell.State.ACTIVE);
+            value = row.isSequenceSegment();
             break;
           case 2:
-            value = row.segmentActive(Cell.NOW, Cell.State.LEARN);
+            value = row.segmentActive(Cell.NOW, Cell.State.ACTIVE);
             break;
           case 3:
+            value = row.segmentActive(Cell.NOW, Cell.State.LEARN);
+            break;
+          case 4:
             value = row.size();
             break;
           default:
@@ -231,7 +403,7 @@ public class TemporalInfo extends JPanel {
       Class result;
       switch (columnIndex) {
         case 0:
-          result = Boolean.class;
+          result = Integer.class;
           break;
         case 1:
           result = Boolean.class;
@@ -240,6 +412,9 @@ public class TemporalInfo extends JPanel {
           result = Boolean.class;
           break;
         case 3:
+          result = Boolean.class;
+          break;
+        case 4:
           result = Integer.class;
           break;
         default:
@@ -251,10 +426,10 @@ public class TemporalInfo extends JPanel {
   }
 
   class SegmentDistalSynapsesModel extends AbstractTableModel {
-    private java.util.List<Synapse.DistalSynapse> synapses = null;
-    private String[] columnNames = {
+    protected java.util.List<Synapse.DistalSynapse> synapses = null;
+    protected String[] columnNames = {
             "Perm",
-            "Act",
+            "Cell",
             "Inx",
             "Position"};
 
@@ -285,7 +460,7 @@ public class TemporalInfo extends JPanel {
             value = row.getPermanence();
             break;
           case 1:
-            value = row.getFromCell().getActiveState(Cell.NOW);
+            value = row.getFromCell();
             break;
           case 2:
             value = row.getFromCell().getCellIndex();
@@ -307,7 +482,7 @@ public class TemporalInfo extends JPanel {
           result = Double.class;
           break;
         case 1:
-          result = Boolean.class;
+          result = Cell.class;
           break;
         case 2:
           result = Integer.class;
@@ -330,6 +505,35 @@ public class TemporalInfo extends JPanel {
       return synapse;
     }
 
+  }
+
+  class SegmentUpdateDistalSynapsesModel extends SegmentDistalSynapsesModel {
+    {
+      columnNames = new String[]{
+              "Perm",
+              "Cell",
+              "Inx",
+              "Position",
+              "n"
+      };
+    }
+
+
+    @Override
+    public Object getValueAt(int rowIndex, int columnIndex) {
+      Synapse.DistalSynapse row = synapses.get(rowIndex);
+      if (columnIndex == 4) {
+        return row.getSegment() instanceof DistalDendriteSegment.Update;
+      }
+      return super.getValueAt(rowIndex, columnIndex);
+    }
+
+    @Override public Class<?> getColumnClass(int columnIndex) {
+      if (columnIndex == 4) {
+        return Boolean.class;
+      }
+      return super.getColumnClass(columnIndex);
+    }
   }
 
 

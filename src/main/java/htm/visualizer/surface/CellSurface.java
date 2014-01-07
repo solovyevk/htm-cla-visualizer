@@ -34,6 +34,10 @@ public abstract class CellSurface extends BaseSurface.CircleElementsSurface {
     drawCell(g2d, x, y, width, height, currentCell, Cell.NOW);
   }
 
+  public static void drawCell(Graphics2D g2d, Rectangle rect, Cell cell, int time) {
+    drawCell(g2d, rect.x, rect.y, rect.width, rect.height, cell, time);
+  }
+
   public static void drawCell(Graphics2D g2d, int x, int y, int width, int height, Cell cell, int time) {
     if (cell.getPredictiveState(time) && cell.getActiveState(time)) {
       drawCell(g2d, x, y, width, height, PREDICTED_COLOR, ACTIVE_COLOR);

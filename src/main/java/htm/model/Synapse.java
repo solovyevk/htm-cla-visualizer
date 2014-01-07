@@ -100,6 +100,7 @@ public class Synapse {
     public static double PERMANENCE_DECREASE = 0.005;
 
     private final Cell fromCell;
+    private DistalDendriteSegment segment;
 
     public static void updateFromConfig(Config synapseCfg) {
       DistalSynapse.CONNECTED_PERMANENCE = synapseCfg.getConnectedPerm();
@@ -119,6 +120,14 @@ public class Synapse {
 
     public Cell getFromCell() {
       return fromCell;
+    }
+
+    public DistalDendriteSegment getSegment() {
+      return segment;
+    }
+
+    public void setSegment(DistalDendriteSegment segment) {
+      this.segment = segment;
     }
   }
 

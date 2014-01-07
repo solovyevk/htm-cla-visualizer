@@ -53,11 +53,11 @@ public class HTMGraphicInterface extends JPanel {
   /*
   Default HTM Cell Parameters
   */
-  private static final  int NEW_SYNAPSE_COUNT = 5;
-  private static final  int ACTIVATION_THRESHOLD = 2;
-  private static final  int MIN_THRESHOLD = 0;//1;
-  private static final  int AMOUNT_OF_DISTAL_SYNAPSES = 30;
-  private static final  int TIME_STEPS = 6;
+  private static final int NEW_SYNAPSE_COUNT = 5;
+  private static final int ACTIVATION_THRESHOLD = 2;
+  private static final int MIN_THRESHOLD = 0;//1;
+  private static final int AMOUNT_OF_DISTAL_SYNAPSES = 30;
+  private static final int TIME_STEPS = 6;
 
   /*
   Default Proximal Synapse Parameters
@@ -100,11 +100,13 @@ public class HTMGraphicInterface extends JPanel {
 
   public HTMGraphicInterface() {
     this(new Config(null, new Region.Config(new Dimension(HORIZONTAL_COLUMN_NUMBER, VERTICAL_COLUMN_NUMBER),
-                                            new Dimension(SENSORY_INPUT_WIDTH, SENSORY_INPUT_HEIGHT), INPUT_RADIUS, LEARNING_RADIUS,
+                                            new Dimension(SENSORY_INPUT_WIDTH, SENSORY_INPUT_HEIGHT), INPUT_RADIUS,
+                                            LEARNING_RADIUS,
                                             false, CELLS_PER_COLUMN),
                     new Column.Config(AMOUNT_OF_PROXIMAL_SYNAPSES,
                                       MINIMAL_OVERLAP, DESIRED_LOCAL_ACTIVITY, BOOST_RATE),
-                    new Cell.Config(NEW_SYNAPSE_COUNT, ACTIVATION_THRESHOLD, MIN_THRESHOLD, AMOUNT_OF_DISTAL_SYNAPSES, TIME_STEPS),
+                    new Cell.Config(NEW_SYNAPSE_COUNT, ACTIVATION_THRESHOLD, MIN_THRESHOLD, AMOUNT_OF_DISTAL_SYNAPSES,
+                                    TIME_STEPS),
                     new Synapse.Config(PROXIMAL_SYNAPSE_CONNECTED_PERMANENCE, PROXIMAL_SYNAPSE_PERMANENCE_INCREASE,
                                        PROXIMAL_SYNAPSE_PERMANENCE_DECREASE),
                     new Synapse.Config(DISTAL_SYNAPSE_CONNECTED_PERMANENCE, DISTAL_SYNAPSE_PERMANENCE_INCREASE,
@@ -186,31 +188,18 @@ public class HTMGraphicInterface extends JPanel {
       }
     });
     //backward selection from active columns temporal info info to Region Slice;
-    temporalInfo.getRegionColumnsVerticalView().addElementMouseEnterListener(new BaseSurface.ElementMouseEnterListener() {
-      @Override
-      public void onElementMouseEnter(BaseSurface.ElementMouseEnterEvent e) {
-        Cell selectedCell = temporalInfo.getRegionColumnsVerticalView().getCell(e.getIndex());
-        slicedView.setClickedOnCell(selectedCell);
-        temporalInfo.setCurrentCell(selectedCell);
-      }
-    });
+    temporalInfo.getRegionColumnsVerticalView().addElementMouseEnterListener(
+            new BaseSurface.ElementMouseEnterListener() {
+              @Override
+              public void onElementMouseEnter(BaseSurface.ElementMouseEnterEvent e) {
+                Cell selectedCell = temporalInfo.getRegionColumnsVerticalView().getCell(e.getIndex());
+                slicedView.setClickedOnCell(selectedCell);
+                temporalInfo.setCurrentCell(selectedCell);
+              }
+            });
     //backward selection from synapses temporal info to Region Slice;
-    temporalInfo.getSegmentDistalSynapsesTable().getSelectionModel().addListSelectionListener(
-      new ListSelectionListener() {
-        @Override public void valueChanged(ListSelectionEvent e) {
-          int rowViewInx = temporalInfo.getSegmentDistalSynapsesTable().getSelectedRow();
-          if (rowViewInx == -1) {
-            slicedView.getLayer(0).setSelectedSynapseColumnIndex(-1);
-          } else {
-            int rowColumnModelInx = temporalInfo.getSegmentDistalSynapsesTable().convertRowIndexToModel(
-                    rowViewInx);
-            Synapse.DistalSynapse selectedSynapse = ((TemporalInfo.SegmentDistalSynapsesModel)temporalInfo.getSegmentDistalSynapsesTable().getModel()).getSynapse(
-                    rowColumnModelInx);
-            slicedView.getLayer(selectedSynapse.getFromCell().getCellIndex()).setSelectedSynapseColumnIndex(
-                    selectedSynapse.getFromCell().getBelongsToColumn().getIndex());
-          }
-        }
-      });
+    temporalInfo.getSegmentDistalSynapsesTable().getSelectionModel().addListSelectionListener(new SynapseTableSelectListener(temporalInfo.getSegmentDistalSynapsesTable(), slicedView));
+    temporalInfo.getSegmentUpdateDistalSynapsesTable().getSelectionModel().addListSelectionListener(new SynapseTableSelectListener(temporalInfo.getSegmentUpdateDistalSynapsesTable(),slicedView));
     if (!region.isSkipSpatial()) {
       //select column to view spatial details
       sdrInput.addElementMouseEnterListener(new BaseSurface.ElementMouseEnterListener() {
@@ -250,6 +239,34 @@ public class HTMGraphicInterface extends JPanel {
           }
         }
       });
+    }
+  }
+
+  private static class SynapseTableSelectListener implements ListSelectionListener {
+    private final JTable sourceTable;
+    private final RegionSlicedHorizontalView slicedView;
+
+    private SynapseTableSelectListener(JTable sourceTable, RegionSlicedHorizontalView slicedView) {
+      this.sourceTable = sourceTable;
+      this.slicedView = slicedView;
+    }
+
+    @Override public void valueChanged(ListSelectionEvent e) {
+      selectFromSynapse();
+    }
+
+    private void selectFromSynapse() {
+      int rowViewInx = sourceTable.getSelectedRow();
+      if (rowViewInx == -1) {
+        slicedView.getLayer(0).setSelectedSynapseColumnIndex(-1);
+      } else {
+        int rowColumnModelInx = sourceTable.convertRowIndexToModel(
+                rowViewInx);
+        Synapse.DistalSynapse selectedSynapse = ((TemporalInfo.SegmentDistalSynapsesModel)sourceTable.getModel()).getSynapse(
+                rowColumnModelInx);
+        slicedView.getLayer(selectedSynapse.getFromCell().getCellIndex()).setSelectedSynapseColumnIndex(
+                selectedSynapse.getFromCell().getBelongsToColumn().getIndex());
+      }
     }
   }
 
@@ -324,23 +341,24 @@ public class HTMGraphicInterface extends JPanel {
 
   Config getParameters() {
     return new Config(patterns, new Region.Config(region.getDimension(), region.getInputSpaceDimension(),
-                                  region.getInputRadius(), region.getLearningRadius(), region.isSkipSpatial(), region.getCellsInColumn()),
-      new Column.Config(Column.AMOUNT_OF_PROXIMAL_SYNAPSES,
-                        Column.MIN_OVERLAP,
-                        Column.DESIRED_LOCAL_ACTIVITY, Column.BOOST_RATE),
-      new Cell.Config(Cell.NEW_SYNAPSE_COUNT,
-                      Cell.ACTIVATION_THRESHOLD,
-                      Cell.MIN_THRESHOLD,
-                      Cell.AMOUNT_OF_SYNAPSES,
-                      Cell.TIME_STEPS),
-      new Synapse.Config(Synapse.ProximalSynapse.CONNECTED_PERMANENCE,
-                         Synapse.ProximalSynapse.PERMANENCE_INCREASE,
-                         Synapse.ProximalSynapse.PERMANENCE_DECREASE
-      ),
-      new Synapse.Config(Synapse.DistalSynapse.CONNECTED_PERMANENCE,
-                         Synapse.DistalSynapse.PERMANENCE_INCREASE,
-                         Synapse.DistalSynapse.PERMANENCE_DECREASE
-      ));
+                                                  region.getInputRadius(), region.getLearningRadius(),
+                                                  region.isSkipSpatial(), region.getCellsInColumn()),
+                      new Column.Config(Column.AMOUNT_OF_PROXIMAL_SYNAPSES,
+                                        Column.MIN_OVERLAP,
+                                        Column.DESIRED_LOCAL_ACTIVITY, Column.BOOST_RATE),
+                      new Cell.Config(Cell.NEW_SYNAPSE_COUNT,
+                                      Cell.ACTIVATION_THRESHOLD,
+                                      Cell.MIN_THRESHOLD,
+                                      Cell.AMOUNT_OF_SYNAPSES,
+                                      Cell.TIME_STEPS),
+                      new Synapse.Config(Synapse.ProximalSynapse.CONNECTED_PERMANENCE,
+                                         Synapse.ProximalSynapse.PERMANENCE_INCREASE,
+                                         Synapse.ProximalSynapse.PERMANENCE_DECREASE
+                      ),
+                      new Synapse.Config(Synapse.DistalSynapse.CONNECTED_PERMANENCE,
+                                         Synapse.DistalSynapse.PERMANENCE_INCREASE,
+                                         Synapse.DistalSynapse.PERMANENCE_DECREASE
+                      ));
   }
 
 
@@ -467,7 +485,7 @@ public class HTMGraphicInterface extends JPanel {
 
     public ControlPanel() {
       initActions();
-      infoPane.setPreferredSize(new Dimension(200, infoPane.getPreferredSize().height));
+      infoPane.setPreferredSize(new Dimension(250, infoPane.getPreferredSize().height));
       infoPane.setLayout(new GridLayout(0, 3, 1, 1));
       infoPane.setVisible(patterns.size() > 0);
       infoPane.add(pattersInfo);
@@ -610,6 +628,9 @@ public class HTMGraphicInterface extends JPanel {
     }
   }
 
+
+
+
   public static class Config {
     private final java.util.List<boolean[]> patterns;
     private final Region.Config regionConfig;
@@ -619,7 +640,8 @@ public class HTMGraphicInterface extends JPanel {
     private final Synapse.Config distalSynapseConfig;
 
 
-    public Config(List<boolean[]> patterns, Region.Config regionConfig, Column.Config columnConfig, Cell.Config cellConfig,
+    public Config(List<boolean[]> patterns, Region.Config regionConfig, Column.Config columnConfig,
+                  Cell.Config cellConfig,
                   Synapse.ProximalSynapse.Config proximalSynapseConfig,
                   Synapse.DistalSynapse.Config distalSynapseConfig) {
       this.patterns = patterns;
@@ -653,6 +675,8 @@ public class HTMGraphicInterface extends JPanel {
     public Cell.Config getCellConfig() {
       return cellConfig;
     }
+
+
   }
 
 }
