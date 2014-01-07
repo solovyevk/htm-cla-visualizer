@@ -3,10 +3,7 @@ package htm.model;
 import htm.utils.CircularArrayList;
 import htm.utils.CollectionUtils;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.List;
+import java.util.*;
 
 public class Cell {
 
@@ -295,6 +292,7 @@ public class Cell {
         result.add(new Synapse.DistalSynapse(cellWithLearnState));
       }
     }
+    fireSegmentUpdatesChange();
     return result;
   }
 
@@ -348,7 +346,41 @@ public class Cell {
     }
     //Clear segmentUpdates after adaption;
     this.segmentUpdates.clear();
+    fireSegmentUpdatesChange();
   }
+
+   /*Custom events implementation*/
+  private Collection<SegmentUpdatesChangeEventListener> _segmentUpdatesChangeEventListeners = new HashSet<SegmentUpdatesChangeEventListener>();
+
+  public synchronized void addSegmentUpdatesChangeListener(SegmentUpdatesChangeEventListener listener) {
+    _segmentUpdatesChangeEventListeners.add(listener);
+  }
+
+  public synchronized void removeSegmentUpdatesChangeListener(SegmentUpdatesChangeEventListener listener) {
+    _segmentUpdatesChangeEventListeners.remove(listener);
+  }
+
+  private synchronized void fireSegmentUpdatesChange() {
+    SegmentUpdatesChangeEvent event = new SegmentUpdatesChangeEvent(this);
+    Iterator i = _segmentUpdatesChangeEventListeners.iterator();
+    while (i.hasNext()) {
+      ((SegmentUpdatesChangeEventListener)i.next()).onSegmentUpdatesChange(event);
+    }
+  }
+
+
+  public static class SegmentUpdatesChangeEvent extends java.util.EventObject {
+
+    public SegmentUpdatesChangeEvent(Cell source) {
+      super(source);
+    }
+
+  }
+
+  public interface SegmentUpdatesChangeEventListener {
+    public void onSegmentUpdatesChange(SegmentUpdatesChangeEvent e);
+  }
+
 
   /*
  *Advances this cell to the next time step.

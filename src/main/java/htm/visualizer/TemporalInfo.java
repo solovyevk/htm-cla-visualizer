@@ -186,6 +186,7 @@ public class TemporalInfo extends JPanel {
     });
     table.getColumnModel().getColumn(2).setPreferredWidth(30);
     table.getColumnModel().getColumn(3).setCellRenderer(new UIUtils.PositionRenderer());
+    table.setAutoCreateRowSorter(true);
     return table;
   }
 
@@ -253,6 +254,11 @@ public class TemporalInfo extends JPanel {
   }
 
   class DistalDendriteSegmentUpdatesModel extends AbstractTableModel {
+    private Cell.SegmentUpdatesChangeEventListener segmentUpdateAdaptEventListener = new Cell.SegmentUpdatesChangeEventListener(){
+      @Override public void onSegmentUpdatesChange(Cell.SegmentUpdatesChangeEvent e) {
+        fireTableDataChanged();
+      }
+    };
     private java.util.List<DistalDendriteSegment.Update> segmentUpdates = null;
     private String[] columnNames = {
             "Seg Inx",
@@ -264,6 +270,9 @@ public class TemporalInfo extends JPanel {
     public void setCell(Cell cell) {
       segmentUpdates = cell != null ? cell.getSegmentUpdates() : null;
       this.fireTableDataChanged();
+      if(cell != null){
+        cell.addSegmentUpdatesChangeListener(segmentUpdateAdaptEventListener);
+      }
     }
 
     public DistalDendriteSegment.Update getSegmentUpdate(int rowIndex) {
@@ -291,7 +300,7 @@ public class TemporalInfo extends JPanel {
 
     @Override public Object getValueAt(int rowIndex, int columnIndex) {
       Object value = null;
-      if (segmentUpdates != null) {
+      if (segmentUpdates != null && segmentUpdates.size() > rowIndex) {
         DistalDendriteSegment.Update row = segmentUpdates.get(rowIndex);
         switch (columnIndex) {
           case 0:
