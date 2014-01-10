@@ -8,9 +8,7 @@
 
 package htm.visualizer.surface;
 
-import htm.model.Cell;
-import htm.model.Column;
-import htm.model.Region;
+import htm.model.*;
 import htm.utils.UIUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -26,6 +24,7 @@ public class RegionSlicedHorizontalView extends JPanel {
   private List<ColumnCellsByIndexSurface> layers = new ArrayList<ColumnCellsByIndexSurface>();
   private CellPosition clickedOnCellPosition = null;
   private CellPosition selectedSynapseCellPosition = null;
+  private List<CellPosition> selectedSegmentSynapsesCellPositionList = new ArrayList<CellPosition>();
 
 
   public List<ColumnCellsByIndexSurface> getLayers() {
@@ -72,17 +71,43 @@ public class RegionSlicedHorizontalView extends JPanel {
   public void setClickedOnCellPosition(CellPosition clickedOnCellPosition) {
     this.clickedOnCellPosition = clickedOnCellPosition.equals(
             this.clickedOnCellPosition) ? null : clickedOnCellPosition;
-    setSelectedSynapseCellPosition(null);
+    this.selectedSynapseCellPosition = null;
+    selectedSegmentSynapsesCellPositionList.clear();
     repaint();
   }
+
 
   public CellPosition getSelectedSynapseCellPosition() {
     return selectedSynapseCellPosition;
   }
 
+
   public void setSelectedSynapseCellPosition(CellPosition selectedSynapseCellPosition) {
     this.selectedSynapseCellPosition = selectedSynapseCellPosition;
   }
+
+  public void setSelectedSynapse(Synapse.DistalSynapse selectedSynapse) {
+    CellPosition newSelectedSynapseCellPosition = new CellPosition(
+            selectedSynapse.getFromCell().getBelongsToColumn().getIndex(),
+            selectedSynapse.getFromCell().getCellIndex());
+    this.selectedSynapseCellPosition = this.selectedSynapseCellPosition == newSelectedSynapseCellPosition ? null : newSelectedSynapseCellPosition;
+  }
+
+  public void setSelectedSegment(DistalDendriteSegment selectedSegment) {
+    selectedSegmentSynapsesCellPositionList.clear();
+    if (selectedSegment != null) {
+      for (Synapse.DistalSynapse distalSynapse : selectedSegment) {
+        selectedSegmentSynapsesCellPositionList.add(new CellPosition(
+                distalSynapse.getFromCell().getBelongsToColumn().getIndex(),
+                distalSynapse.getFromCell().getCellIndex()));
+      }
+    }
+  }
+
+  public List<CellPosition> getSelectedSegmentSynapsesCellPositionList() {
+    return selectedSegmentSynapsesCellPositionList;
+  }
+
 
   public static class CellPosition {
     private final int columnIndex;
@@ -145,7 +170,11 @@ public class RegionSlicedHorizontalView extends JPanel {
       return parentView.getSelectedSynapseCellPosition();
     }
 
-    private void repaintAll() {
+    private List<CellPosition> getSelectedSegmentSynapsesCellPositionList() {
+      return parentView.getSelectedSegmentSynapsesCellPositionList();
+    }
+
+ /*   private void repaintAll() {
       for (ColumnCellsByIndexSurface layer : parentView.getLayers()) {
         layer.repaint();
       }
@@ -155,7 +184,7 @@ public class RegionSlicedHorizontalView extends JPanel {
       parentView.setSelectedSynapseCellPosition(selectedSynapseInx == -1 ? null : new CellPosition(selectedSynapseInx,
                                                                                                    this.layerIndex));
       repaintAll();
-    }
+    } */
 
 
     public void drawNeighbors(int columnIndex, Graphics2D g2d) {
@@ -180,6 +209,7 @@ public class RegionSlicedHorizontalView extends JPanel {
       super.doDrawing(g2d);
       //LOG.debug("Draw Sliced Region");
       CellPosition clickedOn = getClickedOnCellPosition(), selectedSynapse = getSelectedSynapseCellPosition();
+      List<CellPosition> selectedSegmentSynapsesCellPositionList = getSelectedSegmentSynapsesCellPositionList();
       if (clickedOn != null) {
         Stroke originalStroke = g2d.getStroke();
         g2d.setStroke(new BasicStroke(1.5f));
@@ -208,6 +238,23 @@ public class RegionSlicedHorizontalView extends JPanel {
                                                     0.5f));
         g2d.fillOval(aroundRec.x, aroundRec.y, aroundRec.width, aroundRec.height);
         g2d.setComposite(original);
+      }
+      for (CellPosition cellPosition : selectedSegmentSynapsesCellPositionList) {
+        if (cellPosition.getCellIndex() == this.layerIndex) {
+          Color originalColor = g2d.getColor();
+          Stroke originalStroke = g2d.getStroke();
+          Composite original = g2d.getComposite();
+          g2d.setStroke(new BasicStroke(1.5f));
+          g2d.setColor(Color.GREEN);
+          g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER,
+                                                            0.5f));
+          Rectangle aroundRec = getElementAreaWithScale(cellPosition.getColumnIndex(), 1 / (Math.PI / 4) * .25);
+          g2d.drawLine(aroundRec.x, aroundRec.y, aroundRec.x + aroundRec.width, aroundRec.y + aroundRec.height);
+          g2d.drawLine(aroundRec.x, aroundRec.y + aroundRec.height, aroundRec.x + aroundRec.width, aroundRec.y);
+          g2d.setColor(originalColor);
+          g2d.setStroke(originalStroke);
+          g2d.setComposite(original);
+        }
       }
     }
 

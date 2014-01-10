@@ -1,9 +1,6 @@
 package htm.visualizer;
 
-import htm.model.Cell;
-import htm.model.Column;
-import htm.model.Region;
-import htm.model.Synapse;
+import htm.model.*;
 import htm.utils.UIUtils;
 import htm.visualizer.surface.BaseSurface;
 import htm.visualizer.surface.ColumnSDRSurface;
@@ -197,9 +194,12 @@ public class HTMGraphicInterface extends JPanel {
                 temporalInfo.setCurrentCell(selectedCell);
               }
             });
-    //backward selection from synapses temporal info to Region Slice;
+    //backward selection from selected synapse on temporal info to Region Slice;
     temporalInfo.getSegmentDistalSynapsesTable().getSelectionModel().addListSelectionListener(new SynapseTableSelectListener(temporalInfo.getSegmentDistalSynapsesTable(), slicedView));
     temporalInfo.getSegmentUpdateDistalSynapsesTable().getSelectionModel().addListSelectionListener(new SynapseTableSelectListener(temporalInfo.getSegmentUpdateDistalSynapsesTable(),slicedView));
+    //backward selection from selected segment on temporal info to Region Slice;
+    temporalInfo.getDistalDendriteSegmentsTable().getSelectionModel().addListSelectionListener(new SegmentTableSelectListener(temporalInfo.getDistalDendriteSegmentsTable(), slicedView));
+    temporalInfo.getDistalDendriteSegmentUpdatesTable().getSelectionModel().addListSelectionListener(new SegmentTableSelectListener(temporalInfo.getDistalDendriteSegmentUpdatesTable(), slicedView));
     if (!region.isSkipSpatial()) {
       //select column to view spatial details
       sdrInput.addElementMouseEnterListener(new BaseSurface.ElementMouseEnterListener() {
@@ -242,13 +242,44 @@ public class HTMGraphicInterface extends JPanel {
     }
   }
 
-  private static class SynapseTableSelectListener implements ListSelectionListener {
-    private final JTable sourceTable;
-    private final RegionSlicedHorizontalView slicedView;
+  private abstract static class TableSelectListener implements ListSelectionListener {
+     protected final JTable sourceTable;
+     protected final RegionSlicedHorizontalView slicedView;
 
+     private TableSelectListener(JTable sourceTable, RegionSlicedHorizontalView slicedView) {
+       this.sourceTable = sourceTable;
+       this.slicedView = slicedView;
+     }
+   }
+
+  private static class SegmentTableSelectListener extends TableSelectListener {
+
+    private SegmentTableSelectListener(JTable sourceTable, RegionSlicedHorizontalView slicedView) {
+      super(sourceTable, slicedView);
+    }
+
+    @Override public void valueChanged(ListSelectionEvent e) {
+      selectFromSegment();
+    }
+
+    private void selectFromSegment(){
+      int rowViewInx = sourceTable.getSelectedRow();
+       if (rowViewInx == -1) {
+         slicedView.setSelectedSegment(null);
+       } else {
+         int rowColumnModelInx = sourceTable.convertRowIndexToModel(
+                 rowViewInx);
+         DistalDendriteSegment selectedSegment = ((TemporalInfo.SegmentsModel)sourceTable.getModel()).getSegment(
+                 rowColumnModelInx);
+         slicedView.setSelectedSegment(selectedSegment);
+         slicedView.repaint();
+       }
+    }
+  }
+
+  private static class SynapseTableSelectListener extends TableSelectListener {
     private SynapseTableSelectListener(JTable sourceTable, RegionSlicedHorizontalView slicedView) {
-      this.sourceTable = sourceTable;
-      this.slicedView = slicedView;
+      super(sourceTable, slicedView);
     }
 
     @Override public void valueChanged(ListSelectionEvent e) {
@@ -258,14 +289,14 @@ public class HTMGraphicInterface extends JPanel {
     private void selectFromSynapse() {
       int rowViewInx = sourceTable.getSelectedRow();
       if (rowViewInx == -1) {
-        slicedView.getLayer(0).setSelectedSynapseColumnIndex(-1);
+        slicedView.setSelectedSynapseCellPosition(null);
       } else {
         int rowColumnModelInx = sourceTable.convertRowIndexToModel(
                 rowViewInx);
         Synapse.DistalSynapse selectedSynapse = ((TemporalInfo.SegmentDistalSynapsesModel)sourceTable.getModel()).getSynapse(
                 rowColumnModelInx);
-        slicedView.getLayer(selectedSynapse.getFromCell().getCellIndex()).setSelectedSynapseColumnIndex(
-                selectedSynapse.getFromCell().getBelongsToColumn().getIndex());
+        slicedView.setSelectedSynapse(selectedSynapse);
+        slicedView.repaint();
       }
     }
   }

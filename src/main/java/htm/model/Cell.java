@@ -292,7 +292,7 @@ public class Cell {
         result.add(new Synapse.DistalSynapse(cellWithLearnState));
       }
     }
-    fireSegmentUpdatesChange();
+    fireUpdatesChange();
     return result;
   }
 
@@ -346,39 +346,50 @@ public class Cell {
     }
     //Clear segmentUpdates after adaption;
     this.segmentUpdates.clear();
-    fireSegmentUpdatesChange();
+    fireUpdatesChange();
+    fireSegmentsChange();
   }
 
    /*Custom events implementation*/
-  private Collection<SegmentUpdatesChangeEventListener> _segmentUpdatesChangeEventListeners = new HashSet<SegmentUpdatesChangeEventListener>();
+  private Collection<SegmentsChangeEventListener> _segmentsChangeEventListeners = new HashSet<SegmentsChangeEventListener>();
 
-  public synchronized void addSegmentUpdatesChangeListener(SegmentUpdatesChangeEventListener listener) {
-    _segmentUpdatesChangeEventListeners.add(listener);
+  public synchronized void addSegmentsChangeListener(SegmentsChangeEventListener listener) {
+    _segmentsChangeEventListeners.add(listener);
   }
 
-  public synchronized void removeSegmentUpdatesChangeListener(SegmentUpdatesChangeEventListener listener) {
-    _segmentUpdatesChangeEventListeners.remove(listener);
+  public synchronized void removeSegmentsChangeListener(SegmentsChangeEventListener listener) {
+    _segmentsChangeEventListeners.remove(listener);
   }
 
-  private synchronized void fireSegmentUpdatesChange() {
-    SegmentUpdatesChangeEvent event = new SegmentUpdatesChangeEvent(this);
-    Iterator i = _segmentUpdatesChangeEventListeners.iterator();
-    while (i.hasNext()) {
-      ((SegmentUpdatesChangeEventListener)i.next()).onSegmentUpdatesChange(event);
+  private synchronized void fireUpdatesChange() {
+    SegmentsChangeEvent event = new SegmentsChangeEvent(this);
+    for (SegmentsChangeEventListener segmentsChangeEventListener : _segmentsChangeEventListeners) {
+         segmentsChangeEventListener.onUpdatesChange(event);
+       }
+  }
+
+  private synchronized void fireSegmentsChange() {
+     SegmentsChangeEvent event = new SegmentsChangeEvent(this);
+    for (SegmentsChangeEventListener segmentsChangeEventListener : _segmentsChangeEventListeners) {
+      segmentsChangeEventListener.onSegmentsChange(event);
     }
-  }
+   }
 
 
-  public static class SegmentUpdatesChangeEvent extends java.util.EventObject {
 
-    public SegmentUpdatesChangeEvent(Cell source) {
+
+
+  public static class SegmentsChangeEvent extends java.util.EventObject {
+
+    public SegmentsChangeEvent(Cell source) {
       super(source);
     }
 
   }
 
-  public interface SegmentUpdatesChangeEventListener {
-    public void onSegmentUpdatesChange(SegmentUpdatesChangeEvent e);
+  public interface SegmentsChangeEventListener {
+    public void onSegmentsChange(SegmentsChangeEvent e);
+    public void onUpdatesChange(SegmentsChangeEvent e);
   }
 
 

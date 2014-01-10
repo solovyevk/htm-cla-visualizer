@@ -72,7 +72,7 @@ public class TemporalInfo extends JPanel {
           synapsesModel.setSegment(null);
         } else {
           int rowColumnModelInx = distalDendriteSegmentUpdatesTable.convertRowIndexToModel(rowViewInx);
-          DistalDendriteSegment.Update segmentUpdate = ((DistalDendriteSegmentUpdatesModel)distalDendriteSegmentUpdatesTable.getModel()).getSegmentUpdate(
+          DistalDendriteSegment segmentUpdate = ((DistalDendriteSegmentUpdatesModel)distalDendriteSegmentUpdatesTable.getModel()).getSegment(
                   rowColumnModelInx);
           synapsesModel.setSegment(segmentUpdate);
         }
@@ -191,7 +191,18 @@ public class TemporalInfo extends JPanel {
   }
 
   private JTable initDistalDendriteSegmentUpdatesTable() {
-    JTable table = new JTable(new DistalDendriteSegmentUpdatesModel());
+    JTable table = new JTable(new DistalDendriteSegmentUpdatesModel()) {
+      //need to override to avoid exception in sorter
+      @Override
+      public Object getValueAt(int row, int column) {
+        if (row > getModel().getRowCount() || getModel().getRowCount() == 0) {
+          return null;
+        } else {
+          return super.getValueAt(row, column);
+
+        }
+      }
+    };
     table.setAutoCreateRowSorter(true);
     return table;
   }
@@ -204,9 +215,18 @@ public class TemporalInfo extends JPanel {
     return segmentUpdateDistalSynapsesTable;
   }
 
+  public JTable getDistalDendriteSegmentsTable() {
+    return distalDendriteSegmentsTable;
+  }
+
+  public JTable getDistalDendriteSegmentUpdatesTable() {
+    return distalDendriteSegmentUpdatesTable;
+  }
+
   public RegionColumnsVerticalView getRegionColumnsVerticalView() {
     return regionColumnsVerticalView;
   }
+
 
   private class CellAttributesInfo extends UIUtils.TextColumnInfo {
     {
@@ -253,101 +273,27 @@ public class TemporalInfo extends JPanel {
     }
   }
 
-  class DistalDendriteSegmentUpdatesModel extends AbstractTableModel {
-    private Cell.SegmentUpdatesChangeEventListener segmentUpdateAdaptEventListener = new Cell.SegmentUpdatesChangeEventListener(){
-      @Override public void onSegmentUpdatesChange(Cell.SegmentUpdatesChangeEvent e) {
-        fireTableDataChanged();
+
+  abstract class SegmentsModel extends AbstractTableModel {
+    protected java.util.List<? extends DistalDendriteSegment> segments = null;
+
+    private Cell.SegmentsChangeEventListener segmentsUpdatesChangeEventListener = new Cell.SegmentsChangeEventListener() {
+      @Override public void onSegmentsChange(Cell.SegmentsChangeEvent e) {
+        segmentsChange();
+      }
+
+      @Override public void onUpdatesChange(Cell.SegmentsChangeEvent e) {
+        updatesChange();
       }
     };
-    private java.util.List<DistalDendriteSegment.Update> segmentUpdates = null;
-    private String[] columnNames = {
-            "Seg Inx",
-            "Seq",
-            "Time",
-            "Syn(*)"
-    };
 
-    public void setCell(Cell cell) {
-      segmentUpdates = cell != null ? cell.getSegmentUpdates() : null;
-      this.fireTableDataChanged();
-      if(cell != null){
-        cell.addSegmentUpdatesChangeListener(segmentUpdateAdaptEventListener);
-      }
+    protected void segmentsChange() {
     }
 
-    public DistalDendriteSegment.Update getSegmentUpdate(int rowIndex) {
-      DistalDendriteSegment.Update update = null;
-      if (segmentUpdates != null) {
-        update = segmentUpdates.get(rowIndex);
-      }
-      return update;
+    protected void updatesChange() {
     }
 
-
-    @Override public int getRowCount() {
-      return segmentUpdates == null ? 0 : segmentUpdates.size();
-    }
-
-    @Override public int getColumnCount() {
-      return columnNames.length;
-    }
-
-    @Override
-    public String getColumnName(int col) {
-      return columnNames[col];
-    }
-
-
-    @Override public Object getValueAt(int rowIndex, int columnIndex) {
-      Object value = null;
-      if (segmentUpdates != null && segmentUpdates.size() > rowIndex) {
-        DistalDendriteSegment.Update row = segmentUpdates.get(rowIndex);
-        switch (columnIndex) {
-          case 0:
-            value = row.getTarget() == null ? "new" : currentCell.getSegments().indexOf(row.getTarget()) + "";
-            break;
-          case 1:
-            value = row.isSequenceSegment();
-            break;
-          case 2:
-            value = row.getTime() == Cell.NOW ? "NOW" : "BEF";
-            break;
-          case 3:
-            value = row.size();
-            break;
-          default:
-            value = null;
-        }
-      }
-      return value;
-    }
-
-    @Override public Class<?> getColumnClass(int columnIndex) {
-      Class result;
-      switch (columnIndex) {
-        case 0:
-          result = String.class;
-          break;
-        case 1:
-          result = Boolean.class;
-          break;
-        case 2:
-          result = String.class;
-          break;
-        case 3:
-          result = Integer.class;
-          break;
-        default:
-          result = super.getColumnClass(
-                  columnIndex);
-      }
-      return result;
-    }
-  }
-
-  class DistalDendriteSegmentsModel extends AbstractTableModel {
-    private java.util.List<DistalDendriteSegment> segments = null;
-    private String[] columnNames = {
+    protected String[] columnNames = {
             "Seg Inx",
             "Seq",
             "Act",
@@ -356,8 +302,10 @@ public class TemporalInfo extends JPanel {
     };
 
     public void setCell(Cell cell) {
-      segments = cell != null ? cell.getSegments() : null;
       this.fireTableDataChanged();
+      if (cell != null) {
+        cell.addSegmentsChangeListener(segmentsUpdatesChangeEventListener);
+      }
     }
 
     @Override public int getRowCount() {
@@ -379,6 +327,20 @@ public class TemporalInfo extends JPanel {
         segment = segments.get(rowIndex);
       }
       return segment;
+    }
+
+  }
+
+  class DistalDendriteSegmentsModel extends SegmentsModel {
+
+    @Override
+    public void setCell(Cell cell) {
+      segments = cell != null ? cell.getSegments() : null;
+      super.setCell(cell);
+    }
+
+    @Override protected void segmentsChange() {
+      // this.fireTableDataChanged();  -want to keep selected list
     }
 
     @Override public Object getValueAt(int rowIndex, int columnIndex) {
@@ -433,6 +395,86 @@ public class TemporalInfo extends JPanel {
       return result;
     }
   }
+
+  class DistalDendriteSegmentUpdatesModel extends SegmentsModel {
+
+    {
+      columnNames = new String[]{
+              "Seg Inx",
+              "Seq",
+              "Time",
+              "Syn(*)"
+      };
+    }
+
+    @Override protected void updatesChange() {
+      this.fireTableDataChanged();
+    }
+
+    @Override
+    public void setCell(Cell cell) {
+      segments = cell != null ? cell.getSegmentUpdates() : null;
+      super.setCell(cell);
+    }
+
+
+    @Override public int getColumnCount() {
+      return columnNames.length;
+    }
+
+    @Override
+    public String getColumnName(int col) {
+      return columnNames[col];
+    }
+
+
+    @Override public Object getValueAt(int rowIndex, int columnIndex) {
+      Object value = null;
+      if (segments != null && segments.size() > rowIndex) {
+        DistalDendriteSegment.Update row = (DistalDendriteSegment.Update)segments.get(rowIndex);
+        switch (columnIndex) {
+          case 0:
+            value = row.getTarget() == null ? "new" : currentCell.getSegments().indexOf(row.getTarget()) + "";
+            break;
+          case 1:
+            value = row.isSequenceSegment();
+            break;
+          case 2:
+            value = row.getTime() == Cell.NOW ? "NOW" : "BEF";
+            break;
+          case 3:
+            value = row.size();
+            break;
+          default:
+            value = null;
+        }
+      }
+      return value;
+    }
+
+    @Override public Class<?> getColumnClass(int columnIndex) {
+      Class result;
+      switch (columnIndex) {
+        case 0:
+          result = String.class;
+          break;
+        case 1:
+          result = Boolean.class;
+          break;
+        case 2:
+          result = String.class;
+          break;
+        case 3:
+          result = Integer.class;
+          break;
+        default:
+          result = super.getColumnClass(
+                  columnIndex);
+      }
+      return result;
+    }
+  }
+
 
   class SegmentDistalSynapsesModel extends AbstractTableModel {
     protected java.util.List<Synapse.DistalSynapse> synapses = null;
