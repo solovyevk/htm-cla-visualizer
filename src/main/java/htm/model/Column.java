@@ -471,12 +471,14 @@ public class Column extends BaseSpace.Element {
       }
     }
     if (!lcChosen && region.getTemporalLearning()) {
-      Cell bestCell = getBestMatchingCell(Cell.BEFORE);
-      DistalDendriteSegment learningCellBestSegment = bestCell.getBestMatchingSegment(Cell.BEFORE);
+      BestMatchingCellAndSegment  bestMatchingCellAndSegment = getBestMatchingCell(Cell.BEFORE);
+      Cell bestCell = bestMatchingCellAndSegment.getBestCell();
+      DistalDendriteSegment learningCellBestSegment = bestMatchingCellAndSegment.getBestSegment();
       bestCell.setLearnState(true);
       // segmentUpdate is added internally to the bestCell's update list.
       DistalDendriteSegment.Update segmentUpdate = bestCell.getSegmentActiveSynapses(learningCellBestSegment,
                                                                                      Cell.BEFORE, true);
+      //Probably the only place to set sequence flag - indicating whether the segment predicts feed-forward input on the next time step
       segmentUpdate.setSequenceSegment(true);
     }
   }
@@ -498,6 +500,10 @@ public class Column extends BaseSpace.Element {
     for (Cell cell : cells) {
       for (DistalDendriteSegment segment : cell.getSegments()) {
         if (segment.segmentActive(Cell.NOW, Cell.State.ACTIVE)) {
+          //By Kirill - if segment is seq it also should be in learning state to predict
+          if(segment.isSequenceSegment() && !segment.segmentActive(Cell.NOW, Cell.State.LEARN)){
+            return;
+          }
           cell.setPredictiveState(true);
           if (region.getTemporalLearning()) {
             DistalDendriteSegment.Update activeUpdate = cell.getSegmentActiveSynapses(segment, Cell.NOW, false);
@@ -541,7 +547,8 @@ public class Column extends BaseSpace.Element {
    * @param time
    * @return
    */
-  private Cell getBestMatchingCell(int time) {
+
+  private BestMatchingCellAndSegment getBestMatchingCell(int time) {
     List<DistalDendriteSegment> bestMatchingSegmentsFromCells = new ArrayList<DistalDendriteSegment>();
     Cell minSegmentListCell = cells.get(0);
     for (Cell cell : cells) {
@@ -554,7 +561,25 @@ public class Column extends BaseSpace.Element {
       }
     }
     DistalDendriteSegment columnBestMatchingSegment = Cell.getBestMatchingSegment(bestMatchingSegmentsFromCells, time);
-    return columnBestMatchingSegment != null ? columnBestMatchingSegment.getBelongsToCell() : minSegmentListCell;
+    return new BestMatchingCellAndSegment(columnBestMatchingSegment != null ? columnBestMatchingSegment.getBelongsToCell() : minSegmentListCell, columnBestMatchingSegment);
+  }
+
+  private static class BestMatchingCellAndSegment {
+    private final Cell bestCell;
+    private final DistalDendriteSegment bestSegment;
+
+    private BestMatchingCellAndSegment(Cell bestCell, DistalDendriteSegment bestSegment) {
+      this.bestCell = bestCell;
+      this.bestSegment = bestSegment;
+    }
+
+    public Cell getBestCell() {
+      return bestCell;
+    }
+
+    public DistalDendriteSegment getBestSegment() {
+      return bestSegment;
+    }
   }
 
   public void nextTimeStep() {

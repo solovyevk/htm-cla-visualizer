@@ -240,10 +240,10 @@ public class TemporalInfo extends JPanel {
         FontRenderContext frc = g2.getFontRenderContext();
         float drawPosY = finishParagraphY + 2;
         Font timeFont = new Font("Helvetica", Font.BOLD, 11);
-        float x = 105;
+        int x = startX + 5;
         for (int i = 0; i < Cell.TIME_STEPS; i++) {
-          TextLayout timeLayout = new TextLayout("t - " + i + ":", timeFont, frc);
-          CellSurface.drawCell(g2, 105, (int)drawPosY + 1, 11, 11, currentCell, i);
+          TextLayout timeLayout = new TextLayout("t - " + i + ": ", timeFont, frc);
+          CellSurface.drawCell(g2, x, (int)drawPosY + 1, 11, 11, currentCell, i);
           float drawPosX;
           drawPosX = (float)x - timeLayout.getAdvance();
           drawPosY += timeLayout.getAscent();

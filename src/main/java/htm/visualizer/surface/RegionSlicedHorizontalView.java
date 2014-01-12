@@ -242,18 +242,10 @@ public class RegionSlicedHorizontalView extends JPanel {
       for (CellPosition cellPosition : selectedSegmentSynapsesCellPositionList) {
         if (cellPosition.getCellIndex() == this.layerIndex) {
           Color originalColor = g2d.getColor();
-          Stroke originalStroke = g2d.getStroke();
-          Composite original = g2d.getComposite();
-          g2d.setStroke(new BasicStroke(1.5f));
-          g2d.setColor(Color.GREEN);
-          g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER,
-                                                            0.5f));
-          Rectangle aroundRec = getElementAreaWithScale(cellPosition.getColumnIndex(), 1 / (Math.PI / 4) * .25);
-          g2d.drawLine(aroundRec.x, aroundRec.y, aroundRec.x + aroundRec.width, aroundRec.y + aroundRec.height);
-          g2d.drawLine(aroundRec.x, aroundRec.y + aroundRec.height, aroundRec.x + aroundRec.width, aroundRec.y);
+          g2d.setColor(Color.DARK_GRAY);
+          Rectangle aroundRec = getElementAreaByIndex(cellPosition.getColumnIndex());
+          g2d.drawRect(aroundRec.x, aroundRec.y, aroundRec.width, aroundRec.height);
           g2d.setColor(originalColor);
-          g2d.setStroke(originalStroke);
-          g2d.setComposite(original);
         }
       }
     }

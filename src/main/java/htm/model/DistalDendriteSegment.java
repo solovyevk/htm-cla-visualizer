@@ -58,6 +58,7 @@ public class DistalDendriteSegment extends ArrayList<Synapse.DistalSynapse> {
    * state at time t is greater than activationThreshold. The parameter state can be activeState, or learnState.
    */
   public boolean segmentActive(int time, Cell.State state) {
+    List<Synapse.DistalSynapse> res =  getConnectedWithStateCell(time, state);
     return getConnectedWithStateCell(time, state).size() > Cell.ACTIVATION_THRESHOLD;
   }
 
@@ -104,7 +105,7 @@ public class DistalDendriteSegment extends ArrayList<Synapse.DistalSynapse> {
         case ACTIVE:
           return result && synapse.getFromCell().getActiveState(time);
         case LEARN:
-          return result && synapse.getFromCell().getPredictiveState(time);
+          return result && synapse.getFromCell().getLearnState(time);
       }
       throw new RuntimeException("We shouldn't get here");
     }

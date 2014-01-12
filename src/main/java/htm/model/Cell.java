@@ -264,6 +264,8 @@ public class Cell {
     DistalDendriteSegment.Update result = new DistalDendriteSegment.Update(this, segment, time);
     if (segment != null) {
       result.addAll(segment.getActiveCellSynapses(time));
+      //Get isSequenceSegment state from segment for Update
+      result.setSequenceSegment(segment.isSequenceSegment());
     }
     int numberOfNewSynapsesToAdd = NEW_SYNAPSE_COUNT - result.size();
     if (newSynapses && numberOfNewSynapsesToAdd > 0) {
@@ -312,7 +314,8 @@ public class Cell {
   public void adaptSegments(boolean positiveReinforcement) {
     for (DistalDendriteSegment.Update segmentUpdate : segmentUpdates) {
       DistalDendriteSegment segment;
-      if (segmentUpdate.isNewSegment() && segmentUpdate.size() > 0) {
+      //Only create new segment if there are synapses and reinforcement is positive
+      if (segmentUpdate.isNewSegment() && segmentUpdate.size() > 0 && positiveReinforcement) {
         //Only create segment if there are synapses
         segment = new DistalDendriteSegment(this);
       } else {
