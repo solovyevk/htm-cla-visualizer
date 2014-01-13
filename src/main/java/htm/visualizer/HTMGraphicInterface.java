@@ -603,7 +603,7 @@ public class HTMGraphicInterface extends JPanel {
         region.performSpatialPooling();
         region.performTemporalPooling();
         try {
-          Thread.sleep(100);
+          //Thread.sleep(100);
         } catch (Exception e) {
           LOG.error("Process sleep interrupted", e);
         }

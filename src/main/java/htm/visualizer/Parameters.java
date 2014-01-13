@@ -181,7 +181,7 @@ public class Parameters {
       regionHeightParam = new IntegerParameter(1, 50, cfg.getRegionDimension().height);
       inputSpaceWidthParam = new IntegerParameter(1, 50, cfg.getSensoryInputDimension().width);
       inputSpaceHeightParam = new IntegerParameter(1, 50, cfg.getSensoryInputDimension().height);
-      learningRadiusParam = new DoubleParameter(1.0, 25.0, cfg.getInputRadius(), 200);
+      learningRadiusParam = new DoubleParameter(1.0, 50.0, cfg.getLearningRadius(), 200);
       inputRadiusParam = new DoubleParameter(1.0, 25.0, cfg.getInputRadius(), 200);
       cellsInColumnParam = new IntegerParameter(1, 20, cfg.getCellsInColumn());
       skipSpatialCb = new JCheckBox(null, null, cfg.isSkipSpatial());
@@ -232,6 +232,7 @@ public class Parameters {
       inputSpaceWidthParam.setValue(cfg.getSensoryInputDimension().width);
       inputSpaceHeightParam.setValue(cfg.getSensoryInputDimension().height);
       inputRadiusParam.setValue(cfg.getInputRadius());
+      learningRadiusParam.setValue(cfg.getLearningRadius());
       skipSpatialCb.setSelected(cfg.isSkipSpatial());
     }
   }
