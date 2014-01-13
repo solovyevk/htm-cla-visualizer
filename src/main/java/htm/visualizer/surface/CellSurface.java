@@ -10,6 +10,7 @@ package htm.visualizer.surface;
 
 import htm.model.Cell;
 import htm.model.Region;
+import htm.utils.UIUtils;
 
 import java.awt.*;
 
@@ -40,13 +41,13 @@ public abstract class CellSurface extends BaseSurface.CircleElementsSurface {
 
   public static void drawCell(Graphics2D g2d, int x, int y, int width, int height, Cell cell, int time) {
     if (cell.getPredictiveState(time) && cell.getActiveState(time)) {
-      drawCell(g2d, x, y, width, height, PREDICTED_COLOR, ACTIVE_COLOR);
+      UIUtils.drawStatesInCircle(g2d, x, y, width, height, PREDICTED_COLOR, ACTIVE_COLOR);
     } else if (cell.getPredictiveState(time)) {
-      drawCell(g2d, x, y, width, height, PREDICTED_COLOR);
+      UIUtils.drawStatesInCircle(g2d, x, y, width, height, PREDICTED_COLOR);
     } else if (cell.getActiveState(time)) {
-      drawCell(g2d, x, y, width, height, ACTIVE_COLOR);
+      UIUtils.drawStatesInCircle(g2d, x, y, width, height, ACTIVE_COLOR);
     } else {
-      drawCell(g2d, x, y, width, height);
+      UIUtils.drawStatesInCircle(g2d, x, y, width, height);
     }
     if (cell.getLearnState(time)) {
       //third of cell width
@@ -54,22 +55,6 @@ public abstract class CellSurface extends BaseSurface.CircleElementsSurface {
       g2d.setColor(LEARNING_COLOR);
       g2d.fillRect(x + newWidth + 1, y + newWidth + 1, newWidth, newWidth);
     }
-  }
-
-  private static void drawCell(Graphics2D g2d, int x, int y, int width, int height, Color... stateColors) {
-    int cellStates = stateColors.length;
-    if (cellStates > 0) {
-      int startAngle = 0, arcAngle = 360 / cellStates;
-      for (Color stateColor : stateColors) {
-        g2d.setColor(stateColor);
-        g2d.fillArc(x, y, width, height, startAngle, arcAngle);
-        startAngle = startAngle + arcAngle;
-      }
-    }
-    // g2d.setColor(fillColor);
-    //  g2d.fillOval(x, y, width, height);
-    g2d.setColor(Color.BLACK);
-    g2d.drawOval(x, y, width, height);
   }
 
   public abstract Cell getCell(int index);

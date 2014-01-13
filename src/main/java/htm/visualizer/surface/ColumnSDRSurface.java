@@ -29,10 +29,16 @@ public class ColumnSDRSurface extends BaseSurface.CircleElementsSurface {
 
   @Override
   protected void drawElement(Graphics2D g2d, int index, int x, int y, int width, int height) {
-    g2d.setColor(getColumn(index).isActive() ? ACTIVE_COLOR : this.getBackground());
-    g2d.fillOval(x, y, width, height);
-    super.drawElement(g2d, index, x, y, width,
-                      height);
+    Column column = getColumn(index);
+    if (column.isPredicted() && column.isActive()) {
+      UIUtils.drawStatesInCircle(g2d, x, y, width, height, CellSurface.PREDICTED_COLOR, ACTIVE_COLOR);
+    } else if (column.isPredicted()) {
+      UIUtils.drawStatesInCircle(g2d, x, y, width, height, CellSurface.PREDICTED_COLOR);
+    } else if (column.isActive()) {
+      UIUtils.drawStatesInCircle(g2d, x, y, width, height, ACTIVE_COLOR);
+    } else {
+      UIUtils.drawStatesInCircle(g2d, x, y, width, height);
+    }
   }
 
   public Column getColumn(int columnIndex) {

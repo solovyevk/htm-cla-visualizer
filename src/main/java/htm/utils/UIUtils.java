@@ -37,6 +37,20 @@ public enum UIUtils {
   private UIUtils() {
   }
 
+  public static void drawStatesInCircle(Graphics2D g2d, int x, int y, int width, int height, Color... stateColors) {
+    int states = stateColors.length;
+    if (states > 0) {
+      int startAngle = 0, arcAngle = 360 / states;
+      for (Color stateColor : stateColors) {
+        g2d.setColor(stateColor);
+        g2d.fillArc(x, y, width, height, startAngle, arcAngle);
+        startAngle = startAngle + arcAngle;
+      }
+    }
+    g2d.setColor(Color.BLACK);
+    g2d.drawOval(x, y, width, height);
+  }
+
   public ImageIcon createImageIcon(String path) {
     java.net.URL imgURL = getClass().getResource(path);
     if (imgURL != null) {

@@ -76,18 +76,6 @@ public class Column extends BaseSpace.Element {
     Column.BOOST_RATE = columnCfg.getBoostRate();
   }
 
-  //TODO REMOVE marked after debugging
-
-  private boolean marked;
-
-  public boolean isMarked() {
-    return marked;
-  }
-
-  public void setMarked(boolean marked) {
-    this.marked = marked;
-  }
-
 
   private final Region region;
   private final List<Cell> cells = new ArrayList<Cell>();
@@ -332,6 +320,19 @@ public class Column extends BaseSpace.Element {
 
   public boolean isActive() {
     return active.getLast();
+  }
+
+  /**
+   * True if column predicted in temporal sequence/step(s)
+   * @return
+   */
+  public boolean isPredicted() {
+    for (Cell cell : cells) {
+      if(cell.getPredictiveState(Cell.NOW)){
+        return true;
+      }
+    }
+    return false;
   }
 
   /**

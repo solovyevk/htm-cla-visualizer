@@ -279,7 +279,11 @@ public class Cell {
            *distal synapse from another cell in the same column. Therefore the below check is commented out.
            * Skip cells in our own col (don't connect to ourself)
            * */
-          if (cell.belongsToColumn == this.belongsToColumn) {
+          //if (cell.belongsToColumn == this.belongsToColumn) {
+          //  continue;
+          // }
+          /*But avoid self reverence*/
+          if(cell == this){
             continue;
           }
           if (cell.getLearnState(time)) {
