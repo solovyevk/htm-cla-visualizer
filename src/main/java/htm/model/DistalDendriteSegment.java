@@ -12,24 +12,35 @@ import htm.utils.CollectionUtils;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Stack;
 
 public class DistalDendriteSegment extends ArrayList<Synapse.DistalSynapse> {
 
   protected final Cell belongsToCell;
   private boolean sequenceSegment;
+  private Stack<DistalDendriteSegment> predictedBySegments;
+  //private DistalDendriteSegment nextPredictionSegment;
 
 
   //We need to check if synapse connected to this cell is already exist before adding new one
   @Override public boolean add(Synapse.DistalSynapse distalSynapse) {
     Cell newSynapseCell = distalSynapse.getFromCell();
     for (Synapse.DistalSynapse existingSynapse : this) {
-     if (existingSynapse.getFromCell() == newSynapseCell){
-       return false;
-     }
+      if (existingSynapse.getFromCell() == newSynapseCell) {
+        return false;
+      }
     }
     distalSynapse.setSegment(this);
     return super.add(distalSynapse);
   }
+
+  @Override public String toString() {
+    StringBuilder result = new StringBuilder().append("Synapses Number:").append(this.size());
+    result = result.append("sequence Segment:").append(this.sequenceSegment);
+    result.append("Belongs to Cell:").append(this.belongsToCell);
+    return result.toString();
+  }
+
 
   public DistalDendriteSegment(Cell belongsToCell) {
     super(Cell.AMOUNT_OF_SYNAPSES);
@@ -37,10 +48,9 @@ public class DistalDendriteSegment extends ArrayList<Synapse.DistalSynapse> {
     attachToCell();
   }
 
-  protected void attachToCell(){
+  protected void attachToCell() {
     belongsToCell.segments.add(this);
   }
-
 
   public boolean isSequenceSegment() {
     return sequenceSegment;
@@ -58,7 +68,7 @@ public class DistalDendriteSegment extends ArrayList<Synapse.DistalSynapse> {
    * state at time t is greater than activationThreshold. The parameter state can be activeState, or learnState.
    */
   public boolean segmentActive(int time, Cell.State state) {
-    List<Synapse.DistalSynapse> res =  getConnectedWithStateCell(time, state);
+    List<Synapse.DistalSynapse> res = getConnectedWithStateCell(time, state);
     return getConnectedWithStateCell(time, state).size() > Cell.ACTIVATION_THRESHOLD;
   }
 
@@ -72,6 +82,38 @@ public class DistalDendriteSegment extends ArrayList<Synapse.DistalSynapse> {
 
   public Cell getBelongsToCell() {
     return belongsToCell;
+  }
+
+ /* public void setPredictedBySegment(DistalDendriteSegment nextPredictionSegment) {
+    if (sequenceSegment && nextPredictionSegment != null) {
+      throw new RuntimeException("Can not set next prediction segment for sequence segment!");
+    }
+    this.predictedBySegments.push(nextPredictionSegment);
+  } */
+
+  public void linkPredictedBySegment(DistalDendriteSegment segment) {
+    if (sequenceSegment) {
+      throw new RuntimeException("Can not set next prediction segment for sequence segment!");
+    }
+    predictedBySegments = new Stack<DistalDendriteSegment>();
+    if (!segment.isSequenceSegment()) {
+      for (DistalDendriteSegment previous : segment.predictedBySegments) {
+        this.predictedBySegments.push(previous);
+      }
+    }
+    this.predictedBySegments.push(segment);
+  }
+
+  public boolean isLinkedWithPredictedBySegment(){
+    return predictedBySegments  != null;
+  }
+
+  public DistalDendriteSegment getPredictedBySegment() {
+    return this.predictedBySegments.peek();
+  }
+
+  public int predictedInStep() {
+    return predictedBySegments != null ? predictedBySegments.size() : 0;
   }
 
   private static class ActiveCellByTimePredicate implements CollectionUtils.Predicate<Synapse.DistalSynapse> {
@@ -122,19 +164,28 @@ public class DistalDendriteSegment extends ArrayList<Synapse.DistalSynapse> {
     }
 
     @Override protected void attachToCell() {
-     this.belongsToCell.getSegmentUpdates().add(this);
+      this.belongsToCell.getSegmentUpdates().add(this);
     }
 
     public boolean isNewSegment() {
       return target == null;
     }
 
-    public DistalDendriteSegment getTarget(){
+    public DistalDendriteSegment getTarget() {
       return target;
     }
 
     public int getTime() {
       return time;
     }
+
+    @Override
+    public String toString() {
+      StringBuilder result = new StringBuilder().append("New Segment:").append(this.isNewSegment());
+      result = result.append("Time:").append(this.time);
+      result.append(super.toString());
+      return result.toString();
+    }
+
   }
 }

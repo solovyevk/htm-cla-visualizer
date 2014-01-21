@@ -9,11 +9,14 @@
 package htm.visualizer.surface;
 
 
+import htm.model.Cell;
 import htm.model.Column;
 import htm.model.Region;
 import htm.utils.UIUtils;
 
 import java.awt.*;
+import java.util.HashSet;
+import java.util.Set;
 
 public class ColumnSDRSurface extends BaseSurface.CircleElementsSurface {
 
@@ -30,15 +33,20 @@ public class ColumnSDRSurface extends BaseSurface.CircleElementsSurface {
   @Override
   protected void drawElement(Graphics2D g2d, int index, int x, int y, int width, int height) {
     Column column = getColumn(index);
-    if (column.isPredicted() && column.isActive()) {
-      UIUtils.drawStatesInCircle(g2d, x, y, width, height, CellSurface.PREDICTED_COLOR, ACTIVE_COLOR);
-    } else if (column.isPredicted()) {
-      UIUtils.drawStatesInCircle(g2d, x, y, width, height, CellSurface.PREDICTED_COLOR);
-    } else if (column.isActive()) {
-      UIUtils.drawStatesInCircle(g2d, x, y, width, height, ACTIVE_COLOR);
-    } else {
-      UIUtils.drawStatesInCircle(g2d, x, y, width, height);
+    Set<Color> cellStates = new HashSet<Color>();
+    for (Cell cell : column.getCells()) {
+          int predictInStep = cell.getPredictInStepState(Cell.NOW);
+          if(predictInStep == 0){
+            cellStates.add(CellSurface.PREDICTED_COLOR);
+          }
+          if(predictInStep > 0){
+            cellStates.add(CellSurface.PREDICTED_IN_STEP_COLOR);
+          }
+        }
+    if(column.isActive()){
+      cellStates.add(ACTIVE_COLOR);
     }
+    UIUtils.drawStatesInCircle(g2d, x, y, width, height,  cellStates.toArray(new Color[cellStates.size()]));
   }
 
   public Column getColumn(int columnIndex) {

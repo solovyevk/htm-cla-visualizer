@@ -33,6 +33,7 @@ public enum UIUtils {
 
   public static Border DEFAULT_BORDER = BorderFactory.createEmptyBorder(0, 4, 0, 4);
   public static Border LIGHT_GRAY_BORDER = BorderFactory.createLineBorder(Color.lightGray);
+  private static Font sanSerifFont = new Font("SanSerif", Font.BOLD, 11);
 
   private UIUtils() {
   }
@@ -49,6 +50,15 @@ public enum UIUtils {
     }
     g2d.setColor(Color.BLACK);
     g2d.drawOval(x, y, width, height);
+  }
+
+  public static void drawTextInCenter(Graphics2D g2d, int x, int y, int width, int height, String predictInStepStr) {
+    g2d.setFont(sanSerifFont);
+    g2d.setColor(Color.WHITE);
+    FontMetrics fm = g2d.getFontMetrics();
+    int w = fm.stringWidth(predictInStepStr);
+    int h = fm.getAscent();
+    g2d.drawString(predictInStepStr, x + width/2 - (w / 2) + 2, y + height/2+ (h / 4) + 2);
   }
 
   public ImageIcon createImageIcon(String path) {

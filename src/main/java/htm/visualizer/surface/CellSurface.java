@@ -16,6 +16,7 @@ import java.awt.*;
 
 public abstract class CellSurface extends BaseSurface.CircleElementsSurface {
   public static final Color PREDICTED_COLOR = Color.BLUE;
+  public static final Color PREDICTED_IN_STEP_COLOR = UIUtils.LIGHT_BLUE;
   public static final Color LEARNING_COLOR = Color.RED;
   private int time = Cell.NOW;
   protected Region region;
@@ -40,10 +41,12 @@ public abstract class CellSurface extends BaseSurface.CircleElementsSurface {
   }
 
   public static void drawCell(Graphics2D g2d, int x, int y, int width, int height, Cell cell, int time) {
+    int predictInStep = cell.getPredictInStepState(time);
+    Color predictedColor = predictInStep > 0 ? PREDICTED_IN_STEP_COLOR : PREDICTED_COLOR;
     if (cell.getPredictiveState(time) && cell.getActiveState(time)) {
-      UIUtils.drawStatesInCircle(g2d, x, y, width, height, PREDICTED_COLOR, ACTIVE_COLOR);
+      UIUtils.drawStatesInCircle(g2d, x, y, width, height, predictedColor, ACTIVE_COLOR);
     } else if (cell.getPredictiveState(time)) {
-      UIUtils.drawStatesInCircle(g2d, x, y, width, height, PREDICTED_COLOR);
+      UIUtils.drawStatesInCircle(g2d, x, y, width, height, predictedColor);
     } else if (cell.getActiveState(time)) {
       UIUtils.drawStatesInCircle(g2d, x, y, width, height, ACTIVE_COLOR);
     } else {
@@ -54,6 +57,10 @@ public abstract class CellSurface extends BaseSurface.CircleElementsSurface {
       int newWidth = width / 3;
       g2d.setColor(LEARNING_COLOR);
       g2d.fillRect(x + newWidth + 1, y + newWidth + 1, newWidth, newWidth);
+    }
+    if(predictInStep > 0){
+      String predictInStepStr = predictInStep+"";
+      UIUtils.drawTextInCenter(g2d, x, y, width, height, predictInStepStr);
     }
   }
 

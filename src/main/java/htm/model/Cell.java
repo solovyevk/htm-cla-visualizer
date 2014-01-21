@@ -55,6 +55,9 @@ public class Cell {
   public static final int BEFORE = 1;
   public static final int NOW = 0;
 
+  //no prediction in up coming steps
+  public static final int NOT_IN_STEP_PREDICTION = -1;
+
 
   private final Column belongsToColumn;
   private final int cellIndex;
@@ -62,16 +65,18 @@ public class Cell {
    * Boolean vector of Cell's active state in time t-n, ..., t-1, t
    */
   private CellStateBuffer activeState = new CellStateBuffer();
-
-  /**
-   * Boolean vector of Cell's predictive state in time t-n, ..., t-1, t
-   */
-  private CellStateBuffer predictiveState = new CellStateBuffer();
   /**
    * learnState(c, i, t) A boolean indicating whether cell i in column c is
    * chosen as the cell to learn on.
    */
   private CellStateBuffer learnState = new CellStateBuffer();
+
+  /**
+    * Boolean vector of Cell's predictive state in time t-n, ..., t-1, t
+    */
+   //private CellStateBuffer predictiveState = new CellStateBuffer();
+
+  private PredictInStepBuffer predictedInStepState = new PredictInStepBuffer();
 
   protected final List<DistalDendriteSegment> segments = new ArrayList<DistalDendriteSegment>();
 
@@ -136,9 +141,9 @@ public class Cell {
   /**
    * Set Predictive state
    */
-  public void setPredictiveState(boolean predictiveState) {
+  /*public void setPredictiveState(boolean predictiveState) {
     this.predictiveState.setState(predictiveState);
-  }
+  }*/
 
   /**
    * Get Predictive state in Time
@@ -155,8 +160,21 @@ public class Cell {
    * @param time
    */
   public boolean getPredictiveState(int time) {
-    return this.predictiveState.get(time);
+    //return this.predictiveState.get(time);
+    return  getPredictInStepState(time) != NOT_IN_STEP_PREDICTION;
   }
+
+  public void setPredictInStepState(int step){
+    predictedInStepState.setPredictInStep(step);
+  }
+
+  public int getPredictInStepState(int time){
+    return predictedInStepState.get(time);
+  }
+
+
+
+
 
   /**
    * WP
@@ -237,6 +255,16 @@ public class Cell {
     return Collections.unmodifiableList(segments);
   }
 
+  @Override public String toString() {
+    StringBuilder result = new StringBuilder().append("Column Inx:").append(this.getBelongsToColumn().getIndex());
+    result = result.append("; Cell Inx:").append(this.getCellIndex());
+    result = result.append("; Position:").append(this.getBelongsToColumn().getPosition());
+    result = result.append("; Active:").append(this.getActiveState(Cell.NOW));
+    result = result.append("; Learn:").append(this.getLearnState(Cell.NOW));
+    result = result.append("; Predicted:").append(this.getPredictiveState(Cell.NOW));
+    return result.toString();
+  }
+
   /**
    * If the segment is NULL, then a new segment is to be added, otherwise
    * the specified segment is updated.  If the segment exists, find all active
@@ -283,7 +311,7 @@ public class Cell {
           //  continue;
           // }
           /*But avoid self reverence*/
-          if(cell == this){
+          if (cell == this) {
             continue;
           }
           if (cell.getLearnState(time)) {
@@ -320,7 +348,6 @@ public class Cell {
       DistalDendriteSegment segment;
       //Only create new segment if there are synapses and reinforcement is positive
       if (segmentUpdate.isNewSegment() && segmentUpdate.size() > 0 && positiveReinforcement) {
-        //Only create segment if there are synapses
         segment = new DistalDendriteSegment(this);
       } else {
         segment = segmentUpdate.getTarget();
@@ -328,7 +355,6 @@ public class Cell {
 
       if (segment != null) {
         segment.setSequenceSegment(segmentUpdate.isSequenceSegment());
-
         for (Synapse.DistalSynapse distalSynapse : segment) {
           if (positiveReinforcement) {
             if (segmentUpdate.contains(distalSynapse)) {
@@ -357,7 +383,7 @@ public class Cell {
     fireSegmentsChange();
   }
 
-   /*Custom events implementation*/
+  /*Custom events implementation*/
   private Collection<SegmentsChangeEventListener> _segmentsChangeEventListeners = new HashSet<SegmentsChangeEventListener>();
 
   public synchronized void addSegmentsChangeListener(SegmentsChangeEventListener listener) {
@@ -371,19 +397,16 @@ public class Cell {
   private synchronized void fireUpdatesChange() {
     SegmentsChangeEvent event = new SegmentsChangeEvent(this);
     for (SegmentsChangeEventListener segmentsChangeEventListener : _segmentsChangeEventListeners) {
-         segmentsChangeEventListener.onUpdatesChange(event);
-       }
+      segmentsChangeEventListener.onUpdatesChange(event);
+    }
   }
 
   private synchronized void fireSegmentsChange() {
-     SegmentsChangeEvent event = new SegmentsChangeEvent(this);
+    SegmentsChangeEvent event = new SegmentsChangeEvent(this);
     for (SegmentsChangeEventListener segmentsChangeEventListener : _segmentsChangeEventListeners) {
       segmentsChangeEventListener.onSegmentsChange(event);
     }
-   }
-
-
-
+  }
 
 
   public static class SegmentsChangeEvent extends java.util.EventObject {
@@ -396,6 +419,7 @@ public class Cell {
 
   public interface SegmentsChangeEventListener {
     public void onSegmentsChange(SegmentsChangeEvent e);
+
     public void onUpdatesChange(SegmentsChangeEvent e);
   }
 
@@ -409,7 +433,8 @@ public class Cell {
   */
   public void nextTimeStep() {
     this.activeState.add(Cell.NOW, false);
-    this.predictiveState.add(Cell.NOW, false);
+    //this.predictiveState.add(Cell.NOW, false);
+    this.predictedInStepState.add(Cell.NOW, NOT_IN_STEP_PREDICTION);
     this.learnState.add(Cell.NOW, false);
     //TODO CHECK
     /* Need to reset sequenceSegment flag, since it is only make sense in current time step
@@ -434,6 +459,19 @@ public class Cell {
      */
     void setState(boolean state) {
       this.set(NOW, state);
+    }
+  }
+
+  private static class PredictInStepBuffer extends CircularArrayList<Integer> {
+    public PredictInStepBuffer() {
+      super(TIME_STEPS);
+      for (int i = 0; i < TIME_STEPS; i++) {
+        this.add(NOT_IN_STEP_PREDICTION);
+      }
+    }
+
+    void setPredictInStep(int step) {
+      this.set(NOW, step);
     }
   }
 

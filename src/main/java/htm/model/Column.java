@@ -323,17 +323,19 @@ public class Column extends BaseSpace.Element {
   }
 
   /**
-   * True if column predicted in temporal sequence/step(s)
+   * Number of step until column will be predicted in temporal sequence/step(s)
+   *
    * @return
    */
-  public boolean isPredicted() {
+  public int isPredictInStep() {
     for (Cell cell : cells) {
-      if(cell.getPredictiveState(Cell.NOW)){
-        return true;
+      if (cell.getPredictiveState(Cell.NOW)) {
+        return cell.getPredictInStepState(Cell.NOW);
       }
     }
-    return false;
+    return Cell.NOT_IN_STEP_PREDICTION;
   }
+
 
   /**
    * Get column active state at time
@@ -472,7 +474,7 @@ public class Column extends BaseSpace.Element {
       }
     }
     if (!lcChosen && region.getTemporalLearning()) {
-      BestMatchingCellAndSegment  bestMatchingCellAndSegment = getBestMatchingCell(Cell.BEFORE);
+      BestMatchingCellAndSegment bestMatchingCellAndSegment = getBestMatchingCell(Cell.BEFORE);
       Cell bestCell = bestMatchingCellAndSegment.getBestCell();
       DistalDendriteSegment learningCellBestSegment = bestMatchingCellAndSegment.getBestSegment();
       bestCell.setLearnState(true);
@@ -486,29 +488,36 @@ public class Column extends BaseSpace.Element {
 
   /**
    * Phase: 2
-   *
+   * <p/>
    * WP
    * TEMPORAL POOLING
-   *
+   * <p/>
    * The second phase calculates the predictive state for each cell.
    * A cell will turn on its predictive state output if one of its
    * segments becomes active, i.e. if enough of its lateral inputs are currently active due to feed-forward input.
    * In this case, the cell queues up the following changes: a) reinforcement of the currently
    * active segment (lines 47-48), and b) reinforcement of a segment that could have predicted this activation,
    * i.e. a segment that has a (potentially weak) match to activity during the previous time step (lines 50-53).
-   * */
+   */
   public void computeCellsPredictiveState() {
     for (Cell cell : cells) {
       for (DistalDendriteSegment segment : cell.getSegments()) {
         if (segment.segmentActive(Cell.NOW, Cell.State.ACTIVE)) {
           //By Kirill - if segment is seq it also should be in learning state to predict
-          if(segment.isSequenceSegment() && !segment.segmentActive(Cell.NOW, Cell.State.LEARN)){
+          if (segment.isSequenceSegment() && !segment.segmentActive(Cell.NOW, Cell.State.LEARN)) {
             return;
           }
-          cell.setPredictiveState(true);
+          //cell.setPredictiveState(true);
+          cell.setPredictInStepState(segment.predictedInStep());
           if (region.getTemporalLearning()) {
             DistalDendriteSegment.Update activeUpdate = cell.getSegmentActiveSynapses(segment, Cell.NOW, false);
-            DistalDendriteSegment.Update previousUpdate =cell.getSegmentActiveSynapses(cell.getBestMatchingSegment(Cell.BEFORE), Cell.BEFORE, true);
+            DistalDendriteSegment previousBestMatchingSegment = cell.getBestMatchingSegment(Cell.BEFORE);
+            DistalDendriteSegment.Update previousUpdate = cell.getSegmentActiveSynapses(previousBestMatchingSegment,
+                                                                                        Cell.BEFORE, true);
+            //By Kirill establish back in time prediction linkage and cut off seq segments from it
+            if(previousBestMatchingSegment != null && !previousBestMatchingSegment.isSequenceSegment() && !previousBestMatchingSegment.isLinkedWithPredictedBySegment()){
+              previousBestMatchingSegment.linkPredictedBySegment(segment);
+            }
           }
         }
       }
@@ -517,22 +526,22 @@ public class Column extends BaseSpace.Element {
   }
 
   /**
-  * Phase: 3
-  *
-  * WP
-  * TEMPORAL POOLING
-  *
-  * The third and last phase actually carries out learning.
-  * In this phase segment updates that have been queued up are actually
-  * implemented once we get feed-forward input and the cell is chosen as
-  * a learning cell (lines 56-57). Otherwise, if the cell ever stops predicting
-  * for any reason, we negatively reinforce the segments (lines 58-60).
-  * */
-  public void updateDistalSynapses(){
+   * Phase: 3
+   * <p/>
+   * WP
+   * TEMPORAL POOLING
+   * <p/>
+   * The third and last phase actually carries out learning.
+   * In this phase segment updates that have been queued up are actually
+   * implemented once we get feed-forward input and the cell is chosen as
+   * a learning cell (lines 56-57). Otherwise, if the cell ever stops predicting
+   * for any reason, we negatively reinforce the segments (lines 58-60).
+   */
+  public void updateDistalSynapses() {
     for (Cell cell : cells) {
-      if(cell.getLearnState(Cell.NOW)){
+      if (cell.getLearnState(Cell.NOW)) {
         cell.adaptSegments(true);
-      } else if(cell.getPredictiveState(Cell.BEFORE) && !cell.getPredictiveState(Cell.NOW)){
+      } else if (cell.getPredictiveState(Cell.BEFORE) && !cell.getPredictiveState(Cell.NOW)) {
         cell.adaptSegments(false);
       }
     }
@@ -557,12 +566,14 @@ public class Column extends BaseSpace.Element {
         minSegmentListCell = cell;
       }
       DistalDendriteSegment bestMatchingSegment = cell.getBestMatchingSegment(time);
-      if(bestMatchingSegment != null){
-         bestMatchingSegmentsFromCells.add(bestMatchingSegment);
+      if (bestMatchingSegment != null) {
+        bestMatchingSegmentsFromCells.add(bestMatchingSegment);
       }
     }
     DistalDendriteSegment columnBestMatchingSegment = Cell.getBestMatchingSegment(bestMatchingSegmentsFromCells, time);
-    return new BestMatchingCellAndSegment(columnBestMatchingSegment != null ? columnBestMatchingSegment.getBelongsToCell() : minSegmentListCell, columnBestMatchingSegment);
+    return new BestMatchingCellAndSegment(
+            columnBestMatchingSegment != null ? columnBestMatchingSegment.getBelongsToCell() : minSegmentListCell,
+            columnBestMatchingSegment);
   }
 
   private static class BestMatchingCellAndSegment {
