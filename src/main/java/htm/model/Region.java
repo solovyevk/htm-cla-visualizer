@@ -42,6 +42,10 @@ public class Region extends ColumnSpace {
     }
   };
 
+  private boolean temporalLearning = true;
+
+  private boolean spatialLearning = true;
+
   public Region(Config regionCfg) {
     super(regionCfg.getRegionDimension().width, regionCfg.getRegionDimension().height);
     this.cellsInColumn = regionCfg.getCellsInColumn();
@@ -77,8 +81,21 @@ public class Region extends ColumnSpace {
   }
 
   public boolean getTemporalLearning() {
-    return true;
+    return temporalLearning;
   }
+
+  public boolean getSpatialLearning() {
+    return spatialLearning;
+  }
+
+  public void setTemporalLearning(boolean value) {
+    this.temporalLearning = value;
+  }
+
+  public void setSpatialLearning(boolean value) {
+    this.spatialLearning = value;
+  }
+
 
   /**
    * WP
@@ -195,11 +212,13 @@ public class Region extends ColumnSpace {
         }
       }
       // Phase 3: Update synapse permanence and internal variables
-      for (Column activeColumn : activeColumns) {
-        activeColumn.learnSpatialForActive(inhibitionRadius);
-      }
-      for (Column column : regionColumns) {
-        column.boostWeak(inhibitionRadius);
+      if (getSpatialLearning()) {
+        for (Column activeColumn : activeColumns) {
+          activeColumn.learnSpatialForActive(inhibitionRadius);
+        }
+        for (Column column : regionColumns) {
+          column.boostWeak(inhibitionRadius);
+        }
       }
     }
   }
@@ -251,8 +270,10 @@ public class Region extends ColumnSpace {
       column.computeCellsPredictiveState();
     }
     //Phase 3:Run synapses updates accumulated in previous step
-    for (Column column : elementList) {
-      column.updateDistalSynapses();
+    if (this.getTemporalLearning()) {
+      for (Column column : elementList) {
+        column.updateDistalSynapses();
+      }
     }
   }
 

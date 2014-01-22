@@ -515,6 +515,7 @@ public class Column extends BaseSpace.Element {
             DistalDendriteSegment.Update previousUpdate = cell.getSegmentActiveSynapses(previousBestMatchingSegment,
                                                                                         Cell.BEFORE, true);
             //By Kirill establish back in time prediction linkage and cut off seq segments from it
+            //TODO move this to segment Update logic
             if(previousBestMatchingSegment != null && !previousBestMatchingSegment.isSequenceSegment() && !previousBestMatchingSegment.isLinkedWithPredictedBySegment()){
               previousBestMatchingSegment.linkPredictedBySegment(segment);
             }

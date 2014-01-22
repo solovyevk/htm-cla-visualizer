@@ -19,7 +19,6 @@ public class DistalDendriteSegment extends ArrayList<Synapse.DistalSynapse> {
   protected final Cell belongsToCell;
   private boolean sequenceSegment;
   private Stack<DistalDendriteSegment> predictedBySegments;
-  //private DistalDendriteSegment nextPredictionSegment;
 
 
   //We need to check if synapse connected to this cell is already exist before adding new one
@@ -83,13 +82,6 @@ public class DistalDendriteSegment extends ArrayList<Synapse.DistalSynapse> {
   public Cell getBelongsToCell() {
     return belongsToCell;
   }
-
- /* public void setPredictedBySegment(DistalDendriteSegment nextPredictionSegment) {
-    if (sequenceSegment && nextPredictionSegment != null) {
-      throw new RuntimeException("Can not set next prediction segment for sequence segment!");
-    }
-    this.predictedBySegments.push(nextPredictionSegment);
-  } */
 
   public void linkPredictedBySegment(DistalDendriteSegment segment) {
     if (sequenceSegment) {

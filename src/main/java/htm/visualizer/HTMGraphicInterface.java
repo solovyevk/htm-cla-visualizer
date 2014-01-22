@@ -441,6 +441,8 @@ public class HTMGraphicInterface extends JPanel {
     private Action stepAction;
     private Action stopAction;
     private Action cleanInputSpaceAction;
+    private Action spatialLearningAction;
+    private Action temporalLearningAction;
 
     final JToolBar toolBar = new JToolBar();
     final Container infoPane = new Container();
@@ -509,6 +511,24 @@ public class HTMGraphicInterface extends JPanel {
           process.stop();
         }
       };
+
+      spatialLearningAction = new AbstractAction("Learn Spat.") {
+            @Override public void actionPerformed(ActionEvent e) {
+              region.setSpatialLearning(!region.getSpatialLearning());
+            }
+
+      };
+      spatialLearningAction.putValue(Action.SELECTED_KEY, region.getSpatialLearning());
+
+      temporalLearningAction = new AbstractAction("Learn Temp.") {
+              @Override public void actionPerformed(ActionEvent e) {
+                region.setTemporalLearning(!region.getTemporalLearning());
+              }
+
+        };
+
+      temporalLearningAction.putValue(Action.SELECTED_KEY, region.getTemporalLearning());
+
       enableActions();
 
     }
@@ -528,6 +548,8 @@ public class HTMGraphicInterface extends JPanel {
       toolBar.add(new JButton(runAction));
       toolBar.add(new JButton(stepAction));
       toolBar.add(new JButton(stopAction));
+      toolBar.add(new JCheckBox(spatialLearningAction));
+      toolBar.add(new JCheckBox(temporalLearningAction));
       /*
       toolBar.add(new JButton(new AbstractAction("test") {
         @Override public void actionPerformed(ActionEvent e) {
