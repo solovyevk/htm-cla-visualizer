@@ -42,7 +42,7 @@ public abstract class CellSurface extends BaseSurface.CircleElementsSurface {
 
   public static void drawCell(Graphics2D g2d, int x, int y, int width, int height, Cell cell, int time) {
     int predictInStep = cell.getPredictInStepState(time);
-    Color predictedColor = predictInStep > 0 ? PREDICTED_IN_STEP_COLOR : PREDICTED_COLOR;
+    Color predictedColor = predictInStep > 1 ? PREDICTED_IN_STEP_COLOR : PREDICTED_COLOR;
     if (cell.getPredictiveState(time) && cell.getActiveState(time)) {
       UIUtils.drawStatesInCircle(g2d, x, y, width, height, predictedColor, ACTIVE_COLOR);
     } else if (cell.getPredictiveState(time)) {
@@ -58,7 +58,7 @@ public abstract class CellSurface extends BaseSurface.CircleElementsSurface {
       g2d.setColor(LEARNING_COLOR);
       g2d.fillRect(x + newWidth + 1, y + newWidth + 1, newWidth, newWidth);
     }
-    if(predictInStep > 0){
+    if(predictInStep > 1){
       String predictInStepStr = predictInStep+"";
       UIUtils.drawTextInCenter(g2d, x, y, width, height, predictInStepStr);
     }

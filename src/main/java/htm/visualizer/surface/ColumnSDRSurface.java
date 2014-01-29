@@ -36,10 +36,10 @@ public class ColumnSDRSurface extends BaseSurface.CircleElementsSurface {
     Set<Color> cellStates = new HashSet<Color>();
     for (Cell cell : column.getCells()) {
           int predictInStep = cell.getPredictInStepState(Cell.NOW);
-          if(predictInStep == 0){
+          if(predictInStep == 1){
             cellStates.add(CellSurface.PREDICTED_COLOR);
           }
-          if(predictInStep > 0){
+          if(predictInStep > 1){
             cellStates.add(CellSurface.PREDICTED_IN_STEP_COLOR);
           }
         }

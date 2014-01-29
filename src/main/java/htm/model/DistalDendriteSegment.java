@@ -12,13 +12,11 @@ import htm.utils.CollectionUtils;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Stack;
 
 public class DistalDendriteSegment extends ArrayList<Synapse.DistalSynapse> {
 
   protected final Cell belongsToCell;
-  private boolean sequenceSegment;
-  private Stack<DistalDendriteSegment> predictedBySegments;
+  private final DistalDendriteSegment  predictedBy;
 
 
   //We need to check if synapse connected to this cell is already exist before adding new one
@@ -35,15 +33,16 @@ public class DistalDendriteSegment extends ArrayList<Synapse.DistalSynapse> {
 
   @Override public String toString() {
     StringBuilder result = new StringBuilder().append("Synapses Number:").append(this.size());
-    result = result.append("sequence Segment:").append(this.sequenceSegment);
+    result = result.append("sequence Segment:").append(this.isSequenceSegment());
     result.append("Belongs to Cell:").append(this.belongsToCell);
     return result.toString();
   }
 
 
-  public DistalDendriteSegment(Cell belongsToCell) {
+  public DistalDendriteSegment(Cell belongsToCell, DistalDendriteSegment predictedBy) {
     super(Cell.AMOUNT_OF_SYNAPSES);
     this.belongsToCell = belongsToCell;
+    this.predictedBy = predictedBy;
     attachToCell();
   }
 
@@ -52,11 +51,7 @@ public class DistalDendriteSegment extends ArrayList<Synapse.DistalSynapse> {
   }
 
   public boolean isSequenceSegment() {
-    return sequenceSegment;
-  }
-
-  public void setSequenceSegment(boolean sequenceSegment) {
-    this.sequenceSegment = sequenceSegment;
+    return predictedBy == null;
   }
 
   /**
@@ -83,29 +78,20 @@ public class DistalDendriteSegment extends ArrayList<Synapse.DistalSynapse> {
     return belongsToCell;
   }
 
-  public void linkPredictedBySegment(DistalDendriteSegment segment) {
-    if (sequenceSegment) {
-      throw new RuntimeException("Can not set next prediction segment for sequence segment!");
-    }
-    predictedBySegments = new Stack<DistalDendriteSegment>();
-    if (!segment.isSequenceSegment()) {
-      for (DistalDendriteSegment previous : segment.predictedBySegments) {
-        this.predictedBySegments.push(previous);
-      }
-    }
-    this.predictedBySegments.push(segment);
-  }
 
-  public boolean isLinkedWithPredictedBySegment(){
-    return predictedBySegments  != null;
-  }
-
-  public DistalDendriteSegment getPredictedBySegment() {
-    return this.predictedBySegments.peek();
-  }
 
   public int predictedInStep() {
-    return predictedBySegments != null ? predictedBySegments.size() : 0;
+    int result = 1;
+    DistalDendriteSegment predictedBySegment = this.predictedBy;
+    while(predictedBySegment != null){
+      result = result + 1;
+      predictedBySegment = predictedBySegment.getPredictedBy();
+    }
+    return result;
+  }
+
+  public DistalDendriteSegment getPredictedBy() {
+    return predictedBy;
   }
 
   private static class ActiveCellByTimePredicate implements CollectionUtils.Predicate<Synapse.DistalSynapse> {
@@ -147,12 +133,14 @@ public class DistalDendriteSegment extends ArrayList<Synapse.DistalSynapse> {
 
   public static class Update extends DistalDendriteSegment {
     private final DistalDendriteSegment target;
+    private final DistalDendriteSegment predictedBy;
     private final int time;
 
-    public Update(Cell belongsToCell, DistalDendriteSegment target, int time) {
-      super(belongsToCell);
+    public Update(Cell belongsToCell, DistalDendriteSegment target, int time, DistalDendriteSegment predictedBy) {
+      super(belongsToCell, predictedBy);
       this.target = target;
       this.time = time;
+      this.predictedBy = predictedBy;
     }
 
     @Override protected void attachToCell() {

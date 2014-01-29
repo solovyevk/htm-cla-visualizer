@@ -269,10 +269,16 @@ public class Region extends ColumnSpace {
     for (Column column : elementList) {
       column.computeCellsPredictiveState();
     }
-    //Phase 3:Run synapses updates accumulated in previous step
+    //Phase 3:Run synapses updates accumulated in previous steps
     if (this.getTemporalLearning()) {
       for (Column column : elementList) {
         column.updateDistalSynapses();
+      }
+    }
+    //Phase 4: Fix errors in segments for learning cells
+    if (this.getTemporalLearning()) {
+      for (Column column : elementList) {
+        //column.fixSegments();
       }
     }
   }
