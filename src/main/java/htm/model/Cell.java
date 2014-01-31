@@ -360,11 +360,6 @@ public class Cell {
         segment = segmentUpdate.getTarget();
       }
       if (segment != null) {
-        if (segment.getPredictedBy() != segmentUpdate.getPredictedBy()) {
-          //throw new RuntimeException("PredictedBy in segment doesn't match with segmentUpdate");
-          LOG.info("Return to sequence segment: stop cycle here");
-          return;
-        }
         for (Synapse.DistalSynapse distalSynapse : segment) {
           if (positiveReinforcement) {
             if (segmentUpdate.contains(distalSynapse)) {

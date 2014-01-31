@@ -16,7 +16,7 @@ import java.util.List;
 public class DistalDendriteSegment extends ArrayList<Synapse.DistalSynapse> {
 
   protected final Cell belongsToCell;
-  private final DistalDendriteSegment  predictedBy;
+  protected final DistalDendriteSegment  predictedBy;
 
 
   //We need to check if synapse connected to this cell is already exist before adding new one
@@ -133,14 +133,12 @@ public class DistalDendriteSegment extends ArrayList<Synapse.DistalSynapse> {
 
   public static class Update extends DistalDendriteSegment {
     private final DistalDendriteSegment target;
-    private final DistalDendriteSegment predictedBy;
     private final int time;
 
     public Update(Cell belongsToCell, DistalDendriteSegment target, int time, DistalDendriteSegment predictedBy) {
       super(belongsToCell, predictedBy);
       this.target = target;
       this.time = time;
-      this.predictedBy = predictedBy;
     }
 
     @Override protected void attachToCell() {
