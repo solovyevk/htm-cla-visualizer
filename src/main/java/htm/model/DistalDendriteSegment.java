@@ -16,7 +16,7 @@ import java.util.List;
 public class DistalDendriteSegment extends ArrayList<Synapse.DistalSynapse> {
 
   protected final Cell belongsToCell;
-  protected final DistalDendriteSegment  predictedBy;
+  protected final DistalDendriteSegment predictedBy;
 
 
   //We need to check if synapse connected to this cell is already exist before adding new one
@@ -33,8 +33,8 @@ public class DistalDendriteSegment extends ArrayList<Synapse.DistalSynapse> {
 
   @Override public String toString() {
     StringBuilder result = new StringBuilder().append("Synapses Number:").append(this.size());
-    result = result.append("sequence Segment:").append(this.isSequenceSegment());
-    result.append("Belongs to Cell:").append(this.belongsToCell);
+    result = result.append("; sequence Segment:").append(this.isSequenceSegment());
+    result.append("; Belongs to Cell:").append(this.belongsToCell);
     return result.toString();
   }
 
@@ -71,7 +71,9 @@ public class DistalDendriteSegment extends ArrayList<Synapse.DistalSynapse> {
   }
 
   public List<Synapse.DistalSynapse> getActiveCellSynapses(int time) {
-    return CollectionUtils.filter(this, new ActiveCellByTimePredicate(time));
+    /*FOR DEBUG*/
+    List<Synapse.DistalSynapse> result = CollectionUtils.filter(this, new ActiveCellByTimePredicate(time));
+    return result;
   }
 
   public Cell getBelongsToCell() {
@@ -79,11 +81,10 @@ public class DistalDendriteSegment extends ArrayList<Synapse.DistalSynapse> {
   }
 
 
-
   public int predictedInStep() {
     int result = 1;
     DistalDendriteSegment predictedBySegment = this.predictedBy;
-    while(predictedBySegment != null){
+    while (predictedBySegment != null) {
       result = result + 1;
       predictedBySegment = predictedBySegment.getPredictedBy();
     }
@@ -141,7 +142,26 @@ public class DistalDendriteSegment extends ArrayList<Synapse.DistalSynapse> {
       this.time = time;
     }
 
-    @Override protected void attachToCell() {
+    @Override
+    public int predictedInStep() {
+      //Segment for this update hasn't been created yet
+      if (target == null) {
+        return predictedBy == null ? 1 : predictedBy.predictedInStep() + 1;
+      } else {
+        return target.predictedInStep();
+      }
+    }
+
+    @Override public boolean isSequenceSegment() {
+      if (target == null) {
+        return predictedBy == null;
+      } else {
+        return target.isSequenceSegment();
+      }
+    }
+
+    @Override
+    protected void attachToCell() {
       this.belongsToCell.getSegmentUpdates().add(this);
     }
 
@@ -159,8 +179,8 @@ public class DistalDendriteSegment extends ArrayList<Synapse.DistalSynapse> {
 
     @Override
     public String toString() {
-      StringBuilder result = new StringBuilder().append("New Segment:").append(this.isNewSegment());
-      result = result.append("Time:").append(this.time);
+      StringBuilder result = new StringBuilder().append(" New Segment:").append(this.isNewSegment());
+      result = result.append("; Time:").append(this.time);
       result.append(super.toString());
       return result.toString();
     }

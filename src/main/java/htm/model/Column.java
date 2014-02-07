@@ -464,6 +464,7 @@ public class Column extends BaseSpace.Element {
           if (segment.segmentActive(Cell.BEFORE, Cell.State.LEARN)) {
             lcChosen = true;
             cell.setLearnState(true);
+            break;
           }
         }
       }
@@ -502,15 +503,16 @@ public class Column extends BaseSpace.Element {
       for (DistalDendriteSegment segment : cell.getSegments()) {
         if (segment.segmentActive(Cell.NOW, Cell.State.ACTIVE)) {
           //By Kirill - if segment is seq it also should be in learning state to predict
-          if (/*segment.isSequenceSegment() &&*/ !segment.segmentActive(Cell.NOW, Cell.State.LEARN)) {
+          if (segment.isSequenceSegment() && !segment.segmentActive(Cell.NOW, Cell.State.LEARN)) {
             return;
           }
           //cell.setPredictiveState(true);
           cell.setPredictInStepState(segment.predictedInStep());
           if (region.getTemporalLearning()) {
-            DistalDendriteSegment.Update activeUpdate = cell.getSegmentActiveSynapses(segment, Cell.NOW, false, segment.getPredictedBy());
-            DistalDendriteSegment.Update previousUpdate = cell.getSegmentActiveSynapses(cell.getBestMatchingSegment(Cell.BEFORE),
-                                                                                                   Cell.BEFORE, true, segment);
+            DistalDendriteSegment.Update activeUpdate = cell.getSegmentActiveSynapses(segment, Cell.NOW, false,
+                                                                                      segment.getPredictedBy());
+            DistalDendriteSegment.Update previousUpdate = cell.getSegmentActiveSynapses(cell.getBestMatchingSegment(
+                    Cell.BEFORE), Cell.BEFORE, true, segment);
           }
         }
       }
@@ -538,43 +540,8 @@ public class Column extends BaseSpace.Element {
         cell.adaptSegments(false);
       } else if (cell.getPredictInStepState(Cell.NOW) >= cell.getPredictInStepState(
               Cell.BEFORE) && cell.getPredictInStepState(Cell.BEFORE) != Cell.NOT_IN_STEP_PREDICTION) {
-        LOG.warn("Prediction is wrong, trim  segment");
-        DistalDendriteSegment trimSegment = cell.getActiveSegment(Cell.BEFORE, Cell.State.LEARN);
-        if (trimSegment != null) {
-          for (Synapse.DistalSynapse distalSynapse : trimSegment) {
-            if (distalSynapse.getFromCell().getLearnState(Cell.BEFORE)) {
-              distalSynapse.setPermanence(0.0);
-            }
-          }
-        }
-        List<DistalDendriteSegment.Update> segmentUpdates = cell.getSegmentUpdates();
-        for (DistalDendriteSegment.Update segmentUpdate : segmentUpdates) {
-          if (segmentUpdate.getTarget() == trimSegment) {
-            for (ListIterator<Synapse.DistalSynapse> iter = segmentUpdate.listIterator(
-                    segmentUpdate.size()); iter.hasPrevious(); ) {
-              if (iter.previous().getFromCell().getLearnState(Cell.BEFORE)) {
-                iter.remove();
-              }
-            }
-          }
-        }
-        /*for (ListIterator<Synapse.DistalSynapse> iter = trimSegment.listIterator(
-                trimSegment.size()); iter.hasPrevious(); ) {
-          if (iter.previous().getFromCell().getLearnState(Cell.BEFORE)) {
-            iter.remove();
-          }
-        }
-        List<DistalDendriteSegment.Update> segmentUpdates = cell.getSegmentUpdates();
-        for (DistalDendriteSegment.Update segmentUpdate : segmentUpdates) {
-          if (segmentUpdate.getTarget() == trimSegment) {
-            for (ListIterator<Synapse.DistalSynapse> iter = segmentUpdate.listIterator(
-                    segmentUpdate.size()); iter.hasPrevious(); ) {
-              if (iter.previous().getFromCell().getLearnState(Cell.BEFORE)) {
-                iter.remove();
-              }
-            }
-          }
-        }*/
+        cell.adaptSegmentsForWrongPrediction();
+
       }
     }
   }
@@ -605,6 +572,13 @@ public class Column extends BaseSpace.Element {
 
   private BestMatchingCellAndSegment getBestMatchingCell(int time) {
     List<DistalDendriteSegment> bestMatchingSegmentsFromCells = new ArrayList<DistalDendriteSegment>();
+    boolean allSegmentsCreated = true;
+    for (Cell cell : cells) {
+      if (cell.getSegments().size() == 0) {
+        allSegmentsCreated = false;
+        break;
+      }
+    }
     Cell minSegmentListCell = cells.get(0);
     for (Cell cell : cells) {
       if (cell.getSegments().size() < minSegmentListCell.getSegments().size()) {
@@ -617,6 +591,14 @@ public class Column extends BaseSpace.Element {
     }
     DistalDendriteSegment columnBestMatchingSegment = Cell.getBestMatchingSegment(this, bestMatchingSegmentsFromCells,
                                                                                   time);
+    //WP CHANGE by Kirill - to differentiate context prevent selection of the same segment twice for learning cell
+    //if (!allSegmentsCreated && columnBestMatchingSegment != null && columnBestMatchingSegment.belongsToCell.getLearnState(
+    //        time/* + 1*/)) {
+    //  LOG.info("Prohibit sequential selection of the same segment in bestMatchingSegments logic");
+    //  columnBestMatchingSegment = null;
+    //}
+
+
     return new BestMatchingCellAndSegment(
             columnBestMatchingSegment != null ? columnBestMatchingSegment.getBelongsToCell() : minSegmentListCell,
             columnBestMatchingSegment);

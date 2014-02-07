@@ -3,8 +3,8 @@
 <region>
 	<skipSpatial>true</skipSpatial>
 	<inputRadius>5.0</inputRadius>
-	<learningRadius>15</learningRadius>
-	<cellsInColumn>4</cellsInColumn>
+	<learningRadius>15.0</learningRadius>
+	<cellsInColumn>3</cellsInColumn>
 	<sizeX>12</sizeX>
 	<sizeY>12</sizeY>
 </region>

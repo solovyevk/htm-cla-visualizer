@@ -256,6 +256,10 @@ public class Cell {
   public List<DistalDendriteSegment> getSegments() {
     return Collections.unmodifiableList(segments);
   }
+  
+  public boolean removeSegment(DistalDendriteSegment segment){
+    return segments.remove(segment);
+  }
 
   @Override public String toString() {
     StringBuilder result = new StringBuilder().append("Column Inx:").append(this.getBelongsToColumn().getIndex());
@@ -297,7 +301,7 @@ public class Cell {
     }
     int numberOfNewSynapsesToAdd = NEW_SYNAPSE_COUNT - result.size();
     if (newSynapses && numberOfNewSynapsesToAdd > 0) {
-      List<Column> neighbors = getNeighborsAndMyColumns();
+      List<Column> neighbors = getNeighborsAndMyColumn();
       List<Cell> cellWithLearnStateList = new ArrayList<Cell>();
       //TODO Refac
 
@@ -331,10 +335,39 @@ public class Cell {
     return result;
   }
 
-  private List<Column> getNeighborsAndMyColumns() {
+  private List<Column> getNeighborsAndMyColumn() {
     return this.belongsToColumn.getRegion().getAllWithinRadius(this.belongsToColumn.getPosition(),
                                                                this.belongsToColumn.getRegion().getLearningRadius());
 
+  }
+
+  public void adaptSegmentsForWrongPrediction(){
+    int currentStepCount = this.getPredictInStepState(
+            Cell.NOW);
+    LOG.warn("Prediction is wrong for Cell:" + this + "\n" + "Before predicted in " + this.getPredictInStepState(
+            Cell.BEFORE) + " step(s); Now predicted in " + this.getPredictInStepState(Cell.NOW) + " step(s)");
+    //, trim  segment:" + trimSegment);
+    LOG.info("Negatively reinforce and remove segmentUpdates created before or at " + currentStepCount + " step(s)");
+    /*Michael Ferrier fix #1 - http://sourceforge.net/p/openhtm/discussion/htm/thread/ccedad1f/?limit=25&page=4
+    apply only those segment updates created before or at that given creation time,
+    and removes those from the list*/
+    /*try {
+     Thread.sleep(1000 * 20);
+    } catch (Exception e) {
+      LOG.error("Process sleep interrupted", e);
+    } */
+    for (ListIterator<DistalDendriteSegment.Update> iter = segmentUpdates.listIterator(
+            segmentUpdates.size()); iter.hasPrevious(); ) {
+      DistalDendriteSegment.Update update = iter.previous();
+      if (update.predictedInStep() <= currentStepCount) {
+        int predictedInStep = update.predictedInStep();
+        LOG.info("Decrement synapses and remove segment update for step prediction: " + predictedInStep + update);
+        for (Synapse.DistalSynapse distalSynapse : update) {
+          distalSynapse.setPermanence(distalSynapse.getPermanence() - Synapse.DistalSynapse.PERMANENCE_DECREASE);
+        }
+        iter.remove();
+      }
+    }
   }
 
   /**

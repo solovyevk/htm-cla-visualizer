@@ -294,11 +294,13 @@ public class TemporalInfo extends JPanel {
     }
 
     protected String[] columnNames = {
-            "Seg Inx",
+            "Seg",
             "Seq",
             "Act",
             "Learn",
-            "Syn(*)"
+            "By",
+            "St",
+            "Syn"
     };
 
     public void setCell(Cell cell) {
@@ -361,6 +363,12 @@ public class TemporalInfo extends JPanel {
             value = row.segmentActive(Cell.NOW, Cell.State.LEARN);
             break;
           case 4:
+            value = row.getPredictedBy() == null ? "R" : segments.indexOf(row.getPredictedBy()) + "";
+            break;
+          case 5:
+            value = row.predictedInStep();
+            break;
+          case 6:
             value = row.size();
             break;
           default:
@@ -386,6 +394,12 @@ public class TemporalInfo extends JPanel {
           result = Boolean.class;
           break;
         case 4:
+          result = String.class;
+          break;
+        case 6:
+          result = Integer.class;
+          break;
+        case 5:
           result = Integer.class;
           break;
         default:
@@ -400,10 +414,11 @@ public class TemporalInfo extends JPanel {
 
     {
       columnNames = new String[]{
-              "Seg Inx",
+              "Seg",
               "Seq",
               "Time",
-              "Syn(*)"
+              "St",
+              "Syn"
       };
     }
 
@@ -443,6 +458,9 @@ public class TemporalInfo extends JPanel {
             value = row.getTime() == Cell.NOW ? "NOW" : "BEF";
             break;
           case 3:
+            value = row.predictedInStep();
+            break;
+          case 4:
             value = row.size();
             break;
           default:
@@ -465,6 +483,9 @@ public class TemporalInfo extends JPanel {
           result = String.class;
           break;
         case 3:
+          result = Integer.class;
+          break;
+        case 4:
           result = Integer.class;
           break;
         default:
