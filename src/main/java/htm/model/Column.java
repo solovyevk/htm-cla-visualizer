@@ -504,7 +504,7 @@ public class Column extends BaseSpace.Element {
         if (segment.segmentActive(Cell.NOW, Cell.State.ACTIVE)) {
           //By Kirill - if segment is seq it also should be in learning state to predict
           if (segment.isSequenceSegment() && !segment.segmentActive(Cell.NOW, Cell.State.LEARN)) {
-            return;
+            continue;
           }
           //cell.setPredictiveState(true);
           cell.setPredictInStepState(segment.predictedInStep());
@@ -596,7 +596,7 @@ public class Column extends BaseSpace.Element {
     //        time/* + 1*/)) {
     //  LOG.info("Prohibit sequential selection of the same segment in bestMatchingSegments logic");
     //  columnBestMatchingSegment = null;
-    //}
+   // }
 
 
     return new BestMatchingCellAndSegment(

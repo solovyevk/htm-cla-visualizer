@@ -363,7 +363,7 @@ public class Cell {
         int predictedInStep = update.predictedInStep();
         LOG.info("Decrement synapses and remove segment update for step prediction: " + predictedInStep + update);
         for (Synapse.DistalSynapse distalSynapse : update) {
-          distalSynapse.setPermanence(distalSynapse.getPermanence() - Synapse.DistalSynapse.PERMANENCE_DECREASE);
+          distalSynapse.setPermanence(distalSynapse.getPermanence() - 4*Synapse.DistalSynapse.PERMANENCE_DECREASE);
         }
         iter.remove();
       }
