@@ -104,7 +104,9 @@ public class DistalDendriteSegment extends ArrayList<Synapse.DistalSynapse> {
 
     @Override
     public boolean apply(Synapse.DistalSynapse synapse) {
-      return synapse.getFromCell().getActiveState(time);
+      //return synapse.getFromCell().getActiveState(time);
+      //By Kirill
+      return synapse.getFromCell().getActiveState(time) &&  synapse.getFromCell().getLearnState(time);
     }
   }
 

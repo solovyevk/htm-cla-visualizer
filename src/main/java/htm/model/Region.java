@@ -275,10 +275,11 @@ public class Region extends ColumnSpace {
         column.updateDistalSynapses();
       }
     }
+    //By Kirill
     //Phase 4: Fix errors in segments for learning cells
     if (this.getTemporalLearning()) {
       for (Column column : elementList) {
-        //column.fixSegments();
+        column.fixSegments();
       }
     }
   }

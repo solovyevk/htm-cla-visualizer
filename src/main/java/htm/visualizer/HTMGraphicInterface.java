@@ -293,7 +293,7 @@ public class HTMGraphicInterface extends JPanel {
       } else {
         int rowColumnModelInx = sourceTable.convertRowIndexToModel(
                 rowViewInx);
-        Synapse.DistalSynapse selectedSynapse = ((TemporalInfo.SegmentDistalSynapsesModel)sourceTable.getModel()).getSynapse(
+        Synapse.DistalSynapse selectedSynapse = ((TemporalInfo.BaseSegmentDistalSynapsesModel)sourceTable.getModel()).getSynapse(
                 rowColumnModelInx);
         slicedView.setSelectedSynapse(selectedSynapse);
         slicedView.repaint();

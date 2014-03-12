@@ -14,7 +14,7 @@ public class MathUtils {
   private MathUtils() {
   }
 
-  static public double findMax(double... values) {
+  static public double findMax(Double... values) {
     double max = Double.MIN_VALUE;
     for (double d : values) {
       if (d > max) max = d;
@@ -22,7 +22,7 @@ public class MathUtils {
     return max;
   }
 
-  static public double findMin(double... values) {
+  static public double findMin(Double... values) {
     double min = Double.MAX_VALUE;
     for (double d : values) {
       if (d < min) min = d;
