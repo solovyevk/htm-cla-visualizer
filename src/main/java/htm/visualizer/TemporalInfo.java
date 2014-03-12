@@ -23,6 +23,7 @@ import javax.swing.event.ListSelectionListener;
 import javax.swing.table.AbstractTableModel;
 import javax.swing.table.DefaultTableCellRenderer;
 import java.awt.*;
+import java.awt.event.ActionEvent;
 import java.awt.font.FontRenderContext;
 import java.awt.font.TextLayout;
 import java.util.LinkedHashMap;
@@ -52,7 +53,7 @@ public class TemporalInfo extends JPanel {
     //listeners
     distalDendriteSegmentsTable.getSelectionModel().addListSelectionListener(new ListSelectionListener() {
       @Override public void valueChanged(ListSelectionEvent e) {
-        SegmentDistalSynapsesModel synapsesModel = (SegmentDistalSynapsesModel)segmentDistalSynapsesTable.getModel();
+        BaseSegmentDistalSynapsesModel synapsesModel = (BaseSegmentDistalSynapsesModel)segmentDistalSynapsesTable.getModel();
         int rowViewInx = distalDendriteSegmentsTable.getSelectedRow();
         if (rowViewInx == -1) {
           synapsesModel.setSegment(null);
@@ -66,7 +67,7 @@ public class TemporalInfo extends JPanel {
     });
     distalDendriteSegmentUpdatesTable.getSelectionModel().addListSelectionListener(new ListSelectionListener() {
       @Override public void valueChanged(ListSelectionEvent e) {
-        SegmentDistalSynapsesModel synapsesModel = (SegmentDistalSynapsesModel)segmentUpdateDistalSynapsesTable.getModel();
+        BaseSegmentDistalSynapsesModel synapsesModel = (BaseSegmentDistalSynapsesModel)segmentUpdateDistalSynapsesTable.getModel();
         int rowViewInx = distalDendriteSegmentUpdatesTable.getSelectedRow();
         if (rowViewInx == -1) {
           synapsesModel.setSegment(null);
@@ -146,8 +147,27 @@ public class TemporalInfo extends JPanel {
   }
 
   private JTable initDistalDendriteSegmentsTable() {
-    JTable table = new JTable(new DistalDendriteSegmentsModel());
+    final TemporalInfo that = this;
+    final JTable table = new JTable(new DistalDendriteSegmentsModel());
     table.setAutoCreateRowSorter(true);
+    //Need this to be able to delete segment on demand for research purpose
+    JPopupMenu popup = new JPopupMenu();
+    popup.add( new AbstractAction("Delete segment", UIUtils.INSTANCE.createImageIcon(
+                "/images/delete.png")) {
+          @Override public void actionPerformed(ActionEvent e) {
+            DistalDendriteSegment selected = ((SegmentsModel)table.getModel()).getSegment(table.getSelectedRow());
+            that.currentCell.deleteSegment(selected);
+            ((SegmentsModel)table.getModel()).fireTableDataChanged();
+          }
+        });
+    popup.add( new AbstractAction("Delete All Segment", UIUtils.INSTANCE.createImageIcon(
+                   "/images/delete.png")) {
+             @Override public void actionPerformed(ActionEvent e) {
+               that.currentCell.deleteAllSegment();
+               ((SegmentsModel)table.getModel()).fireTableDataChanged();
+             }
+           });
+    table.setComponentPopupMenu(popup);
     return table;
   }
 
@@ -186,6 +206,7 @@ public class TemporalInfo extends JPanel {
     });
     table.getColumnModel().getColumn(2).setPreferredWidth(30);
     table.getColumnModel().getColumn(3).setCellRenderer(new UIUtils.PositionRenderer());
+    table.getColumnModel().getColumn(4).setPreferredWidth(50);
     table.setAutoCreateRowSorter(true);
     return table;
   }
@@ -195,11 +216,10 @@ public class TemporalInfo extends JPanel {
       //need to override to avoid exception in sorter
       @Override
       public Object getValueAt(int row, int column) {
-        if (row > getModel().getRowCount() || getModel().getRowCount() == 0) {
+        if (row > getModel().getRowCount() -1) {
           return null;
         } else {
           return super.getValueAt(row, column);
-
         }
       }
     };
@@ -343,6 +363,7 @@ public class TemporalInfo extends JPanel {
 
     @Override protected void segmentsChange() {
       // this.fireTableDataChanged();  -want to keep selected list
+      this.fireTableDataChanged();
     }
 
     @Override public Object getValueAt(int rowIndex, int columnIndex) {
@@ -497,13 +518,14 @@ public class TemporalInfo extends JPanel {
   }
 
 
-  class SegmentDistalSynapsesModel extends AbstractTableModel {
+  abstract class BaseSegmentDistalSynapsesModel extends AbstractTableModel {
     protected java.util.List<Synapse.DistalSynapse> synapses = null;
     protected String[] columnNames = {
             "Perm",
             "Cell",
             "Inx",
-            "Position"};
+            "Position"
+    };
 
     public void setSegment(DistalDendriteSegment segment) {
       synapses = segment != null ? segment : null;
@@ -579,7 +601,35 @@ public class TemporalInfo extends JPanel {
 
   }
 
-  class SegmentUpdateDistalSynapsesModel extends SegmentDistalSynapsesModel {
+  class SegmentDistalSynapsesModel extends BaseSegmentDistalSynapsesModel {
+    {
+      columnNames = new String[]{
+              "Perm",
+              "Cell",
+              "Inx",
+              "Position",
+              "r"
+      };
+    }
+
+    @Override
+    public Object getValueAt(int rowIndex, int columnIndex) {
+      Synapse.DistalSynapse row = synapses.get(rowIndex);
+      if (columnIndex == 4) {
+        return row.getPermanenceRangeChangeForActive();
+      }
+      return super.getValueAt(rowIndex, columnIndex);
+    }
+
+    @Override public Class<?> getColumnClass(int columnIndex) {
+      if (columnIndex == 4) {
+        return Double.class;
+      }
+      return super.getColumnClass(columnIndex);
+    }
+  }
+
+  class SegmentUpdateDistalSynapsesModel extends BaseSegmentDistalSynapsesModel {
     {
       columnNames = new String[]{
               "Perm",

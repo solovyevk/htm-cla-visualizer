@@ -2,6 +2,8 @@ package htm.model;
 
 import htm.model.space.BaseSpace;
 import htm.model.space.InputSpace;
+import htm.utils.CircularArrayList;
+import htm.utils.MathUtils;
 
 public class Synapse {
   private double permanence;
@@ -102,6 +104,7 @@ public class Synapse {
     private final Cell fromCell;
     private DistalDendriteSegment segment;
 
+
     public static void updateFromConfig(Config synapseCfg) {
       DistalSynapse.CONNECTED_PERMANENCE = synapseCfg.getConnectedPerm();
       DistalSynapse.PERMANENCE_INCREASE = synapseCfg.getPermanenceInc();
@@ -110,7 +113,7 @@ public class Synapse {
 
     public DistalSynapse(Cell fromCell) {
       //NOT sure how to deal with initial permanence, do following for now
-      this(CONNECTED_PERMANENCE -3*PERMANENCE_INCREASE, fromCell);
+      this(CONNECTED_PERMANENCE - 3 * PERMANENCE_INCREASE, fromCell);
     }
 
     public DistalSynapse(double initPermanence, Cell fromCell) {
@@ -129,7 +132,41 @@ public class Synapse {
     public void setSegment(DistalDendriteSegment segment) {
       this.segment = segment;
     }
+
+    /*Added by Kirill to track speed of permanence changes for active cells*/
+
+    public static final int PERMANENCE_RANGE_BUFFER_SIZE = 20;
+    private PermanenceBufferedState<Double> permanenceRangeForActiveCell = new PermanenceBufferedState<Double>();
+
+    public void updatePermanenceRangeForActiveCell() {
+      permanenceRangeForActiveCell.addState(this.getPermanence());
+    }
+
+    public double getPermanenceRangeChangeForActive(){
+      double currentPermanence = getPermanence();
+      if(currentPermanence == 1.0 || permanenceRangeForActiveCell.size() < PERMANENCE_RANGE_BUFFER_SIZE){
+        return 1.0;
+      } else {
+        Double[] permanenceRange = (Double[])permanenceRangeForActiveCell.toArray(new Double[permanenceRangeForActiveCell.size()]);
+        return MathUtils.findMax(permanenceRange) - MathUtils.findMin(permanenceRange);
+      }
+    }
+
+    private static class PermanenceBufferedState<Double> extends CircularArrayList<Double> {
+      public PermanenceBufferedState() {
+        super(PERMANENCE_RANGE_BUFFER_SIZE);
+      }
+
+      void addState(Double value) {
+        this.add(0, value);
+      }
+
+      public Double getLast() {
+        return this.get(0);
+      }
+    }
   }
+
 
   public static class Config {
     private final double connectedPerm;

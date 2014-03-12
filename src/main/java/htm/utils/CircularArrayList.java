@@ -13,7 +13,7 @@ import java.util.ArrayList;
 
 public class CircularArrayList<E> extends ArrayList<E> {
 
-  private int maxCapacity;
+  protected int maxCapacity;
 
   /**
    * ArrayList has a capacity, if full,

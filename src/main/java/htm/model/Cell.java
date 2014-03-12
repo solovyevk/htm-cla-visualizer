@@ -119,6 +119,12 @@ public class Cell {
    */
   public void setActiveState(boolean activeState) {
     this.activeState.setState(activeState);
+     /*Added by Kirill to track speed of permanence changes for active cells*/
+    for (DistalDendriteSegment segment : this.segments) {
+      for (Synapse.DistalSynapse distalSynapse : segment) {
+        distalSynapse.updatePermanenceRangeForActiveCell();
+      }
+    }
   }
 
   /**
@@ -256,8 +262,16 @@ public class Cell {
   public List<DistalDendriteSegment> getSegments() {
     return Collections.unmodifiableList(segments);
   }
-  
-  public boolean removeSegment(DistalDendriteSegment segment){
+
+  public boolean deleteSegment(DistalDendriteSegment toDelete) {
+    return segments.remove(toDelete);
+  }
+
+  public void deleteAllSegment() {
+    segments.clear();
+  }
+
+  public boolean removeSegment(DistalDendriteSegment segment) {
     return segments.remove(segment);
   }
 
@@ -341,7 +355,7 @@ public class Cell {
 
   }
 
-  public void adaptSegmentsForWrongPrediction(){
+  public void adaptSegmentsForWrongPrediction() {
     int currentStepCount = this.getPredictInStepState(
             Cell.NOW);
     LOG.warn("Prediction is wrong for Cell:" + this + "\n" + "Before predicted in " + this.getPredictInStepState(
@@ -363,7 +377,7 @@ public class Cell {
         int predictedInStep = update.predictedInStep();
         LOG.info("Decrement synapses and remove segment update for step prediction: " + predictedInStep + update);
         for (Synapse.DistalSynapse distalSynapse : update) {
-          distalSynapse.setPermanence(distalSynapse.getPermanence() - Synapse.DistalSynapse.PERMANENCE_DECREASE);
+          distalSynapse.setPermanence(distalSynapse.getPermanence() -  4*Synapse.DistalSynapse.PERMANENCE_DECREASE);
         }
         iter.remove();
       }
@@ -433,46 +447,49 @@ public class Cell {
     //Clear segmentUpdates after adaption;
     this.segmentUpdates.clear();
     fireUpdatesChange();
-    fireSegmentsChange();
+    //fireSegmentsChange();
+  }
+
+  private void populateRelatedSegments(DistalDendriteSegment segment, Set<DistalDendriteSegment> related) {
+    for (DistalDendriteSegment relatedSegment : segments) {
+      if (relatedSegment.predictedBy == segment) {
+        related.add(relatedSegment);
+        populateRelatedSegments(relatedSegment, related);
+        break;
+      }
+    }
   }
 
   //By Kirill
   public void fixSegments() {
-
+    Set<DistalDendriteSegment> toRemove = new HashSet<DistalDendriteSegment>();
     for (DistalDendriteSegment segment : segments) {
-      /**
-       * Check if segments has overlapping active state synapses for some,
-       * but not all cells and remove what ever set is smaller
-       */
-      List<Synapse.DistalSynapse> overlappingActiveSynapses = CollectionUtils.filter(segment,
-                                                                                     new CollectionUtils.Predicate<Synapse.DistalSynapse>() {
-                                                                                       @Override public boolean apply(
-                                                                                               Synapse.DistalSynapse synapse) {
-                                                                                         for (int i = 0; i < TIME_STEPS - 1; i++) {
-                                                                                           if (synapse.getFromCell().getActiveState(
-                                                                                                   i) && synapse.getFromCell().getActiveState(
-                                                                                                   i + 1)) {
-                                                                                             return true;
-                                                                                           }
-                                                                                         }
-                                                                                         return false;
-                                                                                       }
-                                                                                     });
-      if (overlappingActiveSynapses.size() > 0 && segment.size() > overlappingActiveSynapses.size()) {
-        segment.removeAll(overlappingActiveSynapses);
-      } else if (overlappingActiveSynapses.size() > 0 && overlappingActiveSynapses.size() > segment.size()) {
-        segment.retainAll(overlappingActiveSynapses);
+      List<Synapse.DistalSynapse> deadSynapses = CollectionUtils.filter(segment,
+                                                                        new CollectionUtils.Predicate<Synapse.DistalSynapse>() {
+                                                                          @Override public boolean apply(
+                                                                                  Synapse.DistalSynapse synapse) {
+                                                                            return synapse.getPermanenceRangeChangeForActive() == 0.0;
+                                                                          }
+                                                                        });
+      if (segment.isSequenceSegment() && segment.size() - deadSynapses.size() <= MIN_THRESHOLD) {
+        toRemove.add(segment);
+        populateRelatedSegments(segment, toRemove);
+        List<DistalDendriteSegment> test = new ArrayList<DistalDendriteSegment>(toRemove);
+        int r = test.size();
       }
-      /**
-       *Don't allow same column cell to be located on the same segment, remove less active cell
-       */
-      int cellsPerColumn = this.belongsToColumn.getRegion().getCellsInColumn();
-      for (int i = 0; i < cellsPerColumn; i++) {
-        // = array[i];
-
+    }
+    if (toRemove.size() > 0) {
+      LOG.info("REMOVE DEAD AND RELATED SEGMENTS:" + toRemove.size() + " for cell:" + this);
+    /* try {
+        Thread.sleep(1000 * 10);
+      } catch (Exception e) {
+        LOG.error("Process sleep interrupted", e);
+      }      */
+     //segments.removeAll(toRemove);
+      for (Cell cell: this.getBelongsToColumn().getCells()) {
+        cell.deleteAllSegment();
       }
-
-
+      fireSegmentsChange();
     }
 
   }
@@ -527,7 +544,6 @@ public class Cell {
   */
   public void nextTimeStep() {
     this.activeState.add(Cell.NOW, false);
-    //this.predictiveState.add(Cell.NOW, false);
     this.predictedInStepState.add(Cell.NOW, NOT_IN_STEP_PREDICTION);
     this.learnState.add(Cell.NOW, false);
   }
