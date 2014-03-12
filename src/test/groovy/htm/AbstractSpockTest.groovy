@@ -15,7 +15,7 @@ import org.springframework.test.context.ContextConfiguration
 import spock.lang.Specification
 /**
  * Created with IntelliJ IDEA.
- * User: miao.lin
+ * User: Linker.Lin
  * Date: 13-12-20
  * Time: 下午5:06
  * To change this template use File | Settings | File Templates.
