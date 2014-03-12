@@ -18,7 +18,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-;
+
 
 public abstract class BaseSpace<E extends BaseSpace.Element> {
   private static final Log LOG = LogFactory.getLog(
