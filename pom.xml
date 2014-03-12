@@ -51,7 +51,7 @@
             <configuration>
               <archive>
                 <manifestEntries>
-                  <Main-Class>peacetech.gao.locator.adconversion.ConversionRunner</Main-Class>
+                  <Main-Class>htm.visualizer.Viewer</Main-Class>
                   <Implementation-Title>${project.description}</Implementation-Title>
                   <Implementation-Version>${project.version}</Implementation-Version>
                 </manifestEntries>
