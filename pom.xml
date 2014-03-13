@@ -7,9 +7,9 @@
   <version>1.0</version>
   <name>HTM-CLA Visualizer</name>
 
-    <properties>
-        <spring.version>2.5.6</spring.version>
-    </properties>
+  <properties>
+    <spring.version>2.5.6</spring.version>
+  </properties>
   <dependencies>
 
     <dependency>
@@ -32,64 +32,67 @@
       <scope>test</scope>
     </dependency>
 
-      <dependency>
-          <groupId>org.codehaus.groovy</groupId>
-          <artifactId>groovy-all</artifactId>
-          <version>2.2.1</version>
-      </dependency>
+    <dependency>
+      <groupId>org.codehaus.groovy</groupId>
+      <artifactId>groovy-all</artifactId>
+      <version>2.2.1</version>
+    </dependency>
 
-      <dependency>
-          <groupId>org.spockframework</groupId>
-          <artifactId>spock-core</artifactId>
-          <version>0.7-groovy-2.0</version>
-      </dependency>
-      <dependency>
-          <groupId>org.spockframework</groupId>
-          <artifactId>spock-spring</artifactId>
-          <version>0.7-groovy-2.0</version>
-      </dependency>
-      <dependency>
-          <groupId>org.unitils</groupId>
-          <artifactId>unitils-dbunit</artifactId>
-          <version>3.3</version>
-          <scope>test</scope>
-          <exclusions>
-              <exclusion>
-                  <groupId>org.dbunit</groupId>
-                  <artifactId>dbunit</artifactId>
-              </exclusion>
-          </exclusions>
-      </dependency>
-      <dependency>
+    <dependency>
+      <groupId>org.spockframework</groupId>
+      <artifactId>spock-core</artifactId>
+      <version>0.7-groovy-2.0</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.spockframework</groupId>
+      <artifactId>spock-spring</artifactId>
+      <version>0.7-groovy-2.0</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.unitils</groupId>
+      <artifactId>unitils-dbunit</artifactId>
+      <version>3.3</version>
+      <scope>test</scope>
+      <exclusions>
+        <exclusion>
           <groupId>org.dbunit</groupId>
           <artifactId>dbunit</artifactId>
-          <version>2.2</version>
-          <scope>test</scope>
-      </dependency>
-      <dependency>
-          <groupId>org.unitils</groupId>
-          <artifactId>unitils-spring</artifactId>
-          <version>3.3</version>
-          <scope>test</scope>
-      </dependency>
+        </exclusion>
+      </exclusions>
+    </dependency>
+    <dependency>
+      <groupId>org.dbunit</groupId>
+      <artifactId>dbunit</artifactId>
+      <version>2.2</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.unitils</groupId>
+      <artifactId>unitils-spring</artifactId>
+      <version>3.3</version>
+      <scope>test</scope>
+    </dependency>
 
-      <dependency>
-          <groupId>org.springframework</groupId>
-          <artifactId>spring-core</artifactId>
-          <version>${spring.version}</version>
-      </dependency>
-      <dependency>
-          <groupId>org.springframework</groupId>
-          <artifactId>spring-test</artifactId>
-          <version>${spring.version}</version>
-          <scope>test</scope>
-          <exclusions>
-              <exclusion>
-                  <groupId>junit</groupId>
-                  <artifactId>junit</artifactId>
-              </exclusion>
-          </exclusions>
-      </dependency>
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-core</artifactId>
+      <version>${spring.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-test</artifactId>
+      <version>${spring.version}</version>
+      <scope>test</scope>
+      <exclusions>
+        <exclusion>
+          <groupId>junit</groupId>
+          <artifactId>junit</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
 
   </dependencies>
 
@@ -143,65 +146,65 @@
         <artifactId>maven-source-plugin</artifactId>
       </plugin>
 
-        <plugin>
-            <groupId>org.codehaus.mojo</groupId>
-            <artifactId>build-helper-maven-plugin</artifactId>
-            <version>1.8</version>
-            <executions>
-                <execution>
-                    <id>add-source</id>
-                    <phase>generate-sources</phase>
-                    <goals>
-                        <goal>add-source</goal>
-                    </goals>
-                    <configuration>
-                        <sources>
-                            <source>src/main/groovy</source>
-                        </sources>
-                    </configuration>
-                </execution>
-                <execution>
-                    <id>add-test-source</id>
-                    <phase>generate-test-sources</phase>
-                    <goals>
-                        <goal>add-test-source</goal>
-                    </goals>
-                    <configuration>
-                        <sources>
-                            <source>src/test/groovy</source>
-                        </sources>
-                    </configuration>
-                </execution>
-            </executions>
-        </plugin>
-        <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-compiler-plugin</artifactId>
-            <version>3.1</version>
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>build-helper-maven-plugin</artifactId>
+        <version>1.8</version>
+        <executions>
+          <execution>
+            <id>add-source</id>
+            <phase>generate-sources</phase>
+            <goals>
+              <goal>add-source</goal>
+            </goals>
             <configuration>
-                <compilerId>groovy-eclipse-compiler</compilerId>
-                <source>1.6</source>
-                <target>1.6</target>
+              <sources>
+                <source>src/main/groovy</source>
+              </sources>
             </configuration>
-            <dependencies>
-                <dependency>
-                    <groupId>org.codehaus.groovy</groupId>
-                    <artifactId>groovy-eclipse-compiler</artifactId>
-                    <version>2.8.0-01</version>
-                </dependency>
-                <dependency>
-                    <groupId>org.codehaus.groovy</groupId>
-                    <artifactId>groovy-eclipse-batch</artifactId>
-                    <version>2.1.8-01</version>
-                </dependency>
-            </dependencies>
-        </plugin>
-        <plugin>
+          </execution>
+          <execution>
+            <id>add-test-source</id>
+            <phase>generate-test-sources</phase>
+            <goals>
+              <goal>add-test-source</goal>
+            </goals>
+            <configuration>
+              <sources>
+                <source>src/test/groovy</source>
+              </sources>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <version>3.1</version>
+        <configuration>
+          <compilerId>groovy-eclipse-compiler</compilerId>
+          <source>1.6</source>
+          <target>1.6</target>
+        </configuration>
+        <dependencies>
+          <dependency>
             <groupId>org.codehaus.groovy</groupId>
             <artifactId>groovy-eclipse-compiler</artifactId>
             <version>2.8.0-01</version>
-            <!--<extensions>true</extensions>-->
-        </plugin>
+          </dependency>
+          <dependency>
+            <groupId>org.codehaus.groovy</groupId>
+            <artifactId>groovy-eclipse-batch</artifactId>
+            <version>2.1.8-01</version>
+          </dependency>
+        </dependencies>
+      </plugin>
+      <plugin>
+        <groupId>org.codehaus.groovy</groupId>
+        <artifactId>groovy-eclipse-compiler</artifactId>
+        <version>2.8.0-01</version>
+        <!--<extensions>true</extensions>-->
+      </plugin>
 
 
     </plugins>
