@@ -11,8 +11,8 @@ package htm.utils;
 import java.math.BigDecimal;
 
 public class MathUtils {
-  private MathUtils() {
-  }
+//  private MathUtils() {
+//  }
 
   static public double findMax(Double... values) {
     double max = Double.MIN_VALUE;
