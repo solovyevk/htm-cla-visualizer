@@ -191,7 +191,7 @@ public class Viewer extends JFrame {
     setJMenuBar(createMenuBar());
     //sync skipSP state
     skipSpatialPoolMenuItem.setState(htmInterface.getRegion().isSkipSpatial());
-    setSize(1200, 880);
+    setSize(1280, 880);
     setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
     setLocationRelativeTo(null);
   }

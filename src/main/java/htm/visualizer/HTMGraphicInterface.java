@@ -443,6 +443,7 @@ public class HTMGraphicInterface extends JPanel {
     private Action cleanInputSpaceAction;
     private Action spatialLearningAction;
     private Action temporalLearningAction;
+    private Action fullSpeedAction;
 
     final JToolBar toolBar = new JToolBar();
     final Container infoPane = new Container();
@@ -529,6 +530,15 @@ public class HTMGraphicInterface extends JPanel {
 
       temporalLearningAction.putValue(Action.SELECTED_KEY, region.getTemporalLearning());
 
+      fullSpeedAction = new AbstractAction("Full Speed!") {
+          @Override public void actionPerformed(ActionEvent e) {
+            process.setFullSpeed(!process.isFullSpeed());
+          }
+
+        };
+
+      fullSpeedAction.putValue(Action.SELECTED_KEY, false);
+
       enableActions();
 
     }
@@ -548,8 +558,15 @@ public class HTMGraphicInterface extends JPanel {
       toolBar.add(new JButton(runAction));
       toolBar.add(new JButton(stepAction));
       toolBar.add(new JButton(stopAction));
-      toolBar.add(new JCheckBox(spatialLearningAction));
-      toolBar.add(new JCheckBox(temporalLearningAction));
+      JCheckBox spatialLearningCheckBox = new JCheckBox(spatialLearningAction);
+      spatialLearningCheckBox.setFont(new Font(null,0,10));
+      toolBar.add(spatialLearningCheckBox);
+      JCheckBox temporalLearningCheckBox = new JCheckBox(temporalLearningAction);
+      temporalLearningCheckBox.setFont(new Font(null,0,10));
+      toolBar.add(temporalLearningCheckBox);
+      JCheckBox fullSpeedCheckBox = new JCheckBox(fullSpeedAction);
+      fullSpeedCheckBox.setFont(new Font(null,0,10));
+      toolBar.add(fullSpeedCheckBox);
       /*
       toolBar.add(new JButton(new AbstractAction("test") {
         @Override public void actionPerformed(ActionEvent e) {
@@ -607,6 +624,10 @@ public class HTMGraphicInterface extends JPanel {
     private ExecutorService es = Executors.newSingleThreadExecutor();
     private ExecutorService esUpdate = Executors.newSingleThreadExecutor();
     private Future<Boolean> processFuture;
+    private volatile boolean fullSpeed = false;
+
+    public boolean isFullSpeed(){ return fullSpeed; }
+    public void setFullSpeed(boolean on){ fullSpeed = on; }
 
     public void sendUpdateNotification() {
       esUpdate.submit(new Callable<Object>() {
@@ -623,7 +644,8 @@ public class HTMGraphicInterface extends JPanel {
       if (patterns.size() != 0) {
         sensoryInputSurface.setSensoryInputValues(patterns.get(currentPatternIndex));
         try {
-          viewsUpdateLatch.await();
+          if (!fullSpeed)
+            viewsUpdateLatch.await();
         } catch (InterruptedException e) {
           LOG.error("viewsUpdateLatch interrupted", e);
         }
@@ -631,18 +653,15 @@ public class HTMGraphicInterface extends JPanel {
         region.nextTimeStep();
         region.performSpatialPooling();
         region.performTemporalPooling();
-//        try {
-//          Thread.sleep(20);
-//        } catch (Exception e) {
-//          LOG.error("Process sleep interrupted", e);
-//        }
+
         if (currentPatternIndex < patterns.size() - 1) {
           currentPatternIndex++;
         } else {
           cycleCounter++;
           currentPatternIndex = 0;
         }
-        viewsUpdateLatch = new CountDownLatch(2);
+        if (!fullSpeed)
+          viewsUpdateLatch = new CountDownLatch(2);
         sendUpdateNotification();
         return true;
       } else {
