@@ -18,7 +18,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Observable;
 import java.util.Observer;
-import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.*;
 
 public class HTMGraphicInterface extends JPanel {
   private static final Log LOG = LogFactory.getLog(HTMGraphicInterface.class);
@@ -602,9 +602,10 @@ public class HTMGraphicInterface extends JPanel {
   }
 
   private class HTMProcess extends Observable {
-    private boolean running = false;
     private int currentPatternIndex = 0;
     private int cycleCounter = 0;
+    private ExecutorService es = Executors.newSingleThreadExecutor();
+    private Future<Boolean> processFuture;
 
     public void sendUpdateNotification() {
       setChanged();
@@ -644,25 +645,31 @@ public class HTMGraphicInterface extends JPanel {
     }
 
     public void run() {
-      new Thread(new Runnable() {
-        @Override public void run() {
-          if (patterns.size() != 0) {
-            running = true;
-          }
-          do {
-            step();
-          } while (running);
-        }
-      }).start();
+      processFuture = es.submit(new Callable<Boolean>() {
+          @Override
+          public Boolean call() {
+              if (patterns.size() == 0) {
+                return false;
+              }
 
+              while(!processFuture.isCancelled()){
+                step();
+              }
+              return false;
+          }
+      });
     }
 
     public void stop() {
-      running = false;
+      if(processFuture != null)
+        processFuture.cancel(true);
     }
 
     public boolean isRunning() {
-      return running;
+      if(processFuture != null)
+        return !processFuture.isDone();
+      else
+        return false;
     }
 
     public int getCurrentPatternIndex() {
@@ -674,7 +681,7 @@ public class HTMGraphicInterface extends JPanel {
     }
 
     public void reset() {
-      running = false;
+      processFuture = null;
       currentPatternIndex = 0;
       cycleCounter = 0;
       sendUpdateNotification();
