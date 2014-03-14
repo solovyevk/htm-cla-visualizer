@@ -605,11 +605,17 @@ public class HTMGraphicInterface extends JPanel {
     private volatile int currentPatternIndex = 0;
     private volatile int cycleCounter = 0;
     private ExecutorService es = Executors.newSingleThreadExecutor();
+    private ExecutorService esUpdate = Executors.newSingleThreadExecutor();
     private Future<Boolean> processFuture;
 
     public void sendUpdateNotification() {
-      setChanged();
-      notifyObservers();
+      esUpdate.submit(new Callable<Object>() {
+        @Override public Object call() throws Exception {
+          setChanged();
+          notifyObservers();
+          return null;
+        }
+      });
     }
 
 
