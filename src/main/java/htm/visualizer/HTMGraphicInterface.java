@@ -92,7 +92,7 @@ public class HTMGraphicInterface extends JPanel {
   private TemporalInfo temporalInfo;
   private SelectedDetails detailsInfo;
   //Need this to ensure sliced view update before region cells reset for next step
-  private CountDownLatch viewsUpdateLatch = new CountDownLatch(0);
+  private volatile CountDownLatch viewsUpdateLatch = new CountDownLatch(0);
 
 
   public HTMGraphicInterface() {
@@ -625,11 +625,11 @@ public class HTMGraphicInterface extends JPanel {
         region.nextTimeStep();
         region.performSpatialPooling();
         region.performTemporalPooling();
-        try {
-          Thread.sleep(20);
-        } catch (Exception e) {
-          LOG.error("Process sleep interrupted", e);
-        }
+//        try {
+//          Thread.sleep(20);
+//        } catch (Exception e) {
+//          LOG.error("Process sleep interrupted", e);
+//        }
         if (currentPatternIndex < patterns.size() - 1) {
           currentPatternIndex++;
         } else {
