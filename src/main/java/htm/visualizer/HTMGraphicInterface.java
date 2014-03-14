@@ -602,8 +602,8 @@ public class HTMGraphicInterface extends JPanel {
   }
 
   private class HTMProcess extends Observable {
-    private int currentPatternIndex = 0;
-    private int cycleCounter = 0;
+    private volatile int currentPatternIndex = 0;
+    private volatile int cycleCounter = 0;
     private ExecutorService es = Executors.newSingleThreadExecutor();
     private Future<Boolean> processFuture;
 
