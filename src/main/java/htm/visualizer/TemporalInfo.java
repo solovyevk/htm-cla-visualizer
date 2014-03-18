@@ -152,21 +152,21 @@ public class TemporalInfo extends JPanel {
     table.setAutoCreateRowSorter(true);
     //Need this to be able to delete segment on demand for research purpose
     JPopupMenu popup = new JPopupMenu();
-    popup.add( new AbstractAction("Delete segment", UIUtils.INSTANCE.createImageIcon(
-                "/images/delete.png")) {
-          @Override public void actionPerformed(ActionEvent e) {
-            DistalDendriteSegment selected = ((SegmentsModel)table.getModel()).getSegment(table.getSelectedRow());
-            that.currentCell.deleteSegment(selected);
-            ((SegmentsModel)table.getModel()).fireTableDataChanged();
-          }
-        });
-    popup.add( new AbstractAction("Delete All Segment", UIUtils.INSTANCE.createImageIcon(
-                   "/images/delete.png")) {
-             @Override public void actionPerformed(ActionEvent e) {
-               that.currentCell.deleteAllSegment();
-               ((SegmentsModel)table.getModel()).fireTableDataChanged();
-             }
-           });
+    popup.add(new AbstractAction("Delete segment", UIUtils.INSTANCE.createImageIcon(
+            "/images/delete.png")) {
+      @Override public void actionPerformed(ActionEvent e) {
+        DistalDendriteSegment selected = ((SegmentsModel)table.getModel()).getSegment(table.getSelectedRow());
+        that.currentCell.deleteSegment(selected);
+        ((SegmentsModel)table.getModel()).fireTableDataChanged();
+      }
+    });
+    popup.add(new AbstractAction("Delete All Segment", UIUtils.INSTANCE.createImageIcon(
+            "/images/delete.png")) {
+      @Override public void actionPerformed(ActionEvent e) {
+        that.currentCell.deleteAllSegment();
+        ((SegmentsModel)table.getModel()).fireTableDataChanged();
+      }
+    });
     table.setComponentPopupMenu(popup);
     return table;
   }
@@ -216,7 +216,7 @@ public class TemporalInfo extends JPanel {
       //need to override to avoid exception in sorter
       @Override
       public Object getValueAt(int row, int column) {
-        if (row > getModel().getRowCount() -1) {
+        if (row > getModel().getRowCount() - 1) {
           return null;
         } else {
           return super.getValueAt(row, column);
@@ -370,30 +370,32 @@ public class TemporalInfo extends JPanel {
       Object value = null;
       if (segments != null) {
         DistalDendriteSegment row = segments.get(rowIndex);
-        switch (columnIndex) {
-          case 0:
-            value = rowIndex;
-            break;
-          case 1:
-            value = row.isSequenceSegment();
-            break;
-          case 2:
-            value = row.segmentActive(Cell.NOW, Cell.State.ACTIVE);
-            break;
-          case 3:
-            value = row.segmentActive(Cell.NOW, Cell.State.LEARN);
-            break;
-          case 4:
-            value = row.getPredictedBy() == null ? "R" : segments.indexOf(row.getPredictedBy()) + "";
-            break;
-          case 5:
-            value = row.predictedInStep();
-            break;
-          case 6:
-            value = row.size();
-            break;
-          default:
-            value = null;
+        if (row != null) {
+          switch (columnIndex) {
+            case 0:
+              value = rowIndex;
+              break;
+            case 1:
+              value = row.isSequenceSegment();
+              break;
+            case 2:
+              value = row.segmentActive(Cell.NOW, Cell.State.ACTIVE);
+              break;
+            case 3:
+              value = row.segmentActive(Cell.NOW, Cell.State.LEARN);
+              break;
+            case 4:
+              value = row.getPredictedBy() == null ? "R" : segments.indexOf(row.getPredictedBy()) + "";
+              break;
+            case 5:
+              value = row.predictedInStep();
+              break;
+            case 6:
+              value = row.size();
+              break;
+            default:
+              value = null;
+          }
         }
       }
       return value;
@@ -468,24 +470,26 @@ public class TemporalInfo extends JPanel {
       Object value = null;
       if (segments != null && segments.size() > rowIndex) {
         DistalDendriteSegment.Update row = (DistalDendriteSegment.Update)segments.get(rowIndex);
-        switch (columnIndex) {
-          case 0:
-            value = row.getTarget() == null ? "new" : currentCell.getSegments().indexOf(row.getTarget()) + "";
-            break;
-          case 1:
-            value = row.isSequenceSegment();
-            break;
-          case 2:
-            value = row.getTime() == Cell.NOW ? "NOW" : "BEF";
-            break;
-          case 3:
-            value = row.predictedInStep();
-            break;
-          case 4:
-            value = row.size();
-            break;
-          default:
-            value = null;
+        if (row != null) {
+          switch (columnIndex) {
+            case 0:
+              value = row.getTarget() == null ? "new" : currentCell.getSegments().indexOf(row.getTarget()) + "";
+              break;
+            case 1:
+              value = row.isSequenceSegment();
+              break;
+            case 2:
+              value = row.getTime() == Cell.NOW ? "NOW" : "BEF";
+              break;
+            case 3:
+              value = row.predictedInStep();
+              break;
+            case 4:
+              value = row.size();
+              break;
+            default:
+              value = null;
+          }
         }
       }
       return value;
@@ -549,21 +553,23 @@ public class TemporalInfo extends JPanel {
       Object value = null;
       if (synapses != null) {
         Synapse.DistalSynapse row = synapses.get(rowIndex);
-        switch (columnIndex) {
-          case 0:
-            value = row.getPermanence();
-            break;
-          case 1:
-            value = row.getFromCell();
-            break;
-          case 2:
-            value = row.getFromCell().getCellIndex();
-            break;
-          case 3:
-            value = new UIUtils.SortablePoint(row.getFromCell().getBelongsToColumn().getPosition());
-            break;
-          default:
-            value = null;
+        if (row != null) {
+          switch (columnIndex) {
+            case 0:
+              value = row.getPermanence();
+              break;
+            case 1:
+              value = row.getFromCell();
+              break;
+            case 2:
+              value = row.getFromCell().getCellIndex();
+              break;
+            case 3:
+              value = new UIUtils.SortablePoint(row.getFromCell().getBelongsToColumn().getPosition());
+              break;
+            default:
+              value = null;
+          }
         }
       }
       return value;
@@ -615,8 +621,10 @@ public class TemporalInfo extends JPanel {
     @Override
     public Object getValueAt(int rowIndex, int columnIndex) {
       Synapse.DistalSynapse row = synapses.get(rowIndex);
+      if(row != null){
       if (columnIndex == 4) {
         return row.getPermanenceRangeChangeForActive();
+      }
       }
       return super.getValueAt(rowIndex, columnIndex);
     }
@@ -644,8 +652,10 @@ public class TemporalInfo extends JPanel {
     @Override
     public Object getValueAt(int rowIndex, int columnIndex) {
       Synapse.DistalSynapse row = synapses.get(rowIndex);
+      if(row != null){
       if (columnIndex == 4) {
         return row.getSegment() instanceof DistalDendriteSegment.Update;
+      }
       }
       return super.getValueAt(rowIndex, columnIndex);
     }

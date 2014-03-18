@@ -161,11 +161,11 @@ public class HTMGraphicInterface extends JPanel {
     final JComponent win = this;
     process.addObserver(new Observer() {
       @Override public void update(Observable o, Object arg) {
-        temporalInfo.getRegionColumnsVerticalView().updateColumns();
         LOG.debug("Repaint Window on PROCESS update");
         SwingUtilities.invokeLater(new Runnable() {
           public void run() {
             LOG.debug("Start Painted View in step:#" + process.getCycle() + ", " + process.currentPatternIndex);
+            temporalInfo.getRegionColumnsVerticalView().updateColumns();
             win.repaint();
           }
         });
@@ -451,7 +451,8 @@ public class HTMGraphicInterface extends JPanel {
     private JLabel stepInfo = new JLabel("Current Pattern: 0");
     private JLabel cycleInfo = new JLabel("Cycle: 0");
 
-    @Override public void update(Observable o, Object arg) {
+    @Override
+    public void update(Observable o, Object arg) {
       enableActions();
       infoPane.setVisible(patterns.size() > 0);
       pattersInfo.setText("Patterns: " + patterns.size() + "");
