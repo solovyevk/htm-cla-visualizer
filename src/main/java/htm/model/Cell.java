@@ -369,7 +369,7 @@ public class Cell {
      Thread.sleep(1000 * 20);
     } catch (Exception e) {
       LOG.error("Process sleep interrupted", e);
-    } */
+    }*/
     for (ListIterator<DistalDendriteSegment.Update> iter = segmentUpdates.listIterator(
             segmentUpdates.size()); iter.hasPrevious(); ) {
       DistalDendriteSegment.Update update = iter.previous();

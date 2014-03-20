@@ -195,11 +195,15 @@ public class HTMGraphicInterface extends JPanel {
               }
             });
     //backward selection from selected synapse on temporal info to Region Slice;
-    temporalInfo.getSegmentDistalSynapsesTable().getSelectionModel().addListSelectionListener(new SynapseTableSelectListener(temporalInfo.getSegmentDistalSynapsesTable(), slicedView));
-    temporalInfo.getSegmentUpdateDistalSynapsesTable().getSelectionModel().addListSelectionListener(new SynapseTableSelectListener(temporalInfo.getSegmentUpdateDistalSynapsesTable(),slicedView));
+    temporalInfo.getSegmentDistalSynapsesTable().getSelectionModel().addListSelectionListener(
+            new SynapseTableSelectListener(temporalInfo.getSegmentDistalSynapsesTable(), slicedView));
+    temporalInfo.getSegmentUpdateDistalSynapsesTable().getSelectionModel().addListSelectionListener(
+            new SynapseTableSelectListener(temporalInfo.getSegmentUpdateDistalSynapsesTable(), slicedView));
     //backward selection from selected segment on temporal info to Region Slice;
-    temporalInfo.getDistalDendriteSegmentsTable().getSelectionModel().addListSelectionListener(new SegmentTableSelectListener(temporalInfo.getDistalDendriteSegmentsTable(), slicedView));
-    temporalInfo.getDistalDendriteSegmentUpdatesTable().getSelectionModel().addListSelectionListener(new SegmentTableSelectListener(temporalInfo.getDistalDendriteSegmentUpdatesTable(), slicedView));
+    temporalInfo.getDistalDendriteSegmentsTable().getSelectionModel().addListSelectionListener(
+            new SegmentTableSelectListener(temporalInfo.getDistalDendriteSegmentsTable(), slicedView));
+    temporalInfo.getDistalDendriteSegmentUpdatesTable().getSelectionModel().addListSelectionListener(
+            new SegmentTableSelectListener(temporalInfo.getDistalDendriteSegmentUpdatesTable(), slicedView));
     if (!region.isSkipSpatial()) {
       //select column to view spatial details
       sdrInput.addElementMouseEnterListener(new BaseSurface.ElementMouseEnterListener() {
@@ -243,14 +247,14 @@ public class HTMGraphicInterface extends JPanel {
   }
 
   private abstract static class TableSelectListener implements ListSelectionListener {
-     protected final JTable sourceTable;
-     protected final RegionSlicedHorizontalView slicedView;
+    protected final JTable sourceTable;
+    protected final RegionSlicedHorizontalView slicedView;
 
-     private TableSelectListener(JTable sourceTable, RegionSlicedHorizontalView slicedView) {
-       this.sourceTable = sourceTable;
-       this.slicedView = slicedView;
-     }
-   }
+    private TableSelectListener(JTable sourceTable, RegionSlicedHorizontalView slicedView) {
+      this.sourceTable = sourceTable;
+      this.slicedView = slicedView;
+    }
+  }
 
   private static class SegmentTableSelectListener extends TableSelectListener {
 
@@ -262,18 +266,18 @@ public class HTMGraphicInterface extends JPanel {
       selectFromSegment();
     }
 
-    private void selectFromSegment(){
+    private void selectFromSegment() {
       int rowViewInx = sourceTable.getSelectedRow();
-       if (rowViewInx == -1) {
-         slicedView.setSelectedSegment(null);
-       } else {
-         int rowColumnModelInx = sourceTable.convertRowIndexToModel(
-                 rowViewInx);
-         DistalDendriteSegment selectedSegment = ((TemporalInfo.SegmentsModel)sourceTable.getModel()).getSegment(
-                 rowColumnModelInx);
-         slicedView.setSelectedSegment(selectedSegment);
-         slicedView.repaint();
-       }
+      if (rowViewInx == -1) {
+        slicedView.setSelectedSegment(null);
+      } else {
+        int rowColumnModelInx = sourceTable.convertRowIndexToModel(
+                rowViewInx);
+        DistalDendriteSegment selectedSegment = ((TemporalInfo.SegmentsModel)sourceTable.getModel()).getSegment(
+                rowColumnModelInx);
+        slicedView.setSelectedSegment(selectedSegment);
+        slicedView.repaint();
+      }
     }
   }
 
@@ -431,6 +435,20 @@ public class HTMGraphicInterface extends JPanel {
     }
   }
 
+  private static class ToolBarCheckBox extends JCheckBox {
+    public ToolBarCheckBox(Action a) {
+      super(a);
+      this.setFont(new Font(null, 0, 10));
+    }
+  }
+
+  private static class ToolLabel extends JLabel {
+    private ToolLabel() {
+      super();
+      //this.setFont(new Font(null, Font.BOLD, 10));
+    }
+  }
+
   private class ControlPanel extends JPanel implements Observer {
     /*
  Controls
@@ -444,19 +462,18 @@ public class HTMGraphicInterface extends JPanel {
     private Action spatialLearningAction;
     private Action temporalLearningAction;
     private Action fullSpeedAction;
+    private Action temporalSplitAction;
 
     final JToolBar toolBar = new JToolBar();
     final Container infoPane = new Container();
-    private JLabel pattersInfo = new JLabel("Patterns: 0");
-    private JLabel stepInfo = new JLabel("Current Pattern: 0");
-    private JLabel cycleInfo = new JLabel("Cycle: 0");
+    private JLabel pattersStepInfo = new ToolLabel();
+    private JLabel cycleInfo = new ToolLabel();
 
     @Override
     public void update(Observable o, Object arg) {
       enableActions();
       infoPane.setVisible(patterns.size() > 0);
-      pattersInfo.setText("Patterns: " + patterns.size() + "");
-      stepInfo.setText("Current: " + process.getCurrentPatternIndex() + "");
+      pattersStepInfo.setText("Size-Step: " + patterns.size() + "-" + process.getCurrentPatternIndex());
       cycleInfo.setText("Cycle: " + process.getCycle());
     }
 
@@ -514,31 +531,39 @@ public class HTMGraphicInterface extends JPanel {
         }
       };
 
-      spatialLearningAction = new AbstractAction("Learn Spat.") {
-            @Override public void actionPerformed(ActionEvent e) {
-              region.setSpatialLearning(!region.getSpatialLearning());
-            }
+      spatialLearningAction = new AbstractAction("Learn Spat") {
+        @Override public void actionPerformed(ActionEvent e) {
+          region.setSpatialLearning(!region.getSpatialLearning());
+        }
 
       };
       spatialLearningAction.putValue(Action.SELECTED_KEY, region.getSpatialLearning());
 
-      temporalLearningAction = new AbstractAction("Learn Temp.") {
-              @Override public void actionPerformed(ActionEvent e) {
-                region.setTemporalLearning(!region.getTemporalLearning());
-              }
+      temporalLearningAction = new AbstractAction("Learn Temp") {
+        @Override public void actionPerformed(ActionEvent e) {
+          region.setTemporalLearning(!region.getTemporalLearning());
+        }
 
-        };
+      };
 
       temporalLearningAction.putValue(Action.SELECTED_KEY, region.getTemporalLearning());
 
       fullSpeedAction = new AbstractAction("Full Speed!") {
-          @Override public void actionPerformed(ActionEvent e) {
-            process.setFullSpeed(!process.isFullSpeed());
-          }
+        @Override public void actionPerformed(ActionEvent e) {
+          process.setFullSpeed(!process.isFullSpeed());
+        }
 
-        };
+      };
 
-      fullSpeedAction.putValue(Action.SELECTED_KEY, false);
+      fullSpeedAction.putValue(Action.SELECTED_KEY, HTMProcess.FULL_SPEED_DEFAULT);
+
+      temporalSplitAction = new AbstractAction("Temp Split") {
+        @Override public void actionPerformed(ActionEvent e) {
+          process.setTemporalSplit(!process.isTemporalSplit());
+        }
+      };
+
+      temporalSplitAction.putValue(Action.SELECTED_KEY, HTMProcess.TEMPORAL_SPLIT_DEFAULT);
 
       enableActions();
 
@@ -547,11 +572,10 @@ public class HTMGraphicInterface extends JPanel {
 
     public ControlPanel() {
       initActions();
-      infoPane.setPreferredSize(new Dimension(250, infoPane.getPreferredSize().height));
-      infoPane.setLayout(new GridLayout(0, 3, 1, 1));
+      infoPane.setPreferredSize(new Dimension(200, infoPane.getPreferredSize().height));
+      infoPane.setLayout(new GridLayout(0, 2, 1, 1));
       infoPane.setVisible(patterns.size() > 0);
-      infoPane.add(pattersInfo);
-      infoPane.add(stepInfo);
+      infoPane.add(pattersStepInfo);
       infoPane.add(cycleInfo);
       toolBar.add(new JButton(cleanInputSpaceAction));
       toolBar.add(new JButton(addPatternAction));
@@ -559,15 +583,20 @@ public class HTMGraphicInterface extends JPanel {
       toolBar.add(new JButton(runAction));
       toolBar.add(new JButton(stepAction));
       toolBar.add(new JButton(stopAction));
-      JCheckBox spatialLearningCheckBox = new JCheckBox(spatialLearningAction);
-      spatialLearningCheckBox.setFont(new Font(null,0,10));
-      toolBar.add(spatialLearningCheckBox);
-      JCheckBox temporalLearningCheckBox = new JCheckBox(temporalLearningAction);
-      temporalLearningCheckBox.setFont(new Font(null,0,10));
-      toolBar.add(temporalLearningCheckBox);
-      JCheckBox fullSpeedCheckBox = new JCheckBox(fullSpeedAction);
-      fullSpeedCheckBox.setFont(new Font(null,0,10));
-      toolBar.add(fullSpeedCheckBox);
+      /**
+      toolBar.add(new JComponent() {
+        private Container init() {
+          this.setLayout(new GridLayout(2, 0, 0, 0));
+          add(new ToolBarCheckBox(spatialLearningAction));
+          add(new ToolBarCheckBox(temporalLearningAction));
+          add(sdrInput);
+          return this;
+        }
+      }.init()); **/
+      toolBar.add(new ToolBarCheckBox(spatialLearningAction));
+      toolBar.add(new ToolBarCheckBox(temporalLearningAction));
+      toolBar.add(new ToolBarCheckBox(fullSpeedAction));
+      toolBar.add(new ToolBarCheckBox(temporalSplitAction));
       /*
       toolBar.add(new JButton(new AbstractAction("test") {
         @Override public void actionPerformed(ActionEvent e) {
@@ -620,15 +649,35 @@ public class HTMGraphicInterface extends JPanel {
   }
 
   private class HTMProcess extends Observable {
+    public final static boolean FULL_SPEED_DEFAULT = false;
+    public final static boolean TEMPORAL_SPLIT_DEFAULT = false;
     private volatile int currentPatternIndex = 0;
     private volatile int cycleCounter = 0;
     private ExecutorService es = Executors.newSingleThreadExecutor();
     private ExecutorService esUpdate = Executors.newSingleThreadExecutor();
     private Future<Boolean> processFuture;
-    private volatile boolean fullSpeed = false;
+    private volatile boolean fullSpeed = FULL_SPEED_DEFAULT;
+    /*We need this mode to brake point temporal polling between phase 1 and 2 to see formation of new segments updates from
+    best matching segment in "phase 1" here htm/model/Column.java:480
+    */
+    private volatile boolean temporalSplit = TEMPORAL_SPLIT_DEFAULT;
+    private volatile boolean temporalSplitStart = true;
 
-    public boolean isFullSpeed(){ return fullSpeed; }
-    public void setFullSpeed(boolean on){ fullSpeed = on; }
+    public boolean isFullSpeed() {
+      return fullSpeed;
+    }
+
+    public void setFullSpeed(boolean on) {
+      fullSpeed = on;
+    }
+
+    public boolean isTemporalSplit() {
+      return temporalSplit;
+    }
+
+    public void setTemporalSplit(boolean temporalSplit) {
+      this.temporalSplit = temporalSplit;
+    }
 
     public void sendUpdateNotification() {
       esUpdate.submit(new Callable<Object>() {
@@ -640,29 +689,43 @@ public class HTMGraphicInterface extends JPanel {
       });
     }
 
-
     public boolean step() {
       if (patterns.size() != 0) {
         sensoryInputSurface.setSensoryInputValues(patterns.get(currentPatternIndex));
         try {
-          if (!fullSpeed)
+          if (!fullSpeed) {
             viewsUpdateLatch.await();
+          }
         } catch (InterruptedException e) {
           LOG.error("viewsUpdateLatch interrupted", e);
         }
-        LOG.debug("Start step #" + process.getCycle() + ", " + process.currentPatternIndex);
-        region.nextTimeStep();
-        region.performSpatialPooling();
-        region.performTemporalPooling();
-
-        if (currentPatternIndex < patterns.size() - 1) {
-          currentPatternIndex++;
+        if (!temporalSplit) {
+          LOG.debug("Start step #" + process.getCycle() + ", " + process.currentPatternIndex);
+          region.nextTimeStep();
+          region.performSpatialPooling();
+          region.performTemporalPooling();
         } else {
-          cycleCounter++;
-          currentPatternIndex = 0;
+          if (temporalSplitStart) {
+            LOG.debug("Start step #" + process.getCycle() + ", " + process.currentPatternIndex);
+            region.nextTimeStep();
+            region.performSpatialPooling();
+            region.temporalPoolingPhaseOne();
+          } else {
+            region.temporalPoolingPhaseTwoThree();
+          }
         }
-        if (!fullSpeed)
+        if (!temporalSplit || !temporalSplitStart) {
+          if (currentPatternIndex < patterns.size() - 1) {
+            currentPatternIndex++;
+          } else {
+            cycleCounter++;
+            currentPatternIndex = 0;
+          }
+        }
+        temporalSplitStart = !temporalSplitStart;
+        if (!fullSpeed) {
           viewsUpdateLatch = new CountDownLatch(2);
+        }
         sendUpdateNotification();
         return true;
       } else {
@@ -672,30 +735,32 @@ public class HTMGraphicInterface extends JPanel {
 
     public void run() {
       processFuture = es.submit(new Callable<Boolean>() {
-          @Override
-          public Boolean call() {
-              if (patterns.size() == 0) {
-                return false;
-              }
-
-              while(!processFuture.isCancelled()){
-                step();
-              }
-              return false;
+        @Override
+        public Boolean call() {
+          if (patterns.size() == 0) {
+            return false;
           }
+
+          while (!processFuture.isCancelled()) {
+            step();
+          }
+          return false;
+        }
       });
     }
 
     public void stop() {
-      if(processFuture != null)
+      if (processFuture != null) {
         processFuture.cancel(true);
+      }
     }
 
     public boolean isRunning() {
-      if(processFuture != null)
+      if (processFuture != null) {
         return !processFuture.isDone();
-      else
+      } else {
         return false;
+      }
     }
 
     public int getCurrentPatternIndex() {
@@ -713,8 +778,6 @@ public class HTMGraphicInterface extends JPanel {
       sendUpdateNotification();
     }
   }
-
-
 
 
   public static class Config {

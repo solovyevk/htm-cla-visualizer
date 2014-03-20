@@ -260,11 +260,13 @@ public class Region extends ColumnSpace {
    * (lines 56-57). Otherwise, if the cell ever stops predicting for any reason, we
    */
   public void performTemporalPooling() {
-    //Phase 1:Compute the active state, activeState(t), for each cell.
-    List<Column> activeColumns = this.getActiveColumns();
-    for (Column activeColumn : activeColumns) {
-      activeColumn.computeCellsActiveState();
-    }
+    temporalPoolingPhaseOne();
+    temporalPoolingPhaseTwoThree();
+
+
+  }
+
+  public void temporalPoolingPhaseTwoThree() {
     //Phase 2:Compute the predicted state, predictiveState(t), for each cell.
     for (Column column : elementList) {
       column.computeCellsPredictiveState();
@@ -281,6 +283,14 @@ public class Region extends ColumnSpace {
       for (Column column : elementList) {
         column.fixSegments();
       }
+    }
+  }
+
+  public void temporalPoolingPhaseOne() {
+    //Phase 1:Compute the active state, activeState(t), for each cell.
+    List<Column> activeColumns = this.getActiveColumns();
+    for (Column activeColumn : activeColumns) {
+      activeColumn.computeCellsActiveState();
     }
   }
 
