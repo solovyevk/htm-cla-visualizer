@@ -18,7 +18,7 @@ public class ColumnSpace extends BaseSpace<Column> {
     return new Column((Region)space, index, position);
   }
 
-  public Column[] getColumns() {
-    return elementList.toArray(new Column[elementList.size()]);
+  public java.util.List<Column> getColumns() {
+    return elementList;
   }
 }

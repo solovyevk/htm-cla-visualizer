@@ -9,6 +9,7 @@
 package htm.utils;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 public class MathUtils {
 //  private MathUtils() {
@@ -22,7 +23,23 @@ public class MathUtils {
     return max;
   }
 
+  static public double findMax(List<Double> values) {
+    double max = Double.MIN_VALUE;
+      for (Double d : values) {
+        if (d > max) max = d;
+      }
+      return max;
+  }
+
   static public double findMin(Double... values) {
+    double min = Double.MAX_VALUE;
+    for (double d : values) {
+      if (d < min) min = d;
+    }
+    return min;
+  }
+
+  static public double findMin(List<Double> values) {
     double min = Double.MAX_VALUE;
     for (double d : values) {
       if (d < min) min = d;
