@@ -22,6 +22,7 @@ public class CircularArrayList<E> extends ArrayList<E> {
    * @param capacity
    */
   public CircularArrayList(int capacity) {
+    super(capacity + 1);
     this.maxCapacity = capacity;
   }
 
