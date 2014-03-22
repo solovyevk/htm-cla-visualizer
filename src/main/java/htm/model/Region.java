@@ -66,8 +66,7 @@ public class Region extends ColumnSpace {
   }
 
   public void connectToInputSpace() {
-    Column[] columns = this.getColumns();
-    for (Column column : columns) {
+    for (Column column : getColumns()) {
       column.createProximalSegment(inputRadius);
     }
   }
@@ -137,9 +136,8 @@ public class Region extends ColumnSpace {
    */
 
   public double getAverageReceptiveFieldSize() {
-    Column[] columns = this.getColumns();
     double sum = 0;
-    for (Column column : columns) {
+    for (Column column : getColumns()) {
       java.util.List<Synapse.ProximalSynapse> connectedSynapses = column.getConnectedSynapses();
       double maxDistance = 0;
       for (Synapse.ProximalSynapse connectedSynapse : connectedSynapses) {
@@ -150,7 +148,7 @@ public class Region extends ColumnSpace {
       // Add the current column's receptive field size to the sum.
       sum += maxDistance;
     }
-    return sum / columns.length;
+    return sum / getColumns().size();
   }
 
   /**
@@ -193,10 +191,9 @@ public class Region extends ColumnSpace {
 
   public void performSpatialPooling() {
     double inhibitionRadius = getAverageReceptiveFieldSize();
-    Column[] regionColumns = getColumns();
+    List<Column> regionColumns = getColumns();
     if (skipSpatial) {
-      for (int i = 0; i < regionColumns.length; i++) {
-        Column regionColumn = regionColumns[i];
+      for (Column regionColumn : regionColumns) {
         regionColumn.setActive(inputSpace.getInputValue(regionColumn.getIndex()));
       }
     } else {

@@ -147,8 +147,7 @@ public class Synapse {
       if(currentPermanence == 1.0 || permanenceRangeForActiveCell.size() < PERMANENCE_RANGE_BUFFER_SIZE){
         return 1.0;
       } else {
-        Double[] permanenceRange = (Double[])permanenceRangeForActiveCell.toArray(new Double[permanenceRangeForActiveCell.size()]);
-        return MathUtils.findMax(permanenceRange) - MathUtils.findMin(permanenceRange);
+        return MathUtils.findMax(permanenceRangeForActiveCell) - MathUtils.findMin(permanenceRangeForActiveCell);
       }
     }
 
