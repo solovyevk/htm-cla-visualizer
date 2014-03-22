@@ -34,7 +34,9 @@ public class Viewer extends JFrame {
   private Action loadFromFileAction;
   private Action editParametersAction;
   private Action skipSpatialPoolingAction;
-  private Action resetAction;
+  private Action restartAction;
+  private Action htmResetAction;
+
 
   JCheckBoxMenuItem skipSpatialPoolMenuItem;
 
@@ -91,7 +93,8 @@ public class Viewer extends JFrame {
           HTMGraphicInterface.Config newCfg = new HTMGraphicInterface.Config(oldCfg.getPatterns(), new Region.Config(
                   modRegionCfg.getRegionDimension(),
                   modRegionCfg.getSensoryInputDimension(),
-                  modRegionCfg.getInputRadius(), modRegionCfg.getLearningRadius(), modRegionCfg.isSkipSpatial(), modRegionCfg.getCellsInColumn()),
+                  modRegionCfg.getInputRadius(), modRegionCfg.getLearningRadius(), modRegionCfg.isSkipSpatial(),
+                  modRegionCfg.getCellsInColumn()),
                                                                              modCfg.getColumnConfig(),
                                                                              modCfg.getCellConfig(),
                                                                              modCfg.getProximalSynapseConfig(),
@@ -117,7 +120,8 @@ public class Viewer extends JFrame {
         HTMGraphicInterface.Config newCfg = new HTMGraphicInterface.Config(oldCfg.getPatterns(), new Region.Config(
                 oldRegionCfg.getRegionDimension(),
                 oldRegionCfg.getSensoryInputDimension(),
-                oldRegionCfg.getInputRadius(), oldRegionCfg.getLearningRadius(), checked, oldRegionCfg.getCellsInColumn()),
+                oldRegionCfg.getInputRadius(), oldRegionCfg.getLearningRadius(), checked,
+                oldRegionCfg.getCellsInColumn()),
                                                                            oldCfg.getColumnConfig(),
                                                                            oldCfg.getCellConfig(),
                                                                            oldCfg.getProximalSynapseConfig(),
@@ -131,7 +135,7 @@ public class Viewer extends JFrame {
       }
     };
 
-    resetAction = new AbstractAction("Restart", UIUtils.INSTANCE.createImageIcon(
+    restartAction = new AbstractAction("Restart", UIUtils.INSTANCE.createImageIcon(
             "/images/arrow_rotate_clockwise.png")) {
 
       @Override public void actionPerformed(ActionEvent e) {
@@ -149,6 +153,15 @@ public class Viewer extends JFrame {
             LOG.error("Can't close config.xml resource stream");
           }
         }
+      }
+    };
+
+    htmResetAction = new AbstractAction("Clear HTM State", UIUtils.INSTANCE.createImageIcon(
+            "/images/eraser.png")) {
+      @Override public void actionPerformed(ActionEvent e) {
+        LOG.debug("Reset HTM State");
+        HTMGraphicInterface.Config cfg = htmInterface.getParameters();
+        win.reloadHTMInterface(cfg);
       }
     };
 
@@ -243,16 +256,21 @@ public class Viewer extends JFrame {
     menu.add(menuItem);
     menu.addSeparator();
 
-    menuItem = new JMenuItem(resetAction);
+    menuItem = new JMenuItem(restartAction);
     menuItem.setMnemonic(KeyEvent.VK_R);
     menuItem.setAccelerator(KeyStroke.getKeyStroke(
             KeyEvent.VK_4, ActionEvent.ALT_MASK));
+    menu.add(menuItem);
+    menuItem = new JMenuItem(htmResetAction);
+    menuItem.setMnemonic(KeyEvent.VK_H);
+    menuItem.setAccelerator(KeyStroke.getKeyStroke(
+            KeyEvent.VK_5, ActionEvent.ALT_MASK));
     menu.add(menuItem);
     menu.addSeparator();
     skipSpatialPoolMenuItem = new JCheckBoxMenuItem(skipSpatialPoolingAction);
     skipSpatialPoolMenuItem.setMnemonic(KeyEvent.VK_S);
     skipSpatialPoolMenuItem.setAccelerator(KeyStroke.getKeyStroke(
-            KeyEvent.VK_5, ActionEvent.ALT_MASK));
+            KeyEvent.VK_6, ActionEvent.ALT_MASK));
     skipSpatialPoolMenuItem.getAccessibleContext().setAccessibleDescription(
             "Skip Spatial Pooling, Connect Input to Temporal Pooling directly");
     menu.add(skipSpatialPoolMenuItem);
@@ -275,27 +293,28 @@ public class Viewer extends JFrame {
           implements Thread.UncaughtExceptionHandler {
     private static int SHOW_LINES = 10;
 
-    public static void showErrorDialog(Throwable thrown) {;
-      StackTraceElement[] stackTraceElements =  thrown.getStackTrace();
+    public static void showErrorDialog(Throwable thrown) {
+      ;
+      StackTraceElement[] stackTraceElements = thrown.getStackTrace();
       int counter = 0;
       StringBuffer stackTraceBuffer = new StringBuffer();
       for (int i = 0; i < stackTraceElements.length; i++) {
         StackTraceElement stackTraceElement = stackTraceElements[i];
         stackTraceBuffer.append(stackTraceElement.toString()).append("\n");
-        if(counter >= SHOW_LINES){
+        if (counter >= SHOW_LINES) {
           break;
         }
         counter++;
       }
-      if(stackTraceElements.length > SHOW_LINES){
+      if (stackTraceElements.length > SHOW_LINES) {
         stackTraceBuffer.append("and ").append(stackTraceElements.length - SHOW_LINES).append(" more ...");
       }
 
-      final String errorStackTrace =  stackTraceBuffer.toString();
+      final String errorStackTrace = stackTraceBuffer.toString();
       final String errorMessage = thrown.getMessage();
       Object[] options = {"Close", "Restart"};
       int result = JOptionPane.showOptionDialog(findActiveFrame(),
-                                                errorMessage +"\n\n" +errorStackTrace,
+                                                errorMessage + "\n\n" + errorStackTrace,
                                                 "Exception Occurred",
                                                 JOptionPane.YES_NO_OPTION,
                                                 JOptionPane.ERROR_MESSAGE,
