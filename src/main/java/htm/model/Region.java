@@ -258,28 +258,18 @@ public class Region extends ColumnSpace {
    */
   public void performTemporalPooling() {
     temporalPoolingPhaseOne();
-    temporalPoolingPhaseTwoThree();
-
-
+    temporalPoolingPhaseTwo();
+    temporalPoolingPhaseThree();
+    //By Kirill
+    //Phase 4: Fix errors in segments for learning cells - my research addition
+    temporalPoolingPhaseFour();
   }
 
-  public void temporalPoolingPhaseTwoThree() {
+
+  public void temporalPoolingPhaseTwo() {
     //Phase 2:Compute the predicted state, predictiveState(t), for each cell.
     for (Column column : elementList) {
       column.computeCellsPredictiveState();
-    }
-    //Phase 3:Run synapses updates accumulated in previous steps
-    if (this.getTemporalLearning()) {
-      for (Column column : elementList) {
-        column.updateDistalSynapses();
-      }
-    }
-    //By Kirill
-    //Phase 4: Fix errors in segments for learning cells
-    if (this.getTemporalLearning()) {
-      for (Column column : elementList) {
-        column.fixSegments();
-      }
     }
   }
 
@@ -290,6 +280,28 @@ public class Region extends ColumnSpace {
       activeColumn.computeCellsActiveState();
     }
   }
+
+  public void temporalPoolingPhaseThree() {
+    //Phase 3:Run synapses updates accumulated in previous steps
+    if (this.getTemporalLearning()) {
+      for (Column column : elementList) {
+        column.updateDistalSynapses();
+      }
+    }
+
+
+  }
+
+  //By Kirill
+  //Phase 4: Fix errors in segments for learning cells
+  public void temporalPoolingPhaseFour() {
+    if (this.getTemporalLearning()) {
+      for (Column column : elementList) {
+        column.fixSegments();
+      }
+    }
+  }
+
 
   /*Reset cells*/
   public void nextTimeStep() {

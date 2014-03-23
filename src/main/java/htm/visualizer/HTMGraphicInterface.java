@@ -79,6 +79,7 @@ public class HTMGraphicInterface extends JPanel {
 
   private java.util.List<boolean[]> patterns = new ArrayList<boolean[]>();
 
+  private final Object temporalSplitLock = new Object();
 
   private HTMProcess process;
 
@@ -519,7 +520,10 @@ public class HTMGraphicInterface extends JPanel {
               "/images/step.png")) {
 
         @Override public void actionPerformed(ActionEvent e) {
-          process.step();
+          synchronized (temporalSplitLock) {
+            process.step();
+          }
+          process.sendUpdateNotification();
         }
 
       };
@@ -559,7 +563,20 @@ public class HTMGraphicInterface extends JPanel {
 
       temporalSplitAction = new AbstractAction("Temp Split") {
         @Override public void actionPerformed(ActionEvent e) {
-          process.setTemporalSplit(!process.isTemporalSplit());
+          process.sendUpdateNotification();
+          boolean fullSpeed = process.isFullSpeed();
+          process.setFullSpeed(true);
+          synchronized (temporalSplitLock) {
+            if (process.isTemporalSplit()) {
+              while (process.temporalPhasePointer != 0) {
+                LOG.debug("Completing temporal split phases on switch: #"+process.temporalPhasePointer);
+                process.step();
+              }
+            }
+            process.setTemporalSplit(!process.isTemporalSplit());
+          }
+          process.sendUpdateNotification();
+          process.setFullSpeed(fullSpeed);
         }
       };
 
@@ -584,15 +601,15 @@ public class HTMGraphicInterface extends JPanel {
       toolBar.add(new JButton(stepAction));
       toolBar.add(new JButton(stopAction));
       /**
-      toolBar.add(new JComponent() {
-        private Container init() {
-          this.setLayout(new GridLayout(2, 0, 0, 0));
-          add(new ToolBarCheckBox(spatialLearningAction));
-          add(new ToolBarCheckBox(temporalLearningAction));
-          add(sdrInput);
-          return this;
-        }
-      }.init()); **/
+       toolBar.add(new JComponent() {
+       private Container init() {
+       this.setLayout(new GridLayout(2, 0, 0, 0));
+       add(new ToolBarCheckBox(spatialLearningAction));
+       add(new ToolBarCheckBox(temporalLearningAction));
+       add(sdrInput);
+       return this;
+       }
+       }.init()); **/
       toolBar.add(new ToolBarCheckBox(spatialLearningAction));
       toolBar.add(new ToolBarCheckBox(temporalLearningAction));
       toolBar.add(new ToolBarCheckBox(fullSpeedAction));
@@ -657,11 +674,10 @@ public class HTMGraphicInterface extends JPanel {
     private ExecutorService esUpdate = Executors.newSingleThreadExecutor();
     private Future<Boolean> processFuture;
     private volatile boolean fullSpeed = FULL_SPEED_DEFAULT;
-    /*We need this mode to brake point temporal polling between phase 1 and 2 to see formation of new segments updates from
-    best matching segment in "phase 1" here htm/model/Column.java:480
+    /*DEBUG Option - We need this mode to brake point temporal polling between phases to see formation of new segments and segments updates from phase to phase
     */
     private volatile boolean temporalSplit = TEMPORAL_SPLIT_DEFAULT;
-    private volatile boolean temporalSplitStart = true;
+    volatile int temporalPhasePointer = 0;
 
     public boolean isFullSpeed() {
       return fullSpeed;
@@ -694,7 +710,8 @@ public class HTMGraphicInterface extends JPanel {
         sensoryInputSurface.setSensoryInputValues(patterns.get(currentPatternIndex));
         try {
           if (!fullSpeed) {
-            viewsUpdateLatch.await();
+            //Added timeout to avoid accident lock down
+            viewsUpdateLatch.await(200, TimeUnit.MILLISECONDS);
           }
         } catch (InterruptedException e) {
           LOG.error("viewsUpdateLatch interrupted", e);
@@ -705,16 +722,32 @@ public class HTMGraphicInterface extends JPanel {
           region.performSpatialPooling();
           region.performTemporalPooling();
         } else {
-          if (temporalSplitStart) {
-            LOG.debug("Start step #" + process.getCycle() + ", " + process.currentPatternIndex);
-            region.nextTimeStep();
-            region.performSpatialPooling();
-            region.temporalPoolingPhaseOne();
-          } else {
-            region.temporalPoolingPhaseTwoThree();
+          switch (temporalPhasePointer) {
+            case 0: {
+              LOG.debug("Start step #" + process.getCycle() + ", " + process.currentPatternIndex);
+              region.nextTimeStep();
+              region.performSpatialPooling();
+              region.temporalPoolingPhaseOne();
+              temporalPhasePointer = 1;
+              break;
+            }
+            case 1:
+              region.temporalPoolingPhaseTwo();
+              temporalPhasePointer = 2;
+              break;
+            case 2:
+              region.temporalPoolingPhaseThree();
+              temporalPhasePointer = 3;
+              break;
+            case 3:
+              region.temporalPoolingPhaseFour();
+              temporalPhasePointer = 0;
+              break;
+            default:
+              throw new RuntimeException("Invalid Temporal Phase Pointer:" + temporalPhasePointer);
           }
         }
-        if (!temporalSplit || !temporalSplitStart) {
+        if (!temporalSplit || temporalPhasePointer == 0) {
           if (currentPatternIndex < patterns.size() - 1) {
             currentPatternIndex++;
           } else {
@@ -722,11 +755,9 @@ public class HTMGraphicInterface extends JPanel {
             currentPatternIndex = 0;
           }
         }
-        temporalSplitStart = !temporalSplitStart;
         if (!fullSpeed) {
           viewsUpdateLatch = new CountDownLatch(2);
         }
-        sendUpdateNotification();
         return true;
       } else {
         return false;
@@ -742,7 +773,10 @@ public class HTMGraphicInterface extends JPanel {
           }
 
           while (!processFuture.isCancelled()) {
-            step();
+            synchronized (temporalSplitLock) {
+              step();
+            }
+            sendUpdateNotification();
           }
           return false;
         }
