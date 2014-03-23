@@ -455,11 +455,9 @@ public class HTMGraphicInterface extends JPanel {
  Controls
   */
     private Action addPatternAction;
-    private Action resetPatternsAction;
     private Action runAction;
     private Action stepAction;
     private Action stopAction;
-    private Action cleanInputSpaceAction;
     private Action spatialLearningAction;
     private Action temporalLearningAction;
     private Action fullSpeedAction;
@@ -469,6 +467,8 @@ public class HTMGraphicInterface extends JPanel {
     final Container infoPane = new Container();
     private JLabel pattersStepInfo = new ToolLabel();
     private JLabel cycleInfo = new ToolLabel();
+    private JLabel tempInfo = new ToolLabel();
+
 
     @Override
     public void update(Observable o, Object arg) {
@@ -476,10 +476,12 @@ public class HTMGraphicInterface extends JPanel {
       infoPane.setVisible(patterns.size() > 0);
       pattersStepInfo.setText("Size-Step: " + patterns.size() + "-" + process.getCurrentPatternIndex());
       cycleInfo.setText("Cycle: " + process.getCycle());
+      tempInfo.setText("Ph:" + (process.temporalPhasePointer == 0 ? 4 : process.temporalPhasePointer));
     }
 
+
+
     private void enableActions() {
-      resetPatternsAction.setEnabled(patterns.size() > 0);
       runAction.setEnabled(patterns.size() > 0 && !process.isRunning());
       stepAction.setEnabled(patterns.size() > 0);
       stopAction.setEnabled(patterns.size() > 0 && process.isRunning());
@@ -487,12 +489,6 @@ public class HTMGraphicInterface extends JPanel {
 
 
     private void initActions() {
-      cleanInputSpaceAction = new AbstractAction("Clean", UIUtils.INSTANCE.createImageIcon(
-              "/images/cleanup.png")) {
-        @Override public void actionPerformed(ActionEvent e) {
-          sensoryInputSurface.reset();
-        }
-      };
 
       addPatternAction = new AbstractAction("Add", UIUtils.INSTANCE.createImageIcon(
               "/images/add.png")) {
@@ -502,12 +498,6 @@ public class HTMGraphicInterface extends JPanel {
 
       };
 
-      resetPatternsAction = new AbstractAction("Reset", UIUtils.INSTANCE.createImageIcon(
-              "/images/refresh.png")) {
-        @Override public void actionPerformed(ActionEvent e) {
-          resetPatterns();
-        }
-      };
 
       runAction = new AbstractAction("Run", UIUtils.INSTANCE.createImageIcon(
               "/images/play.png")) {
@@ -569,11 +559,12 @@ public class HTMGraphicInterface extends JPanel {
           synchronized (temporalSplitLock) {
             if (process.isTemporalSplit()) {
               while (process.temporalPhasePointer != 0) {
-                LOG.debug("Completing temporal split phases on switch: #"+process.temporalPhasePointer);
+                LOG.debug("Completing temporal split phases on switch: #" + process.temporalPhasePointer);
                 process.step();
               }
             }
             process.setTemporalSplit(!process.isTemporalSplit());
+            tempInfo.setVisible(process.isTemporalSplit());
           }
           process.sendUpdateNotification();
           process.setFullSpeed(fullSpeed);
@@ -590,13 +581,25 @@ public class HTMGraphicInterface extends JPanel {
     public ControlPanel() {
       initActions();
       infoPane.setPreferredSize(new Dimension(200, infoPane.getPreferredSize().height));
-      infoPane.setLayout(new GridLayout(0, 2, 1, 1));
-      infoPane.setVisible(patterns.size() > 0);
+      /*infoPane.setLayout(new GridLayout(0, 3, 1, 1));
       infoPane.add(pattersStepInfo);
       infoPane.add(cycleInfo);
-      toolBar.add(new JButton(cleanInputSpaceAction));
+      infoPane.add(tempInfo);*/
+      infoPane.setLayout(new GridBagLayout());
+      GridBagConstraints c = new GridBagConstraints();
+      c.weightx = 1;
+      c.fill = GridBagConstraints.HORIZONTAL;
+      c.gridx = 0;
+      c.gridy = 0;
+      infoPane.add(pattersStepInfo, c);
+      c.gridx = 1;
+      c.weightx = 1.5;
+      infoPane.add(cycleInfo, c);
+      c.gridx = 2;
+      c.weightx = 0.5;
+      infoPane.add(tempInfo, c);
+      infoPane.setVisible(patterns.size() > 0);
       toolBar.add(new JButton(addPatternAction));
-      toolBar.add(new JButton(resetPatternsAction));
       toolBar.add(new JButton(runAction));
       toolBar.add(new JButton(stepAction));
       toolBar.add(new JButton(stopAction));
@@ -614,19 +617,10 @@ public class HTMGraphicInterface extends JPanel {
       toolBar.add(new ToolBarCheckBox(temporalLearningAction));
       toolBar.add(new ToolBarCheckBox(fullSpeedAction));
       toolBar.add(new ToolBarCheckBox(temporalSplitAction));
-      /*
-      toolBar.add(new JButton(new AbstractAction("test") {
-        @Override public void actionPerformed(ActionEvent e) {
-          List<Column> selectedColumns = region.getActiveColumns(2);
-          for (Column selectedColumn : selectedColumns) {
-            selectedColumn.setMarked(true);
-          }
-          sdrInput.repaint();
-        }
-      }));*/
       toolBar.addSeparator();
       toolBar.add(infoPane);
       this.add(toolBar);
+      tempInfo.setVisible(false);
     }
 
     @Override
@@ -645,12 +639,17 @@ public class HTMGraphicInterface extends JPanel {
       return getPreferredSize();
     }
 
-
   }
 
+    
 
   /*Control Methods*/
-  private void addPattern() {
+
+  public void clearInputSpace(){
+    sensoryInputSurface.reset();
+  }
+
+  public void addPattern() {
     patterns.add(sensoryInputSurface.getSensoryInputValues());
     region.nextTimeStep();
     region.performSpatialPooling();
@@ -659,7 +658,7 @@ public class HTMGraphicInterface extends JPanel {
     this.repaint();
   }
 
-  private void resetPatterns() {
+  public void resetPatterns() {
     patterns.clear();
     sensoryInputSurface.reset();
     process.reset();

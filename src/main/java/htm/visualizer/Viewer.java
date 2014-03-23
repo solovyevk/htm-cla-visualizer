@@ -18,7 +18,9 @@ import javax.swing.filechooser.FileNameExtensionFilter;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.KeyEvent;
-import java.io.*;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 
 public class Viewer extends JFrame {
@@ -36,6 +38,10 @@ public class Viewer extends JFrame {
   private Action skipSpatialPoolingAction;
   private Action restartAction;
   private Action htmResetAction;
+
+  private Action addInputAction;
+  private Action removePatternsAction;
+  private Action cleanInputSpaceAction;
 
 
   JCheckBoxMenuItem skipSpatialPoolMenuItem;
@@ -165,6 +171,27 @@ public class Viewer extends JFrame {
       }
     };
 
+    cleanInputSpaceAction = new AbstractAction("Clean Input Space", UIUtils.INSTANCE.createImageIcon(
+            "/images/cleanup.png")) {
+      @Override public void actionPerformed(ActionEvent e) {
+        htmInterface.clearInputSpace();
+      }
+    };
+
+    addInputAction = new AbstractAction("Add Input", UIUtils.INSTANCE.createImageIcon(
+            "/images/add.png")) {
+      @Override public void actionPerformed(ActionEvent e) {
+        htmInterface.addPattern();
+      }
+
+    };
+
+    removePatternsAction = new AbstractAction("Remove Patterns", UIUtils.INSTANCE.createImageIcon(
+            "/images/delete.png")) {
+      @Override public void actionPerformed(ActionEvent e) {
+        htmInterface.resetPatterns();
+      }
+    };
 
   }
 
@@ -274,6 +301,27 @@ public class Viewer extends JFrame {
     skipSpatialPoolMenuItem.getAccessibleContext().setAccessibleDescription(
             "Skip Spatial Pooling, Connect Input to Temporal Pooling directly");
     menu.add(skipSpatialPoolMenuItem);
+
+    menu = new JMenu("Input");
+    menu.setMnemonic(KeyEvent.VK_I);
+    menu.getAccessibleContext().setAccessibleDescription(
+            "Work with Patterns");
+    menuBar.add(menu);
+    menuItem = new JMenuItem(addInputAction);
+    menuItem.setMnemonic(KeyEvent.VK_A);
+    menuItem.setAccelerator(KeyStroke.getKeyStroke(
+            KeyEvent.VK_7, ActionEvent.ALT_MASK));
+    menu.add(menuItem);
+    menuItem = new JMenuItem(cleanInputSpaceAction);
+    menuItem.setMnemonic(KeyEvent.VK_C);
+    menuItem.setAccelerator(KeyStroke.getKeyStroke(
+            KeyEvent.VK_8, ActionEvent.ALT_MASK));
+    menu.add(menuItem);
+    menuItem = new JMenuItem(removePatternsAction);
+    menuItem.setMnemonic(KeyEvent.VK_R);
+    menuItem.setAccelerator(KeyStroke.getKeyStroke(
+            KeyEvent.VK_9, ActionEvent.ALT_MASK));
+    menu.add(menuItem);
 
     return menuBar;
   }
