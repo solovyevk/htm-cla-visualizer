@@ -25,6 +25,7 @@ import java.util.Set;
 public enum UIUtils {
   INSTANCE;
   public static final DecimalFormat DF_4 = new DecimalFormat("##0.0000");
+  public static final DecimalFormat DF_3 = new DecimalFormat("##0.000");
   public static final DecimalFormat DF_2 = new DecimalFormat("##0.00");
 
 
@@ -388,7 +389,7 @@ public enum UIUtils {
     public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus,
                                                    int row, int column) {
       this.permanence = (Double)value;
-      return super.getTableCellRendererComponent(table, DF_4.format(value), isSelected, hasFocus, row,
+      return super.getTableCellRendererComponent(table, DF_3.format(value), isSelected, hasFocus, row,
                                                  column);
     }
   }

@@ -206,7 +206,7 @@ public class TemporalInfo extends JPanel {
     });
     table.getColumnModel().getColumn(2).setPreferredWidth(30);
     table.getColumnModel().getColumn(3).setCellRenderer(new UIUtils.PositionRenderer());
-    table.getColumnModel().getColumn(4).setPreferredWidth(50);
+    table.getColumnModel().getColumn(4).setPreferredWidth(30);
     table.setAutoCreateRowSorter(true);
     return table;
   }
