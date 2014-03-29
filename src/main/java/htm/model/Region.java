@@ -297,7 +297,7 @@ public class Region extends ColumnSpace {
   public void temporalPoolingPhaseFour() {
     if (this.getTemporalLearning()) {
       for (Column column : elementList) {
-        column.fixSegments();
+    //    column.fixSegments();
       }
     }
   }

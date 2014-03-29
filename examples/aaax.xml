@@ -1,0 +1,44 @@
+<?xml version="1.0"?>
+<htm-config>
+<region>
+	<skipSpatial>true</skipSpatial>
+	<inputRadius>5.0</inputRadius>
+	<learningRadius>23.275</learningRadius>
+	<cellsInColumn>4</cellsInColumn>
+	<sizeX>12</sizeX>
+	<sizeY>12</sizeY>
+</region>
+<inputSpace>
+	<sizeX>12</sizeX>
+	<sizeY>12</sizeY>
+</inputSpace>
+<column>
+	<amountOfProximalSynapses>20</amountOfProximalSynapses>
+	<minOverlap>3</minOverlap>
+	<desiredLocalActivity>3</desiredLocalActivity>
+	<boostRate>0.01</boostRate>
+</column>
+<cell>
+	<newSynapseCount>7</newSynapseCount>
+	<activationThreshold>4</activationThreshold>
+	<minThreshold>0</minThreshold>
+	<amountOfSynapses>30</amountOfSynapses>
+	<timeSteps>6</timeSteps>
+</cell>
+<proximalSynapse>
+	<connectedPerm>0.2</connectedPerm>
+	<permanenceInc>0.0050</permanenceInc>
+	<permanenceDec>0.0050</permanenceDec>
+</proximalSynapse>
+<distalSynapse>
+	<connectedPerm>0.2</connectedPerm>
+	<permanenceInc>0.0050</permanenceInc>
+	<permanenceDec>0.02</permanenceDec>
+</distalSynapse>
+<patternsList>
+	<pattern>000000000000000000000000000001000000000011100000000010100000000111110000000100010000000100010000000000000000000000000000000000000000000000000000</pattern>
+	<pattern>000000000000000000000000000001000000000011100000000010100000000111110000000100010000000100010000000000000000000000000000000000000000000000000000</pattern>
+	<pattern>000000000000000000000000000001000000000011100000000010100000000111110000000100010000000100010000000000000000000000000000000000000000000000000000</pattern>
+	<pattern>000000000000000000000000000100010000000010100000000001000000000001000000000010100000000100010000000000000000000000000000000000000000000000000000</pattern>
+</patternsList>
+</htm-config>

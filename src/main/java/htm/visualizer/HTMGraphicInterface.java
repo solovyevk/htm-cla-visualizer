@@ -476,7 +476,7 @@ public class HTMGraphicInterface extends JPanel {
       infoPane.setVisible(patterns.size() > 0);
       pattersStepInfo.setText("Size-Step: " + patterns.size() + "-" + process.getCurrentPatternIndex());
       cycleInfo.setText("Cycle: " + process.getCycle());
-      tempInfo.setText("Ph:" + (process.temporalPhasePointer == 0 ? 4 : process.temporalPhasePointer));
+      tempInfo.setText("Ph:" + (process.temporalPhasePointer == 0 ? 3 : process.temporalPhasePointer));
     }
 
 
@@ -736,10 +736,6 @@ public class HTMGraphicInterface extends JPanel {
               break;
             case 2:
               region.temporalPoolingPhaseThree();
-              temporalPhasePointer = 3;
-              break;
-            case 3:
-              region.temporalPoolingPhaseFour();
               temporalPhasePointer = 0;
               break;
             default:
