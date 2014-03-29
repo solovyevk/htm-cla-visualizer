@@ -260,9 +260,6 @@ public class Region extends ColumnSpace {
     temporalPoolingPhaseOne();
     temporalPoolingPhaseTwo();
     temporalPoolingPhaseThree();
-    //By Kirill
-    //Phase 4: Fix errors in segments for learning cells - my research addition
-    temporalPoolingPhaseFour();
   }
 
 
@@ -286,18 +283,6 @@ public class Region extends ColumnSpace {
     if (this.getTemporalLearning()) {
       for (Column column : elementList) {
         column.updateDistalSynapses();
-      }
-    }
-
-
-  }
-
-  //By Kirill
-  //Phase 4: Fix errors in segments for learning cells
-  public void temporalPoolingPhaseFour() {
-    if (this.getTemporalLearning()) {
-      for (Column column : elementList) {
-    //    column.fixSegments();
       }
     }
   }
