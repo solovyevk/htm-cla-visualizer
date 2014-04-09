@@ -35,18 +35,18 @@ public class ColumnSDRSurface extends BaseSurface.CircleElementsSurface {
     Column column = getColumn(index);
     Set<Color> cellStates = new HashSet<Color>();
     for (Cell cell : column.getCells()) {
-          int predictInStep = cell.getPredictInStepState(Cell.NOW);
-          if(predictInStep == 1){
-            cellStates.add(CellSurface.PREDICTED_COLOR);
-          }
-          if(predictInStep > 1){
-            cellStates.add(CellSurface.PREDICTED_IN_STEP_COLOR);
-          }
-        }
-    if(column.isActive()){
+      int predictInStep = cell.getPredictInStepState(Cell.NOW);
+      if (predictInStep == 1) {
+        cellStates.add(CellSurface.PREDICTED_COLOR);
+      }
+      if (predictInStep > 1) {
+        cellStates.add(CellSurface.PREDICTED_IN_STEP_COLOR);
+      }
+    }
+    if (column.isActive()) {
       cellStates.add(ACTIVE_COLOR);
     }
-    UIUtils.drawStatesInCircle(g2d, x, y, width, height,  cellStates.toArray(new Color[cellStates.size()]));
+    UIUtils.drawStatesInCircle(g2d, x, y, width, height, cellStates.toArray(new Color[cellStates.size()]));
   }
 
   public Column getColumn(int columnIndex) {
@@ -82,6 +82,15 @@ public class ColumnSDRSurface extends BaseSurface.CircleElementsSurface {
     super.doDrawing(g2d);
     if (currentColumn != null) {
       drawInhibitedColumns(currentColumn, g2d);
+      //Current Column selection
+      Point center = currentColumn.getPosition();
+      Rectangle aroundRec = getElementAreaWithScale(center,
+                                                    1 / (Math.PI / 4) * 1.1);
+      g2d.setColor(Color.ORANGE);
+      Composite original = g2d.getComposite();
+      g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER,
+                                                  0.2f));
+      g2d.fillOval(aroundRec.x, aroundRec.y, aroundRec.width, aroundRec.height);
     }
     if (selectedColumnIndex != null) {
       Composite original = g2d.getComposite();

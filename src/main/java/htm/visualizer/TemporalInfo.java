@@ -192,8 +192,8 @@ public class TemporalInfo extends JPanel {
       @Override public void paint(Graphics g) {
         super.paint(g);
         Dimension size = this.getSize();
-        Rectangle insideRec = new Rectangle(size.width / 2 - (size.height - 4) / 2, 2, size.height - 4,
-                                            size.height - 4);
+        Rectangle insideRec = new Rectangle(size.width/2 - size.height/2, 0, size.height - 2,
+                                            size.height - 2);
         Graphics2D g2d = (Graphics2D)g;
         CellSurface.drawCell(g2d, insideRec, cell, Cell.NOW);
         g2d.setColor(Color.BLACK);
@@ -259,17 +259,17 @@ public class TemporalInfo extends JPanel {
         Graphics2D g2 = (Graphics2D)g;
         FontRenderContext frc = g2.getFontRenderContext();
         float drawPosY = finishParagraphY + 2;
-        Font timeFont = new Font("Helvetica", Font.BOLD, 11);
+        Font timeFont = new Font("Helvetica", Font.BOLD, 12);
         int x = startX + 5;
         for (int i = 0; i < Cell.TIME_STEPS; i++) {
           TextLayout timeLayout = new TextLayout("t - " + i + ": ", timeFont, frc);
-          CellSurface.drawCell(g2, x, (int)drawPosY + 1, 11, 11, currentCell, i);
+          CellSurface.drawCell(g2, x, (int)drawPosY , 16, 16, currentCell, i);
           float drawPosX;
           drawPosX = (float)x - timeLayout.getAdvance();
           drawPosY += timeLayout.getAscent();
           g2.setColor(Color.BLACK);
           timeLayout.draw(g2, drawPosX, drawPosY);
-          drawPosY += timeLayout.getDescent() + timeLayout.getLeading();
+          drawPosY += timeLayout.getDescent() + timeLayout.getLeading() + 3;
         }
       }
     }
