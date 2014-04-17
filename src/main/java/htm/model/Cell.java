@@ -102,6 +102,9 @@ public class Cell {
  *Set Learn State in current time Cell.NOW
   */
   public void setLearnState(boolean learnState) {
+    if(!this.getActiveState(Cell.NOW)){
+      LOG.warn("Setting non active cell as learning:" + this);
+    }
     this.learnState.setState(learnState);
   }
 
@@ -460,39 +463,6 @@ public class Cell {
     }
   }
 
-  //By Kirill
-  public void fixSegments() {
-    Set<DistalDendriteSegment> toRemove = new HashSet<DistalDendriteSegment>();
-    for (DistalDendriteSegment segment : segments) {
-      List<Synapse.DistalSynapse> deadSynapses = CollectionUtils.filter(segment,
-                                                                        new CollectionUtils.Predicate<Synapse.DistalSynapse>() {
-                                                                          @Override public boolean apply(
-                                                                                  Synapse.DistalSynapse synapse) {
-                                                                            return synapse.getPermanenceRangeChangeForActive() == 0.0;
-                                                                          }
-                                                                        });
-      if (segment.isSequenceSegment() && segment.size() - deadSynapses.size() <= MIN_THRESHOLD) {
-        toRemove.add(segment);
-        populateRelatedSegments(segment, toRemove);
-        List<DistalDendriteSegment> test = new ArrayList<DistalDendriteSegment>(toRemove);
-        int r = test.size();
-      }
-    }
-    if (toRemove.size() > 0) {
-      LOG.info("REMOVE DEAD AND RELATED SEGMENTS:" + toRemove.size() + " for cell:" + this);
-    /* try {
-        Thread.sleep(1000 * 10);
-      } catch (Exception e) {
-        LOG.error("Process sleep interrupted", e);
-      }      */
-     //segments.removeAll(toRemove);
-      for (Cell cell: this.getBelongsToColumn().getCells()) {
-        cell.deleteAllSegment();
-      }
-      fireSegmentsChange();
-    }
-
-  }
 
   /*Custom events implementation*/
   private Collection<SegmentsChangeEventListener> _segmentsChangeEventListeners = new HashSet<SegmentsChangeEventListener>();
