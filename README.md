@@ -11,7 +11,7 @@ Videos:
 
 1) Introduction: https://www.youtube.com/watch?v=nRgbQhdfL9Q
 
-2) Debugging Temporal Pooler segments formation:(coming soon)
+2) Debugging Temporal Pooler segments formation: https://www.youtube.com/watch?v=9twCUKrAqPo
 
 
 Build Steps:
