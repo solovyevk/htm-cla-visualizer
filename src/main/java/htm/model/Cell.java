@@ -238,11 +238,10 @@ public class Cell {
    * @return
    */
   public DistalDendriteSegment getBestMatchingSegment(final int time) {
-    return getBestMatchingSegment(this.belongsToColumn, new ArrayList(this.getSegments()), time);
+    return getBestMatchingSegment(new ArrayList<DistalDendriteSegment>(this.getSegments()), time);
   }
 
-  public static DistalDendriteSegment getBestMatchingSegment(final Column column,
-                                                             List<DistalDendriteSegment> segmentList, final int time) {
+  public static DistalDendriteSegment getBestMatchingSegment(List<DistalDendriteSegment> segmentList, final int time) {
 
     Collections.sort(segmentList, new Comparator<DistalDendriteSegment>() {
       @Override

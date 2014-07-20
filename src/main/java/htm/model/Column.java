@@ -510,6 +510,8 @@ public class Column extends BaseSpace.Element {
           //By Kirill
           /*Cell can't be predicted if in learning state, otherwise it's learning state will case
           adding segments update from phase 1 & 2 in following phase 3 within the same step, but we don't know if the cell will be active in next step
+          ALSO same said in WP - page 30, Temporal pooler details paragraph 2)
+          Cells with active dendrite segments are put in the predictive state unless they are already active due to feed-forward input
            */
           if (cell.getLearnState(Cell.NOW)) {
             continue;
@@ -596,7 +598,7 @@ public class Column extends BaseSpace.Element {
         bestMatchingSegmentsFromCells.add(bestMatchingSegment);
       }
     }
-    DistalDendriteSegment columnBestMatchingSegment = Cell.getBestMatchingSegment(this, bestMatchingSegmentsFromCells,
+    DistalDendriteSegment columnBestMatchingSegment = Cell.getBestMatchingSegment(bestMatchingSegmentsFromCells,
                                                                                   time);
 
     return new BestMatchingCellAndSegment(
