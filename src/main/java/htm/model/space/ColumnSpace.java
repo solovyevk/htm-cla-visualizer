@@ -1,11 +1,11 @@
 package htm.model.space;
 
 import htm.model.Column;
-import htm.model.Region;
+import htm.model.Layer;
 
 import java.awt.*;
 
-public class ColumnSpace extends BaseSpace<Column> {
+public class ColumnSpace<P> extends BaseSpace<P, Column> {
   public ColumnSpace(int xSize, int ySize) {
     super(xSize, ySize);
   }
@@ -14,11 +14,11 @@ public class ColumnSpace extends BaseSpace<Column> {
     super(dimension);
   }
 
-  @Override protected Column createElement(BaseSpace<Column> space, int index, Point position) {
-    return new Column((Region)space, index, position);
+  @Override protected Column createElement(BaseSpace<P,Column> space, int index, Point position) {
+    return new Column((Layer)space, index, position);
   }
 
   public java.util.List<Column> getColumns() {
-    return elementList;
+    return this.getElements();
   }
 }

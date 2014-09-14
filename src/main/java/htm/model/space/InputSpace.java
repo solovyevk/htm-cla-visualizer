@@ -12,7 +12,7 @@ package htm.model.space;
 import java.awt.Dimension;
 import java.awt.Point;
 
-public class InputSpace extends BaseSpace<InputSpace.Input> {
+public class InputSpace extends BaseSpace<InputSpace, InputSpace.Input> {
   public InputSpace(int xSize, int ySize) {
     super(xSize, ySize);
     initElementSpace();
@@ -24,7 +24,7 @@ public class InputSpace extends BaseSpace<InputSpace.Input> {
   }
 
   @Override
-  protected Input createElement(BaseSpace<InputSpace.Input> space, int index, Point position) {
+  protected Input createElement(BaseSpace<InputSpace, InputSpace.Input>  space, int index, Point position) {
     return new Input(position, index, false);
   }
 
@@ -37,7 +37,7 @@ public class InputSpace extends BaseSpace<InputSpace.Input> {
   }
 
 
-  public static class Input extends BaseSpace.Element{
+  public static class Input extends Element {
      private boolean value;
 
     public Input(Point position, int index, boolean value) {

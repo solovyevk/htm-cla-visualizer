@@ -10,7 +10,7 @@ package htm.visualizer;
 
 import htm.model.Cell;
 import htm.model.DistalDendriteSegment;
-import htm.model.Region;
+import htm.model.Layer;
 import htm.model.Synapse;
 import htm.utils.UIUtils;
 import htm.visualizer.surface.CellSurface;
@@ -37,7 +37,7 @@ public class TemporalInfo extends JPanel {
   private JTable segmentUpdateDistalSynapsesTable;
   private RegionColumnsVerticalView regionColumnsVerticalView;
 
-  public TemporalInfo(Region region) {
+  public TemporalInfo(Layer region) {
     this.setLayout(new GridBagLayout());
     GridBagConstraints c = new GridBagConstraints();
     c.fill = GridBagConstraints.BOTH;

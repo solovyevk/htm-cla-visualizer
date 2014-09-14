@@ -84,7 +84,7 @@ public class HTMGraphicInterface extends JPanel {
   private HTMProcess process;
 
 
-  private Region region;
+  private Layer region;
   private final RegionSlicedHorizontalView slicedView;
   private final ControlPanel control;
   private final SensoryInputSurface sensoryInputSurface;
@@ -97,7 +97,7 @@ public class HTMGraphicInterface extends JPanel {
 
 
   public HTMGraphicInterface() {
-    this(new Config(null, new Region.Config(new Dimension(HORIZONTAL_COLUMN_NUMBER, VERTICAL_COLUMN_NUMBER),
+    this(new Config(null, new Layer.Config(new Dimension(HORIZONTAL_COLUMN_NUMBER, VERTICAL_COLUMN_NUMBER),
                                             new Dimension(SENSORY_INPUT_WIDTH, SENSORY_INPUT_HEIGHT), INPUT_RADIUS,
                                             LEARNING_RADIUS,
                                             false, CELLS_PER_COLUMN),
@@ -119,7 +119,7 @@ public class HTMGraphicInterface extends JPanel {
     Synapse.ProximalSynapse.updateFromConfig(cfg.getProximalSynapseConfig());
     Synapse.DistalSynapse.updateFromConfig(cfg.getDistalSynapseConfig());
     //Initialize region and all related UI
-    this.region = new Region(cfg.getRegionConfig());
+    this.region = new Layer(cfg.getRegionConfig());
     this.sensoryInputSurface = new SensoryInputSurface(region.getInputSpace());
     this.sdrInput = new ColumnSDRSurface(region);
     this.slicedView = new RegionSlicedHorizontalView(region) {
@@ -370,13 +370,13 @@ public class HTMGraphicInterface extends JPanel {
     }.init(), BorderLayout.CENTER);
   }
 
-  Region getRegion() {
+  Layer getRegion() {
     return region;
   }
 
 
   Config getParameters() {
-    return new Config(patterns, new Region.Config(region.getDimension(), region.getInputSpaceDimension(),
+    return new Config(patterns, new Layer.Config(region.getDimension(), region.getInputSpaceDimension(),
                                                   region.getInputRadius(), region.getLearningRadius(),
                                                   region.isSkipSpatial(), region.getCellsInColumn()),
                       new Column.Config(Column.AMOUNT_OF_PROXIMAL_SYNAPSES,
@@ -811,14 +811,14 @@ public class HTMGraphicInterface extends JPanel {
 
   public static class Config {
     private final java.util.List<boolean[]> patterns;
-    private final Region.Config regionConfig;
+    private final Layer.Config regionConfig;
     private final Column.Config columnConfig;
     private final Cell.Config cellConfig;
     private final Synapse.Config proximalSynapseConfig;
     private final Synapse.Config distalSynapseConfig;
 
 
-    public Config(List<boolean[]> patterns, Region.Config regionConfig, Column.Config columnConfig,
+    public Config(List<boolean[]> patterns, Layer.Config regionConfig, Column.Config columnConfig,
                   Cell.Config cellConfig,
                   Synapse.ProximalSynapse.Config proximalSynapseConfig,
                   Synapse.DistalSynapse.Config distalSynapseConfig) {
@@ -830,7 +830,7 @@ public class HTMGraphicInterface extends JPanel {
       this.distalSynapseConfig = distalSynapseConfig;
     }
 
-    public Region.Config getRegionConfig() {
+    public Layer.Config getRegionConfig() {
       return regionConfig;
     }
 

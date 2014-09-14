@@ -8,7 +8,7 @@
 
 package htm.visualizer;
 
-import htm.model.Region;
+import htm.model.Layer;
 import htm.utils.UIUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -95,8 +95,8 @@ public class Viewer extends JFrame {
                 "Edit Parameters",
                 htmInterface.getParameters());
         if (modCfg != null) {
-          Region.Config modRegionCfg = modCfg.getRegionConfig();
-          HTMGraphicInterface.Config newCfg = new HTMGraphicInterface.Config(oldCfg.getPatterns(), new Region.Config(
+          Layer.Config modRegionCfg = modCfg.getRegionConfig();
+          HTMGraphicInterface.Config newCfg = new HTMGraphicInterface.Config(oldCfg.getPatterns(), new Layer.Config(
                   modRegionCfg.getRegionDimension(),
                   modRegionCfg.getSensoryInputDimension(),
                   modRegionCfg.getInputRadius(), modRegionCfg.getLearningRadius(), modRegionCfg.isSkipSpatial(),
@@ -122,8 +122,8 @@ public class Viewer extends JFrame {
         boolean checked = ((JCheckBoxMenuItem)e.getSource()).getState();
         LOG.debug("Skip Spatial Pooling is:" + checked);
         HTMGraphicInterface.Config oldCfg = htmInterface.getParameters();
-        Region.Config oldRegionCfg = oldCfg.getRegionConfig();
-        HTMGraphicInterface.Config newCfg = new HTMGraphicInterface.Config(oldCfg.getPatterns(), new Region.Config(
+        Layer.Config oldRegionCfg = oldCfg.getRegionConfig();
+        HTMGraphicInterface.Config newCfg = new HTMGraphicInterface.Config(oldCfg.getPatterns(), new Layer.Config(
                 oldRegionCfg.getRegionDimension(),
                 oldRegionCfg.getSensoryInputDimension(),
                 oldRegionCfg.getInputRadius(), oldRegionCfg.getLearningRadius(), checked,

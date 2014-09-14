@@ -1,6 +1,7 @@
 package htm.model;
 
 import htm.model.space.BaseSpace;
+import htm.model.space.Element;
 import htm.model.space.InputSpace;
 import htm.utils.CircularArrayList;
 import htm.utils.CollectionUtils;
@@ -12,7 +13,7 @@ import java.awt.*;
 import java.util.*;
 import java.util.List;
 
-public class Column extends BaseSpace.Element {
+public class Column extends Element {
   private static final Log LOG = LogFactory.getLog(Column.class);
   public static int AMOUNT_OF_PROXIMAL_SYNAPSES = 30;
   /**
@@ -77,7 +78,7 @@ public class Column extends BaseSpace.Element {
   }
 
 
-  private final Region region;
+  private final Layer region;
   private final List<Cell> cells = new ArrayList<Cell>();
   private final List<Synapse.ProximalSynapse> proximalSynapses = new ArrayList<Synapse.ProximalSynapse>();
   private int minimalOverlap = MIN_OVERLAP;
@@ -98,7 +99,7 @@ public class Column extends BaseSpace.Element {
 
   private Map<Double, List<Column>> neighbors_cache = new HashMap<Double, List<Column>>();
 
-  public Column(Region region, int columnIndex, Point columnGridPosition) {
+  public Column(Layer region, int columnIndex, Point columnGridPosition) {
     super(columnGridPosition, columnIndex);
     this.region = region;
     for (int i = 0; i < region.getCellsInColumn(); i++) {
@@ -639,7 +640,7 @@ public class Column extends BaseSpace.Element {
   }
 
 
-  public Region getRegion() {
+  public Layer getRegion() {
     return region;
   }
 

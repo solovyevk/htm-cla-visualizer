@@ -10,7 +10,7 @@ package htm.visualizer;
 
 import htm.model.Cell;
 import htm.model.Column;
-import htm.model.Region;
+import htm.model.Layer;
 import htm.model.Synapse;
 import htm.utils.MathUtils;
 import htm.utils.UIUtils;
@@ -164,7 +164,7 @@ public class Parameters {
   }
 
   static class RegionParameters extends JPanel {
-    private final Region.Config cfg;
+    private final Layer.Config cfg;
     private Parameters.IntegerParameter regionWidthParam;
     private Parameters.IntegerParameter regionHeightParam;
     private Parameters.IntegerParameter inputSpaceWidthParam;
@@ -174,7 +174,7 @@ public class Parameters {
     private Parameters.IntegerParameter cellsInColumnParam;
     private JCheckBox skipSpatialCb;
 
-    RegionParameters(Region.Config cfg) {
+    RegionParameters(Layer.Config cfg) {
       this.cfg = cfg;
       setLayout(new SpringLayout());
       regionWidthParam = new IntegerParameter(1, 50, cfg.getRegionDimension().width);
@@ -215,8 +215,8 @@ public class Parameters {
                                     6, 6);       //xPad, yPad
     }
 
-    Region.Config getParameters() {
-      return new Region.Config(new Dimension(regionWidthParam.getValue(),
+    Layer.Config getParameters() {
+      return new Layer.Config(new Dimension(regionWidthParam.getValue(),
                                              regionHeightParam.getValue()),
                                new Dimension(inputSpaceWidthParam.getValue(),
                                              inputSpaceHeightParam.getValue()),
@@ -226,7 +226,7 @@ public class Parameters {
                                cellsInColumnParam.getValue());
     }
 
-    void setParameters(Region.Config cfg) {
+    void setParameters(Layer.Config cfg) {
       regionWidthParam.setValue(cfg.getRegionDimension().width);
       regionHeightParam.setValue(cfg.getRegionDimension().height);
       inputSpaceWidthParam.setValue(cfg.getSensoryInputDimension().width);

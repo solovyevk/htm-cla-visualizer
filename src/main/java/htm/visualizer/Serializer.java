@@ -10,7 +10,7 @@ package htm.visualizer;
 
 import htm.model.Cell;
 import htm.model.Column;
-import htm.model.Region;
+import htm.model.Layer;
 import htm.model.Synapse;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -277,7 +277,7 @@ public enum Serializer {
         || amountOfDistalSynapses == -1 || timeSteps == -1) {
       throw new IllegalArgumentException("Can't find HTM necessary parameters in input file");
     }
-    return new HTMGraphicInterface.Config(patterns, new Region.Config(regionDimension, inputSpaceDimension, inputRadius,
+    return new HTMGraphicInterface.Config(patterns, new Layer.Config(regionDimension, inputSpaceDimension, inputRadius,
                                                                       learningRadius,
                                                                       skipSpatialPooling, cellsInColumn),
                                           new Column.Config(
@@ -309,7 +309,7 @@ public enum Serializer {
   }
 
   public void saveHTMParameters(OutputStream out, HTMGraphicInterface.Config parameters) throws Exception {
-    Region.Config regionCfg = parameters.getRegionConfig();
+    Layer.Config regionCfg = parameters.getRegionConfig();
     Column.Config columnCfg = parameters.getColumnConfig();
     Cell.Config cellCfg = parameters.getCellConfig();
     Synapse.Config proximalSynapseCfg = parameters.getProximalSynapseConfig();

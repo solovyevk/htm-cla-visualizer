@@ -10,7 +10,7 @@ package htm.visualizer.surface;
 
 import htm.model.Cell;
 import htm.model.Column;
-import htm.model.Region;
+import htm.model.Layer;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
@@ -27,7 +27,7 @@ public class RegionColumnsVerticalView extends CellSurface implements Scrollable
   private static final int MIN_CELL_SIZE = 28;
   private int columnIndexHeight = 12;
 
-  public RegionColumnsVerticalView(Region region) {
+  public RegionColumnsVerticalView(Layer region) {
     super(1, region.getCellsInColumn(), region);
     this.updateColumns();
    /* this.addElementMouseEnterListener(new ElementMouseEnterListener() {

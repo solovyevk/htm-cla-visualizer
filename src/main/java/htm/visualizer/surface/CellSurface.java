@@ -9,7 +9,7 @@
 package htm.visualizer.surface;
 
 import htm.model.Cell;
-import htm.model.Region;
+import htm.model.Layer;
 import htm.utils.UIUtils;
 
 import java.awt.*;
@@ -19,14 +19,14 @@ public abstract class CellSurface extends BaseSurface.CircleElementsSurface {
   public static final Color PREDICTED_IN_STEP_COLOR = UIUtils.LIGHT_BLUE;
   public static final Color LEARNING_COLOR = Color.RED;
   private int time = Cell.NOW;
-  protected Region region;
+  protected Layer region;
 
-  public CellSurface(int xSize, int ySize, Region region) {
+  public CellSurface(int xSize, int ySize, Layer region) {
     super(xSize, ySize);
     this.region = region;
   }
 
-  protected Region getRegion() {
+  protected Layer getRegion() {
     return region;
   }
 

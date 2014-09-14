@@ -42,7 +42,7 @@ public class RegionSlicedHorizontalView extends JPanel {
   }
 
 
-  public RegionSlicedHorizontalView(Region region) {
+  public RegionSlicedHorizontalView(Layer region) {
     super(new GridLayout(0, 1));
     for (int i = 0; i < region.getCellsInColumn(); i++) {
       final ColumnCellsByIndexSurface cellLayer = new ColumnCellsByIndexSurface(this, region, i);
@@ -139,7 +139,7 @@ public class RegionSlicedHorizontalView extends JPanel {
     private static final Log LOG = LogFactory.getLog(ColumnCellsByIndexSurface.class);
 
 
-    public ColumnCellsByIndexSurface(RegionSlicedHorizontalView view, Region region, int sliceIndex) {
+    public ColumnCellsByIndexSurface(RegionSlicedHorizontalView view, Layer region, int sliceIndex) {
       super(region.getDimension().width, region.getDimension().height, region);
       this.parentView = view;
       this.layerIndex = sliceIndex;
