@@ -24,22 +24,30 @@ public class Composite<P, E> implements Fractal<P, E> {
     return Collections.unmodifiableList(elementList);
   }
 
+  public List<E> getElementsList() {
+    return elementList;
+  }
+
+  @Override public boolean addAll(List<E> all) {
+    return elementList.addAll(all);
+  }
+
   @Override
   public P getOwner() {
     return owner;
   }
 
-  @Override public void addElement(E element) {
-    elementList.add(element);
+  @Override public E getElementByIndex(int index) {
+      return elementList.get(index);
+    }
+
+  @Override public boolean addElement(E element) {
+    return elementList.add(element);
   }
 
   @Override public void removeElement(E element) {
     elementList.remove(element);
   }
-
-  @Override public E getElementByIndex(int index) {
-      return elementList.get(index);
-    }
 
 
 }

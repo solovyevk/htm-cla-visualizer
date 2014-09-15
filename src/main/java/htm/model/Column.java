@@ -1,5 +1,6 @@
 package htm.model;
 
+import htm.model.fractal.Fractal;
 import htm.model.space.BaseSpace;
 import htm.model.space.Element;
 import htm.model.space.InputSpace;
@@ -13,7 +14,7 @@ import java.awt.*;
 import java.util.*;
 import java.util.List;
 
-public class Column extends Element {
+public class Column extends Element implements Fractal<Layer, Cell>{
   private static final Log LOG = LogFactory.getLog(Column.class);
   public static int AMOUNT_OF_PROXIMAL_SYNAPSES = 30;
   /**
@@ -33,6 +34,17 @@ public class Column extends Element {
    */
   public static int DESIRED_LOCAL_ACTIVITY = 2;
 
+  @Override public boolean addAll(List<Cell> all) {
+    throw new NoSuchElementException("Not supported for Column, fixed number of cells");
+  }
+
+  @Override public boolean addElement(Cell element) {
+    throw new NoSuchElementException("Not supported for Column, fixed number of cells");
+  }
+
+  @Override public void removeElement(Cell element) {
+    throw new NoSuchElementException("Not supported for Column, fixed number of cells");
+  }
 
   /**
    * WP
@@ -603,8 +615,24 @@ public class Column extends Element {
                                                                                   time);
 
     return new BestMatchingCellAndSegment(
-            columnBestMatchingSegment != null ? columnBestMatchingSegment.getBelongsToCell() : minSegmentListCell,
+            columnBestMatchingSegment != null ? columnBestMatchingSegment.getOwner() : minSegmentListCell,
             columnBestMatchingSegment);
+  }
+
+  @Override public void reset() {
+
+  }
+
+  @Override public Layer getOwner() {
+    return region;
+  }
+
+  @Override public Cell getElementByIndex(int inx) {
+    return cells.get(inx);
+  }
+
+  @Override public List<Cell> getElements() {
+    return Collections.unmodifiableList(cells);
   }
 
   private static class BestMatchingCellAndSegment {
@@ -629,19 +657,6 @@ public class Column extends Element {
     for (Cell cell : cells) {
       cell.nextTimeStep();
     }
-  }
-
-  public List<Cell> getCells() {
-    return Collections.unmodifiableList(cells);
-  }
-
-  public Cell getCellByIndex(int index) {
-    return cells.get(index);
-  }
-
-
-  public Layer getRegion() {
-    return region;
   }
 
 

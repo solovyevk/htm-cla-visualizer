@@ -17,8 +17,6 @@ import java.awt.*;
 import java.util.List;
 
 
-
-//public abstract class BaseSpace<E extends BaseSpace.Element> {
 public abstract class BaseSpace<P, E extends Element> extends htm.model.fractal.Composite<P, E> {
   private static final Log LOG = LogFactory.getLog(
           BaseSpace.class);
@@ -36,7 +34,7 @@ public abstract class BaseSpace<P, E extends Element> extends htm.model.fractal.
     int index = 0;
     for (int y = 0; y < ySize; y++) {
       for (int x = 0; x < xSize; x++) {
-        elementList.add(index, createElement(this, index, new Point(x, y)));
+        elementList.add(index, createElement(index, new Point(x, y)));
         index++;
       }
     }
@@ -54,7 +52,7 @@ public abstract class BaseSpace<P, E extends Element> extends htm.model.fractal.
     return Math.min(dimension.width, dimension.height);
   }
 
-  protected abstract E createElement(BaseSpace<P, E> space, int index, Point position);
+  protected abstract E createElement(int index, Point position);
 
   public E getElementByPosition(Point position) {
     for (E element : elementList) {

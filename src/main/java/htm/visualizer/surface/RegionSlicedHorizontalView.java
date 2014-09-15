@@ -64,7 +64,7 @@ public class RegionSlicedHorizontalView extends JPanel {
   }
 
   public void setClickedOnCell(Cell clickedOnCell) {
-    this.setClickedOnCellPosition(new CellPosition(clickedOnCell.getBelongsToColumn().getIndex(),
+    this.setClickedOnCellPosition(new CellPosition(clickedOnCell.getOwner().getIndex(),
                                                    clickedOnCell.getCellIndex()));
   }
 
@@ -88,7 +88,7 @@ public class RegionSlicedHorizontalView extends JPanel {
 
   public void setSelectedSynapse(Synapse.DistalSynapse selectedSynapse) {
     CellPosition newSelectedSynapseCellPosition = new CellPosition(
-            selectedSynapse.getFromCell().getBelongsToColumn().getIndex(),
+            selectedSynapse.getFromCell().getOwner().getIndex(),
             selectedSynapse.getFromCell().getCellIndex());
     this.selectedSynapseCellPosition = this.selectedSynapseCellPosition == newSelectedSynapseCellPosition ? null : newSelectedSynapseCellPosition;
   }
@@ -96,9 +96,9 @@ public class RegionSlicedHorizontalView extends JPanel {
   public void setSelectedSegment(DistalDendriteSegment selectedSegment) {
     selectedSegmentSynapsesCellPositionList.clear();
     if (selectedSegment != null) {
-      for (Synapse.DistalSynapse distalSynapse : selectedSegment) {
+      for (Synapse.DistalSynapse distalSynapse : selectedSegment.getElementsList()) {
         selectedSegmentSynapsesCellPositionList.add(new CellPosition(
-                distalSynapse.getFromCell().getBelongsToColumn().getIndex(),
+                distalSynapse.getFromCell().getOwner().getIndex(),
                 distalSynapse.getFromCell().getCellIndex()));
       }
     }
@@ -154,7 +154,7 @@ public class RegionSlicedHorizontalView extends JPanel {
 
     @Override
     public Cell getCell(int columnIndex) {
-      return region.getElementByIndex(columnIndex).getCellByIndex(layerIndex);
+      return region.getElementByIndex(columnIndex).getElementByIndex(layerIndex);
     }
 
 
@@ -189,9 +189,9 @@ public class RegionSlicedHorizontalView extends JPanel {
 
     public void drawNeighbors(int columnIndex, Graphics2D g2d) {
       Cell clickedOnCell = this.getCell(columnIndex);
-      List<Column> neighborColumns = getRegion().getAllWithinRadius(clickedOnCell.getBelongsToColumn().getPosition(),
+      List<Column> neighborColumns = getRegion().getAllWithinRadius(clickedOnCell.getOwner().getPosition(),
                                                                     getRegion().getLearningRadius());
-      neighborColumns.remove(clickedOnCell.getBelongsToColumn());
+      neighborColumns.remove(clickedOnCell.getOwner());
       g2d.setColor(Color.LIGHT_GRAY);
       Composite original = g2d.getComposite();
       g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER,

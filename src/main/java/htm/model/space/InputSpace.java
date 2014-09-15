@@ -24,7 +24,7 @@ public class InputSpace extends BaseSpace<InputSpace, InputSpace.Input> {
   }
 
   @Override
-  protected Input createElement(BaseSpace<InputSpace, InputSpace.Input>  space, int index, Point position) {
+  protected Input createElement(int index, Point position) {
     return new Input(position, index, false);
   }
 

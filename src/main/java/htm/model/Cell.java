@@ -1,5 +1,6 @@
 package htm.model;
 
+import htm.model.fractal.Composite;
 import htm.utils.CircularArrayList;
 import htm.utils.CollectionUtils;
 import org.apache.commons.logging.Log;
@@ -7,7 +8,7 @@ import org.apache.commons.logging.LogFactory;
 
 import java.util.*;
 
-public class Cell {
+public class Cell extends Composite<Column, DistalDendriteSegment>{
   private static final Log LOG = LogFactory.getLog(Cell.class);
 
   /**
@@ -40,10 +41,6 @@ public class Cell {
     return cellIndex;
   }
 
-  public Column getBelongsToColumn() {
-    return belongsToColumn;
-  }
-
   public List<DistalDendriteSegment.Update> getSegmentUpdates() {
     return segmentUpdates;
   }
@@ -62,7 +59,6 @@ public class Cell {
   public static final int NOT_IN_STEP_PREDICTION = -1;
 
 
-  private final Column belongsToColumn;
   private final int cellIndex;
   /**
    * Boolean vector of Cell's active state in time t-n, ..., t-1, t
@@ -81,7 +77,6 @@ public class Cell {
 
   private PredictInStepBuffer predictedInStepState = new PredictInStepBuffer();
 
-  protected final List<DistalDendriteSegment> segments = new ArrayList<DistalDendriteSegment>();
 
   private final List<DistalDendriteSegment.Update> segmentUpdates = new ArrayList<DistalDendriteSegment.Update>();
 
@@ -94,8 +89,12 @@ public class Cell {
   }
 
   public Cell(Column belongsToColumn, int cellIndex) {
-    this.belongsToColumn = belongsToColumn;
+    this.owner = belongsToColumn;
     this.cellIndex = cellIndex;
+  }
+
+  public List<DistalDendriteSegment> getSegments(){
+   return getElements();
   }
 
   /*
@@ -123,12 +122,14 @@ public class Cell {
   public void setActiveState(boolean activeState) {
     this.activeState.setState(activeState);
      /*Added by Kirill to track speed of permanence changes for active cells*/
-    for (DistalDendriteSegment segment : this.segments) {
-      for (Synapse.DistalSynapse distalSynapse : segment) {
+    for (DistalDendriteSegment segment : this.elementList) {
+      for (Synapse.DistalSynapse distalSynapse : segment.getElementsList()) {
         distalSynapse.updatePermanenceRangeForActiveCell();
       }
     }
   }
+
+
 
   /**
    * Get Active state in Time
@@ -196,7 +197,7 @@ public class Cell {
    */
 
   public DistalDendriteSegment getActiveSegment(final int time, final State state) {
-    List<DistalDendriteSegment> activeSegments = CollectionUtils.filter(this.segments,
+    List<DistalDendriteSegment> activeSegments = CollectionUtils.filter(this.elementList,
                                                                         new CollectionUtils.Predicate<DistalDendriteSegment>() {
                                                                           @Override
                                                                           public boolean apply(
@@ -238,7 +239,7 @@ public class Cell {
    * @return
    */
   public DistalDendriteSegment getBestMatchingSegment(final int time) {
-    return getBestMatchingSegment(new ArrayList<DistalDendriteSegment>(this.getSegments()), time);
+    return getBestMatchingSegment(new ArrayList<DistalDendriteSegment>(this.getElements()), time);
   }
 
   public static DistalDendriteSegment getBestMatchingSegment(List<DistalDendriteSegment> segmentList, final int time) {
@@ -261,26 +262,20 @@ public class Cell {
             time).size() > MIN_THRESHOLD ? segmentList.get(segmentList.size() - 1) : null;
   }
 
-  public List<DistalDendriteSegment> getSegments() {
-    return Collections.unmodifiableList(segments);
-  }
 
   public boolean deleteSegment(DistalDendriteSegment toDelete) {
-    return segments.remove(toDelete);
+    return elementList.remove(toDelete);
   }
 
   public void deleteAllSegment() {
-    segments.clear();
+    elementList.clear();
   }
 
-  public boolean removeSegment(DistalDendriteSegment segment) {
-    return segments.remove(segment);
-  }
 
   @Override public String toString() {
-    StringBuilder result = new StringBuilder().append("Column Inx:").append(this.getBelongsToColumn().getIndex());
+    StringBuilder result = new StringBuilder().append("Column Inx:").append(this.getOwner().getIndex());
     result = result.append("; Cell Inx:").append(this.getCellIndex());
-    result = result.append("; Position:").append(this.getBelongsToColumn().getPosition());
+    result = result.append("; Position:").append(this.getOwner().getPosition());
     result = result.append("; Active:").append(this.getActiveState(Cell.NOW));
     result = result.append("; Learn:").append(this.getLearnState(Cell.NOW));
     result = result.append("; Predicted:").append(this.getPredictiveState(Cell.NOW));
@@ -315,14 +310,14 @@ public class Cell {
     if (segment != null) {
       result.addAll(segment.getActiveCellSynapses(time));
     }
-    int numberOfNewSynapsesToAdd = NEW_SYNAPSE_COUNT - result.size();
+    int numberOfNewSynapsesToAdd = NEW_SYNAPSE_COUNT - result.getElementsList().size();
     if (newSynapses && numberOfNewSynapsesToAdd > 0) {
       List<Column> neighbors = getNeighborsAndMyColumn();
       List<Cell> cellWithLearnStateList = new ArrayList<Cell>();
       //TODO Refac
 
       for (Column neighborColumn : neighbors) {
-        List<Cell> cellList = neighborColumn.getCells();
+        List<Cell> cellList = neighborColumn.getElements();
         for (Cell cell : cellList) {
            /*NOTE: There is no indication in the Numenta pseudocode that a cell shouldn't be able to have a
            *distal synapse from another cell in the same column. Therefore the below check is commented out.
@@ -344,7 +339,7 @@ public class Cell {
       numberOfNewSynapsesToAdd = cellWithLearnStateList.size() < numberOfNewSynapsesToAdd ? cellWithLearnStateList.size() : numberOfNewSynapsesToAdd;
       for (int i = 0; i < numberOfNewSynapsesToAdd; i++) {
         Cell cellWithLearnState = cellWithLearnStateList.get(i);
-        result.add(new Synapse.DistalSynapse(cellWithLearnState));
+        result.addElement(new Synapse.DistalSynapse(cellWithLearnState));
       }
     }
     fireUpdatesChange();
@@ -352,8 +347,8 @@ public class Cell {
   }
 
   private List<Column> getNeighborsAndMyColumn() {
-    return this.belongsToColumn.getRegion().getAllWithinRadius(this.belongsToColumn.getPosition(),
-                                                               this.belongsToColumn.getRegion().getLearningRadius());
+    return this.owner.getOwner().getAllWithinRadius(this.owner.getPosition(),
+                                                               this.owner.getOwner().getLearningRadius());
 
   }
 
@@ -378,7 +373,7 @@ public class Cell {
       if (update.predictedInStep() <= currentStepCount) {
         int predictedInStep = update.predictedInStep();
         LOG.info("Decrement synapses and remove segment update for step prediction: " + predictedInStep + update);
-        for (Synapse.DistalSynapse distalSynapse : update) {
+        for (Synapse.DistalSynapse distalSynapse : update.getElementsList()) {
           distalSynapse.setPermanence(distalSynapse.getPermanence() -  4*Synapse.DistalSynapse.PERMANENCE_DECREASE);
         }
         iter.remove();
@@ -409,17 +404,17 @@ public class Cell {
         segment = segmentUpdate.getTarget();
       }
       if (segment != null) {
-        for (Synapse.DistalSynapse distalSynapse : segment) {
+        for (Synapse.DistalSynapse distalSynapse : segment.getElementsList()) {
           if (positiveReinforcement) {
             if (segmentUpdate.contains(distalSynapse)) {
               distalSynapse.setPermanence(distalSynapse.getPermanence() + Synapse.DistalSynapse.PERMANENCE_INCREASE);
             } else {
               //distalSynapse.setPermanence(distalSynapse.getPermanence() - Synapse.DistalSynapse.PERMANENCE_DECREASE);
               //By Kirill - only decrease permanence if no column shared
-              List<Cell> columnCells = distalSynapse.getFromCell().getBelongsToColumn().getCells();
+              List<Cell> columnCells = distalSynapse.getFromCell().getOwner().getElements();
               boolean keep = false;
               for (Cell columnCell : columnCells) {
-                for (Synapse.DistalSynapse synapse : segmentUpdate) {
+                for (Synapse.DistalSynapse synapse : segmentUpdate.getElementsList()) {
                   if (synapse.getFromCell() == columnCell) {
                     keep = true;
                     break;
@@ -437,9 +432,9 @@ public class Cell {
             }
           }
         }
-        for (Synapse.DistalSynapse distalSynapse : segmentUpdate) {
+        for (Synapse.DistalSynapse distalSynapse : segmentUpdate.getElementsList()) {
           if (!segment.contains(distalSynapse)) {
-            segment.add(distalSynapse);
+            segment.addElement(distalSynapse);
           }
         }
       }
@@ -453,7 +448,7 @@ public class Cell {
   }
 
   private void populateRelatedSegments(DistalDendriteSegment segment, Set<DistalDendriteSegment> related) {
-    for (DistalDendriteSegment relatedSegment : segments) {
+    for (DistalDendriteSegment relatedSegment : elementList) {
       if (relatedSegment.predictedBy == segment) {
         related.add(relatedSegment);
         populateRelatedSegments(relatedSegment, related);

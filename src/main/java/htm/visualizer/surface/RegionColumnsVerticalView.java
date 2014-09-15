@@ -89,8 +89,8 @@ public class RegionColumnsVerticalView extends CellSurface implements Scrollable
       g2d.setColor(Color.RED);
       Rectangle aroundRec = getElementAreaWithScale(selectedCellIndex, 1 / (Math.PI / 4) * 0.9);
       g2d.drawOval(aroundRec.x, aroundRec.y, aroundRec.width, aroundRec.height);
-      Column column = getCell(selectedCellIndex).getBelongsToColumn();
-      List<Cell> columnCells = column.getCells();
+      Column column = getCell(selectedCellIndex).getOwner();
+      List<Cell> columnCells = column.getElements();
       for (Cell columnCell : columnCells) {
         int cellInx = indexOf(columnCell);
         if (cellInx != selectedCellIndex) {
@@ -119,7 +119,7 @@ public class RegionColumnsVerticalView extends CellSurface implements Scrollable
   @Override
   public Cell getCell(int index) {
     int cellIndex = index / dimension.width, columnIndex = index % dimension.width;
-    return columns.get(columnIndex).getCellByIndex(cellIndex);
+    return columns.get(columnIndex).getElementByIndex(cellIndex);
   }
 
   public int indexOf(Cell cell) {

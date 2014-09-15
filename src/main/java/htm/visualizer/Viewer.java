@@ -199,7 +199,7 @@ public class Viewer extends JFrame {
     this.remove(htmInterface);
     htmInterface = new HTMGraphicInterface(newCfg);
     this.add(htmInterface);
-    skipSpatialPoolMenuItem.setState(htmInterface.getRegion().isSkipSpatial());
+    skipSpatialPoolMenuItem.setState(htmInterface.getLayer().isSkipSpatial());
     //for java 1.6
     this.invalidate();
     this.validate();
@@ -230,7 +230,7 @@ public class Viewer extends JFrame {
     add(htmInterface);
     setJMenuBar(createMenuBar());
     //sync skipSP state
-    skipSpatialPoolMenuItem.setState(htmInterface.getRegion().isSkipSpatial());
+    skipSpatialPoolMenuItem.setState(htmInterface.getLayer().isSkipSpatial());
     setSize(1300, 880);
     setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
     setLocationRelativeTo(null);

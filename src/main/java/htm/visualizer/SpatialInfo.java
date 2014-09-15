@@ -127,7 +127,7 @@ public class SpatialInfo extends JPanel {
       Column column = currentColumn;
       Map<String, String> result = new LinkedHashMap<String, String>();
       if (column != null) {
-        double inhibitionRadius = column.getRegion().getAverageReceptiveFieldSize();
+        double inhibitionRadius = column.getOwner().getAverageReceptiveFieldSize();
         result.put("Index", column.getIndex() + "");
         result.put("Position", "X:" + (column.getPosition().x) + ", Y:" + column.getPosition().y);
         result.put("Active", column.isActive() ? "Yes" : "No");
@@ -161,7 +161,7 @@ public class SpatialInfo extends JPanel {
 
     public void setColumn(Column column) {
       this.column = column != null ? column : null;
-      neighbors = column != null ? column.getNeighbors(column.getRegion().getAverageReceptiveFieldSize()) : null;
+      neighbors = column != null ? column.getNeighbors(column.getOwner().getAverageReceptiveFieldSize()) : null;
       this.fireTableDataChanged();
     }
 

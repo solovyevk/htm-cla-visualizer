@@ -1,6 +1,6 @@
 package htm.model;
 
-import htm.model.space.ColumnSpace;
+import htm.model.space.BaseSpace;
 import htm.model.space.InputSpace;
 import htm.utils.CollectionUtils;
 import org.apache.commons.logging.Log;
@@ -11,7 +11,15 @@ import java.util.ArrayList;
 import java.util.List;
 
 
-public class Layer extends ColumnSpace<Layer> {
+public class Layer extends BaseSpace<Layer, Column> {
+  @Override
+  protected Column createElement(int index, Point position) {
+    return new Column(this, index, position);
+  }
+
+  public java.util.List<Column> getColumns() {
+    return this.getElements();
+  }
   private final InputSpace inputSpace;
   /**
    * inputRadius for this input Space

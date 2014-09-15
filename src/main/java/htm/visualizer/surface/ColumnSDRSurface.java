@@ -34,7 +34,7 @@ public class ColumnSDRSurface extends BaseSurface.CircleElementsSurface {
   protected void drawElement(Graphics2D g2d, int index, int x, int y, int width, int height) {
     Column column = getColumn(index);
     Set<Color> cellStates = new HashSet<Color>();
-    for (Cell cell : column.getCells()) {
+    for (Cell cell : column.getElements()) {
       int predictInStep = cell.getPredictInStepState(Cell.NOW);
       if (predictInStep == 1) {
         cellStates.add(CellSurface.PREDICTED_COLOR);

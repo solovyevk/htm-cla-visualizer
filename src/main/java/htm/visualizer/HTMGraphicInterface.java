@@ -84,7 +84,7 @@ public class HTMGraphicInterface extends JPanel {
   private HTMProcess process;
 
 
-  private Layer region;
+  private Layer layer;
   private final RegionSlicedHorizontalView slicedView;
   private final ControlPanel control;
   private final SensoryInputSurface sensoryInputSurface;
@@ -92,7 +92,7 @@ public class HTMGraphicInterface extends JPanel {
   private SpatialInfo spatialInfo;
   private TemporalInfo temporalInfo;
   private SelectedDetails detailsInfo;
-  //Need this to ensure sliced view update before region cells reset for next step
+  //Need this to ensure sliced view update before layer cells reset for next step
   private volatile CountDownLatch viewsUpdateLatch = new CountDownLatch(0);
 
 
@@ -118,22 +118,22 @@ public class HTMGraphicInterface extends JPanel {
     Cell.updateFromConfig(cfg.getCellConfig());
     Synapse.ProximalSynapse.updateFromConfig(cfg.getProximalSynapseConfig());
     Synapse.DistalSynapse.updateFromConfig(cfg.getDistalSynapseConfig());
-    //Initialize region and all related UI
-    this.region = new Layer(cfg.getRegionConfig());
-    this.sensoryInputSurface = new SensoryInputSurface(region.getInputSpace());
-    this.sdrInput = new ColumnSDRSurface(region);
-    this.slicedView = new RegionSlicedHorizontalView(region) {
+    //Initialize layer and all related UI
+    this.layer = new Layer(cfg.getRegionConfig());
+    this.sensoryInputSurface = new SensoryInputSurface(layer.getInputSpace());
+    this.sdrInput = new ColumnSDRSurface(layer);
+    this.slicedView = new RegionSlicedHorizontalView(layer) {
       @Override
       public Dimension getPreferredSize() {
         int prefWidth = super.getPreferredSize().width;
-        return new Dimension(prefWidth, 270 * region.getCellsInColumn());
+        return new Dimension(prefWidth, 270 * layer.getCellsInColumn());
       }
     };
     this.control = new ControlPanel();
-    if (!region.isSkipSpatial()) {
+    if (!layer.isSkipSpatial()) {
       this.spatialInfo = new SpatialInfo();
     }
-    this.temporalInfo = new TemporalInfo(region);
+    this.temporalInfo = new TemporalInfo(layer);
     this.detailsInfo = new SelectedDetails(spatialInfo, temporalInfo);
     initLayout();
     initProcess();
@@ -205,7 +205,7 @@ public class HTMGraphicInterface extends JPanel {
             new SegmentTableSelectListener(temporalInfo.getDistalDendriteSegmentsTable(), slicedView));
     temporalInfo.getDistalDendriteSegmentUpdatesTable().getSelectionModel().addListSelectionListener(
             new SegmentTableSelectListener(temporalInfo.getDistalDendriteSegmentUpdatesTable(), slicedView));
-    if (!region.isSkipSpatial()) {
+    if (!layer.isSkipSpatial()) {
       //select column to view spatial details
       sdrInput.addElementMouseEnterListener(new BaseSurface.ElementMouseEnterListener() {
         @Override
@@ -370,15 +370,15 @@ public class HTMGraphicInterface extends JPanel {
     }.init(), BorderLayout.CENTER);
   }
 
-  Layer getRegion() {
-    return region;
+  Layer getLayer() {
+    return layer;
   }
 
 
   Config getParameters() {
-    return new Config(patterns, new Layer.Config(region.getDimension(), region.getInputSpaceDimension(),
-                                                  region.getInputRadius(), region.getLearningRadius(),
-                                                  region.isSkipSpatial(), region.getCellsInColumn()),
+    return new Config(patterns, new Layer.Config(layer.getDimension(), layer.getInputSpaceDimension(),
+                                                  layer.getInputRadius(), layer.getLearningRadius(),
+                                                  layer.isSkipSpatial(), layer.getCellsInColumn()),
                       new Column.Config(Column.AMOUNT_OF_PROXIMAL_SYNAPSES,
                                         Column.MIN_OVERLAP,
                                         Column.DESIRED_LOCAL_ACTIVITY, Column.BOOST_RATE),
@@ -527,20 +527,20 @@ public class HTMGraphicInterface extends JPanel {
 
       spatialLearningAction = new AbstractAction("Learn Spat") {
         @Override public void actionPerformed(ActionEvent e) {
-          region.setSpatialLearning(!region.getSpatialLearning());
+          layer.setSpatialLearning(!layer.getSpatialLearning());
         }
 
       };
-      spatialLearningAction.putValue(Action.SELECTED_KEY, region.getSpatialLearning());
+      spatialLearningAction.putValue(Action.SELECTED_KEY, layer.getSpatialLearning());
 
       temporalLearningAction = new AbstractAction("Learn Temp") {
         @Override public void actionPerformed(ActionEvent e) {
-          region.setTemporalLearning(!region.getTemporalLearning());
+          layer.setTemporalLearning(!layer.getTemporalLearning());
         }
 
       };
 
-      temporalLearningAction.putValue(Action.SELECTED_KEY, region.getTemporalLearning());
+      temporalLearningAction.putValue(Action.SELECTED_KEY, layer.getTemporalLearning());
 
       fullSpeedAction = new AbstractAction("Full Speed!") {
         @Override public void actionPerformed(ActionEvent e) {
@@ -651,9 +651,9 @@ public class HTMGraphicInterface extends JPanel {
 
   public void addPattern() {
     patterns.add(sensoryInputSurface.getSensoryInputValues());
-    region.nextTimeStep();
-    region.performSpatialPooling();
-    region.performTemporalPooling();
+    layer.nextTimeStep();
+    layer.performSpatialPooling();
+    layer.performTemporalPooling();
     process.sendUpdateNotification();
     this.repaint();
   }
@@ -717,25 +717,25 @@ public class HTMGraphicInterface extends JPanel {
         }
         if (!temporalSplit) {
           LOG.debug("Start step #" + process.getCycle() + ", " + process.currentPatternIndex);
-          region.nextTimeStep();
-          region.performSpatialPooling();
-          region.performTemporalPooling();
+          layer.nextTimeStep();
+          layer.performSpatialPooling();
+          layer.performTemporalPooling();
         } else {
           switch (temporalPhasePointer) {
             case 0: {
               LOG.debug("Start step #" + process.getCycle() + ", " + process.currentPatternIndex);
-              region.nextTimeStep();
-              region.performSpatialPooling();
-              region.temporalPoolingPhaseOne();
+              layer.nextTimeStep();
+              layer.performSpatialPooling();
+              layer.temporalPoolingPhaseOne();
               temporalPhasePointer = 1;
               break;
             }
             case 1:
-              region.temporalPoolingPhaseTwo();
+              layer.temporalPoolingPhaseTwo();
               temporalPhasePointer = 2;
               break;
             case 2:
-              region.temporalPoolingPhaseThree();
+              layer.temporalPoolingPhaseThree();
               temporalPhasePointer = 0;
               break;
             default:
