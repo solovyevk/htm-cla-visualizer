@@ -11,7 +11,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 
-public class Layer extends BaseSpace<Layer, Column> {
+public class Layer extends BaseSpace<Region, Column> {
   @Override
   protected Column createElement(int index, Point position) {
     return new Column(this, index, position);

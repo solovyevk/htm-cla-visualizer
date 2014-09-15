@@ -8,7 +8,15 @@
 
 package htm.model;
 
-public class Region extends htm.model.fractal.Composite<Region, Layer> {
+import java.util.HashMap;
+import java.util.Map;
+
+public class Region extends htm.model.fractal.Composite<Region, Region> {
+  Map<String, Layer> layers = new HashMap<String, Layer>();
+
+  public  Layer getLayer(String level){
+    return layers.get(level);
+  }
 
 }
 
