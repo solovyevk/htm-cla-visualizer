@@ -1,6 +1,5 @@
 package htm.model;
 
-import htm.model.fractal.Fractal;
 import htm.model.space.BaseSpace;
 import htm.model.space.Element;
 import htm.model.space.InputSpace;
@@ -14,7 +13,7 @@ import java.awt.*;
 import java.util.*;
 import java.util.List;
 
-public class Column extends Element implements Fractal<Layer, Cell>{
+public class Column extends Element<Layer, Cell>{
   private static final Log LOG = LogFactory.getLog(Column.class);
   public static int AMOUNT_OF_PROXIMAL_SYNAPSES = 30;
   /**
@@ -34,15 +33,18 @@ public class Column extends Element implements Fractal<Layer, Cell>{
    */
   public static int DESIRED_LOCAL_ACTIVITY = 2;
 
-  @Override public boolean addAll(List<Cell> all) {
+  @Override
+  public boolean addAll(List<Cell> all) {
     throw new NoSuchElementException("Not supported for Column, fixed number of cells");
   }
 
-  @Override public boolean addElement(Cell element) {
+  @Override
+  public boolean addElement(Cell element) {
     throw new NoSuchElementException("Not supported for Column, fixed number of cells");
   }
 
-  @Override public void removeElement(Cell element) {
+  @Override
+  public void removeElement(Cell element) {
     throw new NoSuchElementException("Not supported for Column, fixed number of cells");
   }
 
@@ -91,7 +93,6 @@ public class Column extends Element implements Fractal<Layer, Cell>{
 
 
   private final Layer region;
-  private final List<Cell> cells = new ArrayList<Cell>();
   private final List<Synapse.ProximalSynapse> proximalSynapses = new ArrayList<Synapse.ProximalSynapse>();
   private int minimalOverlap = MIN_OVERLAP;
   private double boost = 1.0;
@@ -112,10 +113,10 @@ public class Column extends Element implements Fractal<Layer, Cell>{
   private Map<Double, List<Column>> neighbors_cache = new HashMap<Double, List<Column>>();
 
   public Column(Layer region, int columnIndex, Point columnGridPosition) {
-    super(columnGridPosition, columnIndex);
+    super(region, columnGridPosition, columnIndex);
     this.region = region;
     for (int i = 0; i < region.getCellsInColumn(); i++) {
-      cells.add(new Cell(this, i));
+      this.elementList.add(new Cell(this, i));
     }
   }
 
@@ -268,7 +269,7 @@ public class Column extends Element implements Fractal<Layer, Cell>{
    * @param increaseBy
    */
   private void increasePermanence(double increaseBy) {
-    List<Synapse.ProximalSynapse> proximalSynapses = this.getPotentialSynapses();
+    //List<Synapse.ProximalSynapse> proximalSynapses = this.getPotentialSynapses();
     for (Synapse.ProximalSynapse proximalSynapse : proximalSynapses) {
       proximalSynapse.setPermanence(proximalSynapse.getPermanence() + increaseBy);
     }
@@ -341,7 +342,7 @@ public class Column extends Element implements Fractal<Layer, Cell>{
    * @return
    */
   public int isPredictInStep() {
-    for (Cell cell : cells) {
+    for (Cell cell : this.getElementsList()) {
       if (cell.getPredictiveState(Cell.NOW)) {
         return cell.getPredictInStepState(Cell.NOW);
       }
@@ -468,7 +469,7 @@ public class Column extends Element implements Fractal<Layer, Cell>{
       throw new RuntimeException("Column should be active");
     }
     boolean buPredicted = false, lcChosen = false;
-    for (Cell cell : cells) {
+    for (Cell cell : this.getElementsList()) {
       if (cell.getPredictiveState(Cell.BEFORE)) {
         DistalDendriteSegment segment = cell.getActiveSegment(Cell.BEFORE, Cell.State.ACTIVE);
         if (segment != null && segment.isSequenceSegment()) {
@@ -483,7 +484,7 @@ public class Column extends Element implements Fractal<Layer, Cell>{
       }
     }
     if (!buPredicted) {
-      for (Cell cell : cells) {
+      for (Cell cell : this.getElementsList()) {
         cell.setActiveState(true);
       }
     }
@@ -513,7 +514,7 @@ public class Column extends Element implements Fractal<Layer, Cell>{
    * i.e. a segment that has a (potentially weak) match to activity during the previous time step (lines 50-53).
    */
   public void computeCellsPredictiveState() {
-    for (Cell cell : cells) {
+    for (Cell cell : this.getElementsList()) {
       for (DistalDendriteSegment segment : cell.getSegments()) {
         if (segment.segmentActive(Cell.NOW, Cell.State.ACTIVE)) {
           //By Kirill - if segment is seq it also should be in learning state to predict
@@ -555,7 +556,7 @@ public class Column extends Element implements Fractal<Layer, Cell>{
    * for any reason, we negatively reinforce the segments (lines 58-60).
    */
   public void updateDistalSynapses() {
-    for (Cell cell : cells) {
+    for (Cell cell : this.getElementsList()) {
       if (cell.getLearnState(Cell.NOW)) {
         cell.adaptSegments(true);
       } else if (cell.getPredictiveState(Cell.BEFORE) && !cell.getPredictiveState(Cell.NOW)) {
@@ -583,21 +584,21 @@ public class Column extends Element implements Fractal<Layer, Cell>{
   private BestMatchingCellAndSegment getBestMatchingCell(int time) {
     List<DistalDendriteSegment> bestMatchingSegmentsFromCells = new ArrayList<DistalDendriteSegment>();
     boolean allSegmentsCreated = true;
-    for (Cell cell : cells) {
+    for (Cell cell : this.getElementsList()) {
       if (cell.getSegments().size() == 0) {
         allSegmentsCreated = false;
         break;
       }
     }
-    Cell minSegmentListCell = cells.get(0);
-    for (Cell cell : cells) {
+    Cell minSegmentListCell = this.getElementsList().get(0);
+    for (Cell cell : this.getElementsList()) {
       //By Kirill
       //Avoid selecting learning cell as best matching to make sure we use next cell in column to help with temporal forking
       if(cell.getLearnState(time)){
         //Shift minCell to next, since we exclude this one
         int nextInx = cell.getCellIndex() + 1;
-        if(nextInx < cells.size()){
-          minSegmentListCell = cells.get(nextInx);
+        if(nextInx < this.getElementsList().size()){
+          minSegmentListCell = this.getElementByIndex(nextInx);
         } else if(cell.getBestMatchingSegment(time) == null){
           //LOG.warn("Possible repeating pattern, please increase number of cells in column");
         }
@@ -619,21 +620,6 @@ public class Column extends Element implements Fractal<Layer, Cell>{
             columnBestMatchingSegment);
   }
 
-  @Override public void reset() {
-
-  }
-
-  @Override public Layer getOwner() {
-    return region;
-  }
-
-  @Override public Cell getElementByIndex(int inx) {
-    return cells.get(inx);
-  }
-
-  @Override public List<Cell> getElements() {
-    return Collections.unmodifiableList(cells);
-  }
 
   private static class BestMatchingCellAndSegment {
     private final Cell cell;
@@ -654,7 +640,7 @@ public class Column extends Element implements Fractal<Layer, Cell>{
   }
 
   public void nextTimeStep() {
-    for (Cell cell : cells) {
+    for (Cell cell : this.getElementsList()) {
       cell.nextTimeStep();
     }
   }

@@ -17,7 +17,7 @@ import java.awt.*;
 import java.util.List;
 
 
-public abstract class BaseSpace<P, E extends Element> extends htm.model.fractal.Composite<P, E> {
+public abstract class BaseSpace<P, E extends Element<?, ?>> extends htm.model.fractal.Composite<P, E> {
   private static final Log LOG = LogFactory.getLog(
           BaseSpace.class);
 
@@ -26,7 +26,6 @@ public abstract class BaseSpace<P, E extends Element> extends htm.model.fractal.
 
   public BaseSpace(int xSize, int ySize) {
     this.dimension = new Dimension(xSize, ySize);
-   // elementList.g = new ArrayList<E>(xSize * ySize);
   }
   /*Have to call it after construction and param initialization*/
   protected void initElementSpace() {

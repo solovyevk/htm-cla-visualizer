@@ -8,13 +8,17 @@
 
 package htm.model.space;
 
+
+import htm.model.fractal.Composite;
+
 import java.awt.*;
 
-public class Element {
+public class Element<P, E>  extends Composite<P, E> {
   protected final Point position;
   private final int index;
 
-  public Element(Point position, int index) {
+  public Element(P owner, Point position, int index) {
+    this.owner = owner;
     this.position = position;
     this.index = index;
   }
