@@ -1,5 +1,6 @@
 package htm.model;
 
+import htm.model.algorithms.temporal.TemporalPooler;
 import htm.model.space.BaseSpace;
 import htm.model.space.InputSpace;
 import htm.utils.CollectionUtils;
@@ -12,14 +13,8 @@ import java.util.List;
 
 
 public class Layer extends BaseSpace<Region, Column> {
-  @Override
-  protected Column createElement(int index, Point position) {
-    return new Column(this, index, position);
-  }
 
-  public java.util.List<Column> getColumns() {
-    return this.getElements();
-  }
+
   private final InputSpace inputSpace;
   /**
    * inputRadius for this input Space
@@ -50,19 +45,28 @@ public class Layer extends BaseSpace<Region, Column> {
     }
   };
 
-  private boolean temporalLearning = true;
+  //TODO not sure if Layer should directly reference algorithmic classes: Temporal/Spatial Pooler
+  private TemporalPooler temporalPooler;
+
+  public TemporalPooler getTemporalPooler() {
+    return temporalPooler;
+  }
+
+  public void setTemporalPooler(TemporalPooler temporalPooler) {
+    this.temporalPooler = temporalPooler;
+  }
 
   private boolean spatialLearning = true;
 
-  public Layer(Config regionCfg) {
-    super(regionCfg.getRegionDimension().width, regionCfg.getRegionDimension().height);
-    this.cellsInColumn = regionCfg.getCellsInColumn();
+  public Layer(Config layerCfg) {
+    super(layerCfg.getRegionDimension().width, layerCfg.getRegionDimension().height);
+    this.cellsInColumn = layerCfg.getCellsInColumn();
     this.initElementSpace();
-    this.inputSpace = new InputSpace(regionCfg.getSensoryInputDimension().width,
-                                     regionCfg.getSensoryInputDimension().height);
-    this.inputRadius = regionCfg.getInputRadius();
-    this.learningRadius = regionCfg.getLearningRadius();
-    this.skipSpatial = regionCfg.isSkipSpatial();
+    this.inputSpace = new InputSpace(layerCfg.getSensoryInputDimension().width,
+                                     layerCfg.getSensoryInputDimension().height);
+    this.inputRadius = layerCfg.getInputRadius();
+    this.learningRadius = layerCfg.getLearningRadius();
+    this.skipSpatial = layerCfg.isSkipSpatial();
     if (skipSpatial) {
       if (inputSpace.getDimension().height != this.getDimension().height || inputSpace.getDimension().width != this.getDimension().width) {
         throw new IllegalArgumentException(
@@ -71,6 +75,15 @@ public class Layer extends BaseSpace<Region, Column> {
     } else {
       connectToInputSpace();
     }
+  }
+
+  @Override
+  protected Column createElement(int index, Point position) {
+    return new Column(this, index, position);
+  }
+
+  public java.util.List<Column> getColumns() {
+    return this.getElements();
   }
 
   public void connectToInputSpace() {
@@ -87,16 +100,8 @@ public class Layer extends BaseSpace<Region, Column> {
     return convertPositionToOtherSpace(inputPosition, inputSpace.getDimension(), this.getDimension());
   }
 
-  public boolean getTemporalLearning() {
-    return temporalLearning;
-  }
-
   public boolean getSpatialLearning() {
     return spatialLearning;
-  }
-
-  public void setTemporalLearning(boolean value) {
-    this.temporalLearning = value;
   }
 
   public void setSpatialLearning(boolean value) {
@@ -228,80 +233,6 @@ public class Layer extends BaseSpace<Region, Column> {
     }
   }
 
-  /**
-   * Performs temporal pooling based on the current spatial pooler output.
-   * WP:
-   * The input to this code is activeColumns(t), as computed by the spatial pooler.
-   * The code computes the active and predictive state for each cell at the current
-   * time step, t. The boolean OR of the active and predictive states for each cell
-   * forms the output of the temporal pooler for the next level.
-   * <p/>
-   * Phase 1:
-   * Compute the active state, activeState(t), for each cell.
-   * The first phase calculates the activeState for each cell that is in a winning column.
-   * For those columns, the code further selects one cell per column as the learning cell (learnState).
-   * The logic is as follows: if the bottom-up input was predicted by any cell
-   * (i.e. its predictiveState output was 1 due to a sequence segment),
-   * then those cells become active (lines 23-27). If that segment became
-   * active from cells chosen with learnState on, this cell is selected as the learning cell (lines 28-30).
-   * If the bottom-up input was not predicted, then all cells in the become active (lines 32-34).
-   * In addition, the best matching cell is chosen as the learning cell (lines 36-41) and a
-   * new segment is added to that cell.
-   * <p/>
-   * Phase 2:
-   * Compute the predicted state, predictiveState(t), for each cell.
-   * The second phase calculates the predictive state for each cell.
-   * A cell will turn on its predictive state output if one of its segments becomes active,
-   * i.e. if enough of its lateral inputs are currently active due to feed-forward input.
-   * In this case, the cell queues up the following changes:
-   * a) reinforcement of the currently active segment (lines 47-48), and
-   * b) reinforcement of a segment that could have predicted this activation, i.e. a segment that has a (potentially weak)
-   * match to activity during the previous time step (lines 50-53).
-   * <p/>
-   * Phase 3:
-   * Update synapses. The third and last phase actually carries out learning. In this
-   * phase segmentUpdates updates that have been queued up are actually implemented
-   * once we get feed-forward input and the cell is chosen as a learning cell
-   * (lines 56-57). Otherwise, if the cell ever stops predicting for any reason, we
-   */
-  public void performTemporalPooling() {
-    temporalPoolingPhaseOne();
-    temporalPoolingPhaseTwo();
-    temporalPoolingPhaseThree();
-  }
-
-
-  public void temporalPoolingPhaseTwo() {
-    //Phase 2:Compute the predicted state, predictiveState(t), for each cell.
-    for (Column column : elementList) {
-      column.computeCellsPredictiveState();
-    }
-  }
-
-  public void temporalPoolingPhaseOne() {
-    //Phase 1:Compute the active state, activeState(t), for each cell.
-    List<Column> activeColumns = this.getActiveColumns();
-    for (Column activeColumn : activeColumns) {
-      activeColumn.computeCellsActiveState();
-    }
-  }
-
-  public void temporalPoolingPhaseThree() {
-    //Phase 3:Run synapses updates accumulated in previous steps
-    if (this.getTemporalLearning()) {
-      for (Column column : elementList) {
-        column.updateDistalSynapses();
-      }
-    }
-  }
-
-
-  /*Reset cells*/
-  public void nextTimeStep() {
-    for (Column column : elementList) {
-      column.nextTimeStep();
-    }
-  }
 
   public Dimension getInputSpaceDimension() {
     return inputSpace.getDimension();

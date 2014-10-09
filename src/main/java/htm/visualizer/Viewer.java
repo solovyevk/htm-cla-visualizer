@@ -96,15 +96,18 @@ public class Viewer extends JFrame {
                 htmInterface.getParameters());
         if (modCfg != null) {
           Layer.Config modRegionCfg = modCfg.getRegionConfig();
-          HTMGraphicInterface.Config newCfg = new HTMGraphicInterface.Config(oldCfg.getPatterns(), new Layer.Config(
-                  modRegionCfg.getRegionDimension(),
-                  modRegionCfg.getSensoryInputDimension(),
-                  modRegionCfg.getInputRadius(), modRegionCfg.getLearningRadius(), modRegionCfg.isSkipSpatial(),
-                  modRegionCfg.getCellsInColumn()),
-                                                                             modCfg.getColumnConfig(),
-                                                                             modCfg.getCellConfig(),
-                                                                             modCfg.getProximalSynapseConfig(),
-                                                                             modCfg.getDistalSynapseConfig());
+          HTMGraphicInterface.Config newCfg = new HTMGraphicInterface.Config(
+                  oldCfg.getPatterns(),
+                  modCfg.getTemporalPoolerConfig(),
+                  new Layer.Config(
+                          modRegionCfg.getRegionDimension(),
+                          modRegionCfg.getSensoryInputDimension(),
+                          modRegionCfg.getInputRadius(), modRegionCfg.getLearningRadius(), modRegionCfg.isSkipSpatial(),
+                          modRegionCfg.getCellsInColumn()),
+                  modCfg.getColumnConfig(),
+                  modCfg.getCellConfig(),
+                  modCfg.getProximalSynapseConfig(),
+                  modCfg.getDistalSynapseConfig());
           try {
             win.reloadHTMInterface(newCfg);
           } catch (Exception ex) {
@@ -123,11 +126,15 @@ public class Viewer extends JFrame {
         LOG.debug("Skip Spatial Pooling is:" + checked);
         HTMGraphicInterface.Config oldCfg = htmInterface.getParameters();
         Layer.Config oldRegionCfg = oldCfg.getRegionConfig();
-        HTMGraphicInterface.Config newCfg = new HTMGraphicInterface.Config(oldCfg.getPatterns(), new Layer.Config(
-                oldRegionCfg.getRegionDimension(),
-                oldRegionCfg.getSensoryInputDimension(),
-                oldRegionCfg.getInputRadius(), oldRegionCfg.getLearningRadius(), checked,
-                oldRegionCfg.getCellsInColumn()),
+        HTMGraphicInterface.Config newCfg = new HTMGraphicInterface.Config(oldCfg.getPatterns(),
+                                                                           oldCfg.getTemporalPoolerConfig(),
+                                                                           new Layer.Config(
+                                                                                   oldRegionCfg.getRegionDimension(),
+                                                                                   oldRegionCfg.getSensoryInputDimension(),
+                                                                                   oldRegionCfg.getInputRadius(),
+                                                                                   oldRegionCfg.getLearningRadius(),
+                                                                                   checked,
+                                                                                   oldRegionCfg.getCellsInColumn()),
                                                                            oldCfg.getColumnConfig(),
                                                                            oldCfg.getCellConfig(),
                                                                            oldCfg.getProximalSynapseConfig(),

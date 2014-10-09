@@ -65,9 +65,8 @@ public class DistalDendriteSegment extends Composite<Cell, Synapse.DistalSynapse
    * This routine returns true if the number of connected synapses on segment s that are active due to the given
    * state at time t is greater than activationThreshold. The parameter state can be activeState, or learnState.
    */
-  public boolean segmentActive(int time, Cell.State state) {
-    List<Synapse.DistalSynapse> res = getConnectedWithStateCell(time, state);
-    return getConnectedWithStateCell(time, state).size() > Cell.ACTIVATION_THRESHOLD;
+  public boolean segmentActive(int time, Cell.State state, int activationThreshold) {
+    return getConnectedWithStateCell(time, state).size() > activationThreshold;
   }
 
   public List<Synapse.DistalSynapse> getConnectedWithStateCell(int time, Cell.State state) {
@@ -75,9 +74,7 @@ public class DistalDendriteSegment extends Composite<Cell, Synapse.DistalSynapse
   }
 
   public List<Synapse.DistalSynapse> getActiveCellSynapses(int time) {
-    /*FOR DEBUG*/
-    List<Synapse.DistalSynapse> result = CollectionUtils.filter(this.elementList, new ActiveCellByTimePredicate(time));
-    return result;
+    return CollectionUtils.filter(this.elementList, new ActiveCellByTimePredicate(time));
   }
 
 

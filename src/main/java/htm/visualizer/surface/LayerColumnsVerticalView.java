@@ -20,14 +20,14 @@ import java.awt.font.FontRenderContext;
 import java.awt.font.TextLayout;
 import java.util.List;
 
-public class RegionColumnsVerticalView extends CellSurface implements Scrollable {
+public class LayerColumnsVerticalView extends CellSurface implements Scrollable {
   private int selectedCellIndex = -1;
-  private static final Log LOG = LogFactory.getLog(RegionColumnsVerticalView.class);
+  private static final Log LOG = LogFactory.getLog(LayerColumnsVerticalView.class);
   protected List<Column> columns;
   private static final int MIN_CELL_SIZE = 28;
   private int columnIndexHeight = 12;
 
-  public RegionColumnsVerticalView(Layer region) {
+  public LayerColumnsVerticalView(Layer region) {
     super(1, region.getCellsInColumn(), region);
     this.updateColumns();
    /* this.addElementMouseEnterListener(new ElementMouseEnterListener() {

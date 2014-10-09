@@ -92,7 +92,7 @@ public class Column extends Element<Layer, Cell>{
   }
 
 
-  private final Layer region;
+
   private final List<Synapse.ProximalSynapse> proximalSynapses = new ArrayList<Synapse.ProximalSynapse>();
   private int minimalOverlap = MIN_OVERLAP;
   private double boost = 1.0;
@@ -114,7 +114,6 @@ public class Column extends Element<Layer, Cell>{
 
   public Column(Layer region, int columnIndex, Point columnGridPosition) {
     super(region, columnGridPosition, columnIndex);
-    this.region = region;
     for (int i = 0; i < region.getCellsInColumn(); i++) {
       this.elementList.add(new Cell(this, i));
     }
@@ -128,7 +127,7 @@ public class Column extends Element<Layer, Cell>{
   **/
 
   public Point getInputSpacePosition() {
-    return this.region.convertColumnPositionToInputSpace(this.getPosition());
+    return this.getOwner().convertColumnPositionToInputSpace(this.getPosition());
   }
 
   /**
@@ -148,7 +147,7 @@ public class Column extends Element<Layer, Cell>{
    */
 
   public void createProximalSegment(double inputRadius) {
-    InputSpace sensoryInput = this.region.getInputSpace();
+    InputSpace sensoryInput = this.getOwner().getInputSpace();
     Point inputSpacePosition = this.getInputSpacePosition();
     List<InputSpace.Input> potentialProximalInputs = sensoryInput.getAllWithinRadius(inputSpacePosition, inputRadius);
     if (potentialProximalInputs.size() < AMOUNT_OF_PROXIMAL_SYNAPSES) {
@@ -164,7 +163,7 @@ public class Column extends Element<Layer, Cell>{
       InputSpace.Input input = potentialProximalInputs.get(j);
       //Permanence value is based on Gaussian distribution around the ConnectedPerm value, biased by distance from this Column.
       double distanceToInputSrc = BaseSpace.getDistance(inputSpacePosition, input.getPosition()),
-              distanceToInputColumn = BaseSpace.getDistance(this.region.convertInputPositionToColumnSpace(
+              distanceToInputColumn = BaseSpace.getDistance(this.getOwner().convertInputPositionToColumnSpace(
                       input.getPosition()), position),
               initPermanence = Synapse.ProximalSynapse.PERMANENCE_INCREASE * randomGenerator.nextGaussian() + Synapse.ProximalSynapse.CONNECTED_PERMANENCE,
               radiusBiasDeviation = 0.1f, //1.1 to 0.9 -> Y = 1.1 - radiusBiasDeviation / 2inputRadius * X
@@ -336,20 +335,6 @@ public class Column extends Element<Layer, Cell>{
     return active.getLast();
   }
 
-  /**
-   * Number of step until column will be predicted in temporal sequence/step(s)
-   *
-   * @return
-   */
-  public int isPredictInStep() {
-    for (Cell cell : this.getElementsList()) {
-      if (cell.getPredictiveState(Cell.NOW)) {
-        return cell.getPredictInStepState(Cell.NOW);
-      }
-    }
-    return Cell.NOT_IN_STEP_PREDICTION;
-  }
-
 
   /**
    * Get column active state at time
@@ -411,7 +396,7 @@ public class Column extends Element<Layer, Cell>{
     List<Column> result;
     result = neighbors_cache.get(roundedInhibitionRadius);
     if (result == null) {
-      result = region.getAllWithinRadius(this.getPosition(), roundedInhibitionRadius);
+      result = this.getOwner().getAllWithinRadius(this.getPosition(), roundedInhibitionRadius);
       //remove itself
       result.remove(result.indexOf(this));
       if (result.size() == 0) {
@@ -450,194 +435,7 @@ public class Column extends Element<Layer, Cell>{
     return Collections.unmodifiableList(proximalSynapses);
   }
 
-  /**
-   * WP
-   * TEMPORAL POOLING
-   * <p/>
-   * Phase 1: Compute cells state
-   * The first phase calculates the activeState for each cell that is in a winning column.
-   * For those columns, the code further selects one cell per column as the learning cell (learnState).
-   * The logic is as follows: if the bottom-up input was predicted by any cell (i.e. its predictiveState
-   * output was 1 due to a sequence segment), then those cells become active (lines 23-27).
-   * If that segment became active from cells chosen with learnState on, this cell is selected as
-   * the learning cell (lines 28-30). If the bottom-up input was not predicted, then all cells
-   * in the become active (lines 32-34). In addition, the best matching cell is chosen as the
-   * learning cell (lines 36-41) and a new segment is added to that cell.
-   */
-  public void computeCellsActiveState() {
-    if (!isActive()) {
-      throw new RuntimeException("Column should be active");
-    }
-    boolean buPredicted = false, lcChosen = false;
-    for (Cell cell : this.getElementsList()) {
-      if (cell.getPredictiveState(Cell.BEFORE)) {
-        DistalDendriteSegment segment = cell.getActiveSegment(Cell.BEFORE, Cell.State.ACTIVE);
-        if (segment != null && segment.isSequenceSegment()) {
-          buPredicted = true;
-          cell.setActiveState(true);
-          if (segment.segmentActive(Cell.BEFORE, Cell.State.LEARN)) {
-            lcChosen = true;
-            cell.setLearnState(true);
-            break;
-          }
-        }
-      }
-    }
-    if (!buPredicted) {
-      for (Cell cell : this.getElementsList()) {
-        cell.setActiveState(true);
-      }
-    }
-    if (!lcChosen && region.getTemporalLearning()) {
-      //TODO we need to consider only seq segments when looking for the best segment here in phase 1 - this is for new connections only, can't select future activated segments here
-      BestMatchingCellAndSegment bestMatchingCellAndSegment = getBestMatchingCell(Cell.BEFORE);
-      Cell bestCell = bestMatchingCellAndSegment.getCell();
-      DistalDendriteSegment learningCellBestSegment = bestMatchingCellAndSegment.getSegment();
-      bestCell.setLearnState(true);
-      // segmentUpdate is added internally to the bestCell's update list.
-      DistalDendriteSegment.Update segmentUpdate = bestCell.getSegmentActiveSynapses(learningCellBestSegment,
-                                                                                     Cell.BEFORE, true, null);
-    }
-  }
 
-  /**
-   * Phase: 2
-   * <p/>
-   * WP
-   * TEMPORAL POOLING
-   * <p/>
-   * The second phase calculates the predictive state for each cell.
-   * A cell will turn on its predictive state output if one of its
-   * segments becomes active, i.e. if enough of its lateral inputs are currently active due to feed-forward input.
-   * In this case, the cell queues up the following changes: a) reinforcement of the currently
-   * active segment (lines 47-48), and b) reinforcement of a segment that could have predicted this activation,
-   * i.e. a segment that has a (potentially weak) match to activity during the previous time step (lines 50-53).
-   */
-  public void computeCellsPredictiveState() {
-    for (Cell cell : this.getElementsList()) {
-      for (DistalDendriteSegment segment : cell.getSegments()) {
-        if (segment.segmentActive(Cell.NOW, Cell.State.ACTIVE)) {
-          //By Kirill - if segment is seq it also should be in learning state to predict
-          if (segment.isSequenceSegment() && !segment.segmentActive(Cell.NOW, Cell.State.LEARN)) {
-            continue;
-          }
-          //By Kirill
-          /*Cell can't be predicted if in learning state, otherwise it's learning state will case
-          adding segments update from phase 1 & 2 in following phase 3 within the same step, but we don't know if the cell will be active in next step
-          ALSO same said in WP - page 30, Temporal pooler details paragraph 2)
-          Cells with active dendrite segments are put in the predictive state unless they are already active due to feed-forward input
-           */
-          if (cell.getLearnState(Cell.NOW)) {
-            continue;
-          }
-          cell.setPredictInStepState(segment.predictedInStep());
-          if (region.getTemporalLearning()) {
-            DistalDendriteSegment.Update activeUpdate = cell.getSegmentActiveSynapses(segment, Cell.NOW, false,
-                                                                                      segment.getPredictedBy());
-            DistalDendriteSegment.Update previousUpdate = cell.getSegmentActiveSynapses(cell.getBestMatchingSegment(
-                    Cell.BEFORE), Cell.BEFORE, true, segment);
-          }
-        }
-      }
-    }
-
-  }
-
-  /**
-   * Phase: 3
-   * <p/>
-   * WP
-   * TEMPORAL POOLING
-   * <p/>
-   * The third and last phase actually carries out learning.
-   * In this phase segment updates that have been queued up are actually
-   * implemented once we get feed-forward input and the cell is chosen as
-   * a learning cell (lines 56-57). Otherwise, if the cell ever stops predicting
-   * for any reason, we negatively reinforce the segments (lines 58-60).
-   */
-  public void updateDistalSynapses() {
-    for (Cell cell : this.getElementsList()) {
-      if (cell.getLearnState(Cell.NOW)) {
-        cell.adaptSegments(true);
-      } else if (cell.getPredictiveState(Cell.BEFORE) && !cell.getPredictiveState(Cell.NOW)) {
-        cell.adaptSegments(false);
-      } else if (cell.getPredictInStepState(Cell.NOW) >= cell.getPredictInStepState(
-              Cell.BEFORE) && cell.getPredictInStepState(Cell.BEFORE) != Cell.NOT_IN_STEP_PREDICTION) {
-        cell.adaptSegmentsForWrongPrediction();
-
-      }
-    }
-  }
-
-
-  /**
-   * WP
-   * <p/>
-   * getBestMatchingCell(c)
-   * For the given column, return the cell with the best matching segment.
-   * If no cell has a matching segment, then return the cell with the fewest number of segments.
-   *
-   * @param time
-   * @return
-   */
-
-  private BestMatchingCellAndSegment getBestMatchingCell(int time) {
-    List<DistalDendriteSegment> bestMatchingSegmentsFromCells = new ArrayList<DistalDendriteSegment>();
-    boolean allSegmentsCreated = true;
-    for (Cell cell : this.getElementsList()) {
-      if (cell.getSegments().size() == 0) {
-        allSegmentsCreated = false;
-        break;
-      }
-    }
-    Cell minSegmentListCell = this.getElementsList().get(0);
-    for (Cell cell : this.getElementsList()) {
-      //By Kirill
-      //Avoid selecting learning cell as best matching to make sure we use next cell in column to help with temporal forking
-      if(cell.getLearnState(time)){
-        //Shift minCell to next, since we exclude this one
-        int nextInx = cell.getCellIndex() + 1;
-        if(nextInx < this.getElementsList().size()){
-          minSegmentListCell = this.getElementByIndex(nextInx);
-        } else if(cell.getBestMatchingSegment(time) == null){
-          //LOG.warn("Possible repeating pattern, please increase number of cells in column");
-        }
-        continue;
-      }
-      if (cell.getSegments().size() < minSegmentListCell.getSegments().size()) {
-        minSegmentListCell = cell;
-      }
-      DistalDendriteSegment bestMatchingSegment = cell.getBestMatchingSegment(time);
-      if (bestMatchingSegment != null) {
-        bestMatchingSegmentsFromCells.add(bestMatchingSegment);
-      }
-    }
-    DistalDendriteSegment columnBestMatchingSegment = Cell.getBestMatchingSegment(bestMatchingSegmentsFromCells,
-                                                                                  time);
-
-    return new BestMatchingCellAndSegment(
-            columnBestMatchingSegment != null ? columnBestMatchingSegment.getOwner() : minSegmentListCell,
-            columnBestMatchingSegment);
-  }
-
-
-  private static class BestMatchingCellAndSegment {
-    private final Cell cell;
-    private final DistalDendriteSegment segment;
-
-    private BestMatchingCellAndSegment(Cell bestCell, DistalDendriteSegment bestSegment) {
-      this.cell = bestCell;
-      this.segment = bestSegment;
-    }
-
-    public Cell getCell() {
-      return cell;
-    }
-
-    public DistalDendriteSegment getSegment() {
-      return segment;
-    }
-  }
 
   public void nextTimeStep() {
     for (Cell cell : this.getElementsList()) {
@@ -666,7 +464,7 @@ public class Column extends Element<Layer, Cell>{
     }
 
     public double getSlidingAverage() {
-      double result = 0;
+      double result;
       int length = this.size(), activeCount = 0;
       for (int i = 0; i < length; i++) {
         if (positiveCondition(get(i))) {

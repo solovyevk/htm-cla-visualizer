@@ -2,7 +2,6 @@ package htm.model;
 
 import htm.model.fractal.Composite;
 import htm.utils.CircularArrayList;
-import htm.utils.CollectionUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
@@ -17,20 +16,7 @@ public class Cell extends Composite<Column, DistalDendriteSegment>{
    * newSynapseCount
    * The maximum number of synapses added to a segment during learning.
    */
-  public static int NEW_SYNAPSE_COUNT = 5;
-  /**
-   * WP
-   * activationThreshold
-   * <p/>
-   * Activation threshold for a segment. If the number of active connected
-   * synapses in a segment is greater than activationThreshold, the segment is said to be active.
-   */
-  public static int ACTIVATION_THRESHOLD = 2;
-  /**
-   * WP
-   * minThreshold Minimum segment activity for learning.
-   */
-  public static int MIN_THRESHOLD = 0;//1;
+
   public static int AMOUNT_OF_SYNAPSES = 30;
   /**
    * cell will keep a buffer of its last TIME_STEPS states
@@ -81,9 +67,6 @@ public class Cell extends Composite<Column, DistalDendriteSegment>{
   private final List<DistalDendriteSegment.Update> segmentUpdates = new ArrayList<DistalDendriteSegment.Update>();
 
   public static void updateFromConfig(Config cellCfg) {
-    NEW_SYNAPSE_COUNT = cellCfg.getNewSynapseCount();
-    ACTIVATION_THRESHOLD = cellCfg.getActivationThreshold();
-    MIN_THRESHOLD = cellCfg.getMinThreshold();
     AMOUNT_OF_SYNAPSES = cellCfg.getAmountOfSynapses();
     TIME_STEPS = cellCfg.getTimeSteps();
   }
@@ -186,82 +169,6 @@ public class Cell extends Composite<Column, DistalDendriteSegment>{
   }
 
 
-  /**
-   * WP
-   * <p/>
-   * getActiveSegment(c, i, t, state)
-   * <p/>
-   * For the given column c cell i, return a segment index such that segmentActive(s,t, state) is true.
-   * If multiple segments are active, sequence segments are given preference.
-   * Otherwise, segments with most activity are given preference.
-   */
-
-  public DistalDendriteSegment getActiveSegment(final int time, final State state) {
-    List<DistalDendriteSegment> activeSegments = CollectionUtils.filter(this.elementList,
-                                                                        new CollectionUtils.Predicate<DistalDendriteSegment>() {
-                                                                          @Override
-                                                                          public boolean apply(
-                                                                                  DistalDendriteSegment segment) {
-                                                                            return segment.segmentActive(time, state);
-                                                                          }
-                                                                        });
-    Collections.sort(activeSegments, new Comparator<DistalDendriteSegment>() {
-      @Override
-      public int compare(DistalDendriteSegment segment, DistalDendriteSegment segmentToCompare) {
-        int amountActiveCells = segment.getConnectedWithStateCell(time, state).size();
-        int amountActiveCellsToCompare = segmentToCompare.getConnectedWithStateCell(time, state).size();
-        if (segment.isSequenceSegment() == segmentToCompare.isSequenceSegment()
-            && amountActiveCells == amountActiveCellsToCompare) {
-          return 0;
-        } else if ((segment.isSequenceSegment() && !segmentToCompare.isSequenceSegment())
-                   || (segment.isSequenceSegment() == segmentToCompare.isSequenceSegment()
-                       && amountActiveCells > amountActiveCellsToCompare)) {
-          return 1;
-        } else {
-          return -1;
-        }
-      }
-    });
-    return activeSegments.size() > 0 ? activeSegments.get(activeSegments.size() - 1) : null;
-  }
-
-  /**
-   * WP
-   * <p/>
-   * getBestMatchingSegment(c, i, t)
-   * <p/>
-   * For the given column c cell i at time t, find the segment with the largest number of active synapses.
-   * This routine is aggressive in finding the best match. The permanence value of synapses is allowed to be
-   * below connectedPerm. The number of active synapses is allowed to be below activationThreshold,
-   * but must be above minThreshold. The routine returns the segment index. If no segments are found, then an index of -1 is returned.
-   *
-   * @param time
-   * @return
-   */
-  public DistalDendriteSegment getBestMatchingSegment(final int time) {
-    return getBestMatchingSegment(new ArrayList<DistalDendriteSegment>(this.getElements()), time);
-  }
-
-  public static DistalDendriteSegment getBestMatchingSegment(List<DistalDendriteSegment> segmentList, final int time) {
-
-    Collections.sort(segmentList, new Comparator<DistalDendriteSegment>() {
-      @Override
-      public int compare(DistalDendriteSegment segment, DistalDendriteSegment segmentToCompare) {
-        int amountActiveCells = segment.getActiveCellSynapses(time).size();
-        int amountActiveCellsToCompare = segmentToCompare.getActiveCellSynapses(time).size();
-        if (amountActiveCells == amountActiveCellsToCompare) {
-          return 0;
-        } else if (amountActiveCells > amountActiveCellsToCompare) {
-          return 1;
-        } else {
-          return -1;
-        }
-      }
-    });
-    return segmentList.size() > 0 && segmentList.get(segmentList.size() - 1).getActiveCellSynapses(
-            time).size() > MIN_THRESHOLD ? segmentList.get(segmentList.size() - 1) : null;
-  }
-
 
   public boolean deleteSegment(DistalDendriteSegment toDelete) {
     return elementList.remove(toDelete);
@@ -282,180 +189,15 @@ public class Cell extends Composite<Column, DistalDendriteSegment>{
     return result.toString();
   }
 
-  /**
-   * If the segment is NULL, then a new segment is to be added, otherwise
-   * the specified segment is updated.  If the segment exists, find all active
-   * synapses for the segment (either at t or t-1)
-   * and mark them as needing to be updated.  If newSynapses is true, then
-   * Region.newSynapseCount - len(activeSynapses) new synapses are added to the
-   * segment to be updated.  The (new) synapses are randomly chosen from the set
-   * of current learning cells (within Region.predictionRadius if set).
-   * These segment updates are only applied when the applySegmentUpdates
-   * method is later called on this Cell.
-   * <p/>
-   * WP
-   * <p/>
-   * getSegmentActiveSynapses(c, i, t, s, newSynapses= false)
-   * <p/>
-   * Return a segmentUpdate data structure containing a list of proposed changes to segment s.
-   * Let activeSynapses be the list of active synapses where the originating cells have their
-   * activeState output = 1 at time step t. (This list is empty if s = -1 since the segment doesn't exist.)
-   * newSynapses is an optional argument that defaults to false. If newSynapses is true,
-   * then newSynapseCount - count(activeSynapses) synapses are added to activeSynapses.
-   * These synapses are randomly chosen from the set of cells that have learnState output = 1 at time step t.
-   */
-  public DistalDendriteSegment.Update getSegmentActiveSynapses(DistalDendriteSegment segment, int time,
-                                                               boolean newSynapses, DistalDendriteSegment predictedBy) {
-    DistalDendriteSegment.Update result = new DistalDendriteSegment.Update(this, segment, time, predictedBy);
-    if (segment != null) {
-      result.addAll(segment.getActiveCellSynapses(time));
-    }
-    int numberOfNewSynapsesToAdd = NEW_SYNAPSE_COUNT - result.getElementsList().size();
-    if (newSynapses && numberOfNewSynapsesToAdd > 0) {
-      List<Column> neighbors = getNeighborsAndMyColumn();
-      List<Cell> cellWithLearnStateList = new ArrayList<Cell>();
-      //TODO Refac
 
-      for (Column neighborColumn : neighbors) {
-        List<Cell> cellList = neighborColumn.getElements();
-        for (Cell cell : cellList) {
-           /*NOTE: There is no indication in the Numenta pseudocode that a cell shouldn't be able to have a
-           *distal synapse from another cell in the same column. Therefore the below check is commented out.
-           * Skip cells in our own col (don't connect to ourself)
-           * */
-          //if (cell.belongsToColumn == this.belongsToColumn) {
-          //  continue;
-          // }
-          /*But avoid self reverence*/
-          if (cell == this) {
-            continue;
-          }
-          if (cell.getLearnState(time)) {
-            cellWithLearnStateList.add(cell);
-          }
-        }
-      }
-      Collections.shuffle(cellWithLearnStateList);
-      numberOfNewSynapsesToAdd = cellWithLearnStateList.size() < numberOfNewSynapsesToAdd ? cellWithLearnStateList.size() : numberOfNewSynapsesToAdd;
-      for (int i = 0; i < numberOfNewSynapsesToAdd; i++) {
-        Cell cellWithLearnState = cellWithLearnStateList.get(i);
-        result.addElement(new Synapse.DistalSynapse(cellWithLearnState));
-      }
-    }
-    fireUpdatesChange();
-    return result;
-  }
 
-  private List<Column> getNeighborsAndMyColumn() {
+  public List<Column> getNeighborsAndMyColumn() {
     return this.owner.getOwner().getAllWithinRadius(this.owner.getPosition(),
                                                                this.owner.getOwner().getLearningRadius());
 
   }
 
-  public void adaptSegmentsForWrongPrediction() {
-    int currentStepCount = this.getPredictInStepState(
-            Cell.NOW);
-    LOG.warn("Prediction is wrong for Cell:" + this + "\n" + "Before predicted in " + this.getPredictInStepState(
-            Cell.BEFORE) + " step(s); Now predicted in " + this.getPredictInStepState(Cell.NOW) + " step(s)");
-    //, trim  segment:" + trimSegment);
-    LOG.info("Negatively reinforce and remove segmentUpdates created before or at " + currentStepCount + " step(s)");
-    /*Michael Ferrier fix #1 - http://sourceforge.net/p/openhtm/discussion/htm/thread/ccedad1f/?limit=25&page=4
-    apply only those segment updates created before or at that given creation time,
-    and removes those from the list*/
-    /*try {
-     Thread.sleep(1000 * 20);
-    } catch (Exception e) {
-      LOG.error("Process sleep interrupted", e);
-    }*/
-    for (ListIterator<DistalDendriteSegment.Update> iter = segmentUpdates.listIterator(
-            segmentUpdates.size()); iter.hasPrevious(); ) {
-      DistalDendriteSegment.Update update = iter.previous();
-      if (update.predictedInStep() <= currentStepCount) {
-        int predictedInStep = update.predictedInStep();
-        LOG.info("Decrement synapses and remove segment update for step prediction: " + predictedInStep + update);
-        for (Synapse.DistalSynapse distalSynapse : update.getElementsList()) {
-          distalSynapse.setPermanence(distalSynapse.getPermanence() -  4*Synapse.DistalSynapse.PERMANENCE_DECREASE);
-        }
-        iter.remove();
-      }
-    }
-  }
 
-  /**
-   * WP
-   * <p/>
-   * adaptSegments(segmentList, positiveReinforcement)
-   * <p/>
-   * This function iterates through a list of segmentUpdate's and reinforces each segment.
-   * For each segmentUpdate element, the following changes are performed.
-   * If positiveReinforcement is true then synapses on the active list get
-   * their permanence counts incremented by permanenceInc. All other synapses
-   * get their permanence counts decremented by permanenceDec. If positiveReinforcement
-   * is false, then synapses on the active list get their permanence counts decremented by permanenceDec.
-   * After this step, any synapses in segmentUpdate that do yet exist get added with a permanence count of initialPerm.
-   */
-  public void adaptSegments(boolean positiveReinforcement) {
-    for (DistalDendriteSegment.Update segmentUpdate : segmentUpdates) {
-      DistalDendriteSegment segment;
-      //Only create new segment if there are synapses and reinforcement is positive
-      if (segmentUpdate.isNewSegment() && segmentUpdate.size() > 0 && positiveReinforcement) {
-        segment = new DistalDendriteSegment(this, segmentUpdate.getPredictedBy());
-      } else {
-        segment = segmentUpdate.getTarget();
-      }
-      if (segment != null) {
-        for (Synapse.DistalSynapse distalSynapse : segment.getElementsList()) {
-          if (positiveReinforcement) {
-            if (segmentUpdate.contains(distalSynapse)) {
-              distalSynapse.setPermanence(distalSynapse.getPermanence() + Synapse.DistalSynapse.PERMANENCE_INCREASE);
-            } else {
-              //distalSynapse.setPermanence(distalSynapse.getPermanence() - Synapse.DistalSynapse.PERMANENCE_DECREASE);
-              //By Kirill - only decrease permanence if no column shared
-              List<Cell> columnCells = distalSynapse.getFromCell().getOwner().getElements();
-              boolean keep = false;
-              for (Cell columnCell : columnCells) {
-                for (Synapse.DistalSynapse synapse : segmentUpdate.getElementsList()) {
-                  if (synapse.getFromCell() == columnCell) {
-                    keep = true;
-                    break;
-                  }
-                }
-                if (keep) break;
-              }
-              if (!keep) {
-                distalSynapse.setPermanence(distalSynapse.getPermanence() - Synapse.DistalSynapse.PERMANENCE_DECREASE);
-              }
-            }
-          } else {
-            if (segmentUpdate.contains(distalSynapse)) {
-              distalSynapse.setPermanence(distalSynapse.getPermanence() - Synapse.DistalSynapse.PERMANENCE_DECREASE);
-            }
-          }
-        }
-        for (Synapse.DistalSynapse distalSynapse : segmentUpdate.getElementsList()) {
-          if (!segment.contains(distalSynapse)) {
-            segment.addElement(distalSynapse);
-          }
-        }
-      }
-      //DELETE processed segmentUpdate
-      //this.segmentUpdates.remove(segmentUpdate);
-    }
-    //Clear segmentUpdates after adaption;
-    this.segmentUpdates.clear();
-    fireUpdatesChange();
-    //fireSegmentsChange();
-  }
-
-  private void populateRelatedSegments(DistalDendriteSegment segment, Set<DistalDendriteSegment> related) {
-    for (DistalDendriteSegment relatedSegment : elementList) {
-      if (relatedSegment.predictedBy == segment) {
-        related.add(relatedSegment);
-        populateRelatedSegments(relatedSegment, related);
-        break;
-      }
-    }
-  }
 
 
   /*Custom events implementation*/
@@ -469,14 +211,14 @@ public class Cell extends Composite<Column, DistalDendriteSegment>{
     _segmentsChangeEventListeners.remove(listener);
   }
 
-  private synchronized void fireUpdatesChange() {
+  public synchronized void fireUpdatesChange() {
     SegmentsChangeEvent event = new SegmentsChangeEvent(this);
     for (SegmentsChangeEventListener segmentsChangeEventListener : _segmentsChangeEventListeners) {
       segmentsChangeEventListener.onUpdatesChange(event);
     }
   }
 
-  private synchronized void fireSegmentsChange() {
+  public synchronized void fireSegmentsChange() {
     SegmentsChangeEvent event = new SegmentsChangeEvent(this);
     for (SegmentsChangeEventListener segmentsChangeEventListener : _segmentsChangeEventListeners) {
       segmentsChangeEventListener.onSegmentsChange(event);
@@ -544,31 +286,14 @@ public class Cell extends Composite<Column, DistalDendriteSegment>{
   }
 
   public static class Config {
-    private final int newSynapseCount;
-    private final int activationThreshold;
-    private final int minThreshold;
     private final int amountOfSynapses;
     private final int timeSteps;
 
-    public Config(int newSynapseCount, int activationThreshold, int minThreshold, int amountOfSynapses, int timeSteps) {
-      this.newSynapseCount = newSynapseCount;
-      this.activationThreshold = activationThreshold;
-      this.minThreshold = minThreshold;
+    public Config(int amountOfSynapses, int timeSteps) {
       this.amountOfSynapses = amountOfSynapses;
       this.timeSteps = timeSteps;
     }
 
-    public int getNewSynapseCount() {
-      return newSynapseCount;
-    }
-
-    public int getActivationThreshold() {
-      return activationThreshold;
-    }
-
-    public int getMinThreshold() {
-      return minThreshold;
-    }
 
     public int getAmountOfSynapses() {
       return amountOfSynapses;
