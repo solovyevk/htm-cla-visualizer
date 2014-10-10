@@ -12,6 +12,7 @@ import htm.model.Cell;
 import htm.model.DistalDendriteSegment;
 import htm.model.Layer;
 import htm.model.Synapse;
+import htm.model.algorithms.temporal.TemporalPooler;
 import htm.utils.UIUtils;
 import htm.visualizer.surface.CellSurface;
 import htm.visualizer.surface.LayerColumnsVerticalView;
@@ -371,6 +372,7 @@ public class TemporalInfo extends JPanel {
     }
 
     @Override public Object getValueAt(int rowIndex, int columnIndex) {
+      TemporalPooler currentLayerTemporalPooler =  getLayer().getTemporalPooler();
       Object value = null;
       if (segments != null) {
         DistalDendriteSegment row = segments.get(rowIndex);
@@ -383,10 +385,10 @@ public class TemporalInfo extends JPanel {
               value = row.isSequenceSegment();
               break;
             case 2:
-              value = row.segmentActive(Cell.NOW, Cell.State.ACTIVE, getLayer().getTemporalPooler().getActivationThreshold());
+              value = currentLayerTemporalPooler.segmentActive(row, Cell.NOW, Cell.State.ACTIVE);
               break;
             case 3:
-              value = row.segmentActive(Cell.NOW, Cell.State.LEARN, getLayer().getTemporalPooler().getActivationThreshold());
+              value = currentLayerTemporalPooler.segmentActive(row, Cell.NOW, Cell.State.LEARN);
               break;
             case 4:
               value = row.getPredictedBy() == null ? "R" : segments.indexOf(row.getPredictedBy()) + "";

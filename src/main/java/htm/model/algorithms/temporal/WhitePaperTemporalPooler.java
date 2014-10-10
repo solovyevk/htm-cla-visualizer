@@ -1,11 +1,3 @@
-/**
- * Copyright (c) 2011, Peace Technology, Inc.
- * $Author:$
- * $Revision:$
- * $Date:$
- * $NoKeywords$
- */
-
 package htm.model.algorithms.temporal;
 
 import htm.model.*;
@@ -125,7 +117,7 @@ public class WhitePaperTemporalPooler extends TemporalPooler {
         if (segment != null && segment.isSequenceSegment()) {
           buPredicted = true;
           cell.setActiveState(true);
-          if (segment.segmentActive(Cell.BEFORE, Cell.State.LEARN, this.getActivationThreshold())) {
+          if (segmentActive(segment, Cell.BEFORE, Cell.State.LEARN)) {
             lcChosen = true;
             cell.setLearnState(true);
             break;
@@ -167,9 +159,9 @@ public class WhitePaperTemporalPooler extends TemporalPooler {
   public void computeCellsPredictiveStateForColumn(Column currentColumn) {
     for (Cell cell : currentColumn.getElementsList()) {
       for (DistalDendriteSegment segment : cell.getSegments()) {
-        if (segment.segmentActive(Cell.NOW, Cell.State.ACTIVE, this.getActivationThreshold())) {
+        if (segmentActive(segment, Cell.NOW, Cell.State.ACTIVE)) {
           //By Kirill - if segment is seq it also should be in learning state to predict
-          if (segment.isSequenceSegment() && !segment.segmentActive(Cell.NOW, Cell.State.LEARN, this.getActivationThreshold())) {
+          if (segment.isSequenceSegment() && !segmentActive(segment, Cell.NOW, Cell.State.LEARN)) {
             continue;
           }
           //By Kirill
@@ -237,7 +229,7 @@ public class WhitePaperTemporalPooler extends TemporalPooler {
               @Override
               public boolean apply(
                       DistalDendriteSegment segment) {
-                return segment.segmentActive(time, state, self.getActivationThreshold());
+                return segmentActive(segment, time, state);
               }
             });
     Collections.sort(activeSegments, new Comparator<DistalDendriteSegment>() {
@@ -347,6 +339,7 @@ public class WhitePaperTemporalPooler extends TemporalPooler {
     return segmentList.size() > 0 && segmentList.get(segmentList.size() - 1).getActiveCellSynapses(
             time).size() > this.getMinThreshold() ? segmentList.get(segmentList.size() - 1) : null;
   }
+
 
   /**
    * If the segment is NULL, then a new segment is to be added, otherwise
@@ -470,8 +463,6 @@ public class WhitePaperTemporalPooler extends TemporalPooler {
           }
         }
       }
-      //DELETE processed segmentUpdate
-      //this.segmentUpdates.remove(segmentUpdate);
     }
     //Clear segmentUpdates after adaption;
     currentCell.getSegmentUpdates().clear();

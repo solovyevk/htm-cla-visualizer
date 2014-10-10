@@ -8,6 +8,8 @@
 
 package htm.model.algorithms.temporal;
 
+import htm.model.Cell;
+import htm.model.DistalDendriteSegment;
 import htm.model.Layer;
 
 public abstract class TemporalPooler {
@@ -33,14 +35,25 @@ public abstract class TemporalPooler {
    */
   protected int minThreshold;
 
+  protected Layer layer;
+  protected boolean learningMode = true;
+
   protected TemporalPooler(Config cfg) {
     this.newSynapseCount = cfg.getNewSynapseCount();
     this.activationThreshold = cfg.getActivationThreshold();
     this.minThreshold = cfg.getMinThreshold();
   }
 
-  protected Layer layer;
-  protected boolean learningMode = true;
+  /**
+     * WP
+     * segmentActive(s, t, state)
+     * <p/>
+     * This routine returns true if the number of connected synapses on segments that are active due to the given
+     * state at time t is greater than activationThreshold. The parameter state can be activeState, or learnState.
+     */
+    public boolean segmentActive(DistalDendriteSegment segment, int time, Cell.State state) {
+      return segment.getConnectedWithStateCell(time, state).size() > activationThreshold;
+    }
 
   public boolean isLearningMode() {
     return learningMode;

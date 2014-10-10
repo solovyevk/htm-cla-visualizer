@@ -112,9 +112,9 @@ public class Column extends Element<Layer, Cell>{
 
   private Map<Double, List<Column>> neighbors_cache = new HashMap<Double, List<Column>>();
 
-  public Column(Layer region, int columnIndex, Point columnGridPosition) {
-    super(region, columnGridPosition, columnIndex);
-    for (int i = 0; i < region.getCellsInColumn(); i++) {
+  public Column(Layer layer, int columnIndex, Point columnGridPosition) {
+    super(layer, columnGridPosition, columnIndex);
+    for (int i = 0; i < layer.getCellsInColumn(); i++) {
       this.elementList.add(new Cell(this, i));
     }
   }
