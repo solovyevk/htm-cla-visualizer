@@ -1,6 +1,8 @@
 package htm.visualizer;
 
 import htm.model.*;
+import htm.model.algorithms.spatial.SpatialPooler;
+import htm.model.algorithms.spatial.WhitePaperSpatialPooler;
 import htm.model.algorithms.temporal.TemporalPooler;
 import htm.model.algorithms.temporal.WhitePaperTemporalPooler;
 import htm.utils.UIUtils;
@@ -75,9 +77,6 @@ public class HTMGraphicInterface extends JPanel {
   public static double DISTAL_SYNAPSE_PERMANENCE_DECREASE = 0.005;
 
 
-  static {
-    Column.BOOST_RATE = BOOST_RATE;
-  }
 
   private java.util.List<boolean[]> patterns = new ArrayList<boolean[]>();
 
@@ -86,12 +85,14 @@ public class HTMGraphicInterface extends JPanel {
   private HTMProcess process;
 
   private WhitePaperTemporalPooler temporalPooler;
+  private SpatialPooler spatialPooler;
   private Layer layer;
   private final LayerSlicedHorizontalView slicedView;
   private final ControlPanel control;
   private final SensoryInputSurface sensoryInputSurface;
   private final ColumnSDRSurface sdrInput;
   private SpatialInfo spatialInfo;
+
   private TemporalInfo temporalInfo;
   private SelectedDetails detailsInfo;
   //Need this to ensure sliced view update before layer cells reset for next step
@@ -103,12 +104,15 @@ public class HTMGraphicInterface extends JPanel {
                     new TemporalPooler.Config(NEW_SYNAPSE_COUNT,
                                               ACTIVATION_THRESHOLD,
                                               MIN_THRESHOLD),
+                    new SpatialPooler.Config(MINIMAL_OVERLAP,
+                                             DESIRED_LOCAL_ACTIVITY,
+                                             BOOST_RATE
+                                             ),
                     new Layer.Config(new Dimension(HORIZONTAL_COLUMN_NUMBER, VERTICAL_COLUMN_NUMBER),
                                      new Dimension(SENSORY_INPUT_WIDTH, SENSORY_INPUT_HEIGHT), INPUT_RADIUS,
                                      LEARNING_RADIUS,
                                      false, CELLS_PER_COLUMN),
-                    new Column.Config(AMOUNT_OF_PROXIMAL_SYNAPSES,
-                                      MINIMAL_OVERLAP, DESIRED_LOCAL_ACTIVITY, BOOST_RATE),
+                    new Column.Config(AMOUNT_OF_PROXIMAL_SYNAPSES),
                     new Cell.Config(AMOUNT_OF_DISTAL_SYNAPSES,
                                     TIME_STEPS),
                     new Synapse.Config(PROXIMAL_SYNAPSE_CONNECTED_PERMANENCE, PROXIMAL_SYNAPSE_PERMANENCE_INCREASE,
@@ -127,6 +131,7 @@ public class HTMGraphicInterface extends JPanel {
     //Initialize layer and all related UI
     this.layer = new Layer(cfg.getRegionConfig());
     this.temporalPooler = (WhitePaperTemporalPooler)new WhitePaperTemporalPooler(cfg.getTemporalPoolerConfig()).setLayer(layer);
+    this.spatialPooler = (SpatialPooler)new WhitePaperSpatialPooler(cfg.getSpatialPoolerConfig()).setLayer(layer);
     this.sensoryInputSurface = new SensoryInputSurface(layer.getInputSpace());
     this.sdrInput = new ColumnSDRSurface(layer);
     this.slicedView = new LayerSlicedHorizontalView(layer) {
@@ -384,16 +389,18 @@ public class HTMGraphicInterface extends JPanel {
 
 
   Config getParameters() {
-    return new Config(patterns, new WhitePaperTemporalPooler.Config(temporalPooler.getNewSynapseCount(),
+    return new Config(patterns,
+                      new TemporalPooler.Config(temporalPooler.getNewSynapseCount(),
                                                           temporalPooler.getActivationThreshold(),
                                                           temporalPooler.getMinThreshold()),
+                      new SpatialPooler.Config(spatialPooler.getMinimalOverlap(),
+                                               spatialPooler.getDesiredLocalActivity(),
+                                               spatialPooler.getBoostRate()),
                       new Layer.Config(layer.getDimension(), layer.getInputSpaceDimension(),
                                        layer.getInputRadius(), layer.getLearningRadius(),
                                        layer.isSkipSpatial(), layer.getCellsInColumn()),
 
-                      new Column.Config(Column.AMOUNT_OF_PROXIMAL_SYNAPSES,
-                                        Column.MIN_OVERLAP,
-                                        Column.DESIRED_LOCAL_ACTIVITY, Column.BOOST_RATE),
+                      new Column.Config(Column.AMOUNT_OF_PROXIMAL_SYNAPSES),
                       new Cell.Config(Cell.AMOUNT_OF_SYNAPSES,
                                       Cell.TIME_STEPS),
                       new Synapse.Config(Synapse.ProximalSynapse.CONNECTED_PERMANENCE,
@@ -535,11 +542,11 @@ public class HTMGraphicInterface extends JPanel {
 
       spatialLearningAction = new AbstractAction("Learn Spat") {
         @Override public void actionPerformed(ActionEvent e) {
-          layer.setSpatialLearning(!layer.getSpatialLearning());
+          spatialPooler.setLearningMode(!spatialPooler.isLearningMode());
         }
 
       };
-      spatialLearningAction.putValue(Action.SELECTED_KEY, layer.getSpatialLearning());
+      spatialLearningAction.putValue(Action.SELECTED_KEY, spatialPooler.isLearningMode());
 
       temporalLearningAction = new AbstractAction("Learn Temp") {
         @Override public void actionPerformed(ActionEvent e) {
@@ -659,7 +666,7 @@ public class HTMGraphicInterface extends JPanel {
 
   public void addPattern() {
     patterns.add(sensoryInputSurface.getSensoryInputValues());
-    layer.performSpatialPooling();
+    spatialPooler.execute();
     temporalPooler.execute();
     process.sendUpdateNotification();
     this.repaint();
@@ -724,13 +731,13 @@ public class HTMGraphicInterface extends JPanel {
         }
         if (!temporalSplit) {
           LOG.debug("Start step #" + process.getCycle() + ", " + process.currentPatternIndex);
-          layer.performSpatialPooling();
+          spatialPooler.execute();
           temporalPooler.execute();
         } else {
           switch (temporalPhasePointer) {
             case 0: {
               LOG.debug("Start step #" + process.getCycle() + ", " + process.currentPatternIndex);
-              layer.performSpatialPooling();
+              spatialPooler.execute();
               temporalPooler.nextTimeStep();
               temporalPooler.phaseOne();
               temporalPhasePointer = 1;
@@ -818,6 +825,7 @@ public class HTMGraphicInterface extends JPanel {
   public static class Config {
     private final java.util.List<boolean[]> patterns;
     private final TemporalPooler.Config temporalPoolerConfig;
+    private final SpatialPooler.Config spatialPoolerConfig;
     private final Layer.Config regionConfig;
     private final Column.Config columnConfig;
     private final Cell.Config cellConfig;
@@ -825,13 +833,14 @@ public class HTMGraphicInterface extends JPanel {
     private final Synapse.Config distalSynapseConfig;
 
 
-    public Config(List<boolean[]> patterns, TemporalPooler.Config temporalPoolerConfig, Layer.Config regionConfig,
+    public Config(List<boolean[]> patterns, TemporalPooler.Config temporalPoolerConfig, SpatialPooler.Config spatialPoolerConfig, Layer.Config regionConfig,
                   Column.Config columnConfig,
                   Cell.Config cellConfig,
                   Synapse.ProximalSynapse.Config proximalSynapseConfig,
                   Synapse.DistalSynapse.Config distalSynapseConfig) {
       this.patterns = patterns;
       this.temporalPoolerConfig = temporalPoolerConfig;
+      this.spatialPoolerConfig = spatialPoolerConfig;
       this.regionConfig = regionConfig;
       this.columnConfig = columnConfig;
       this.cellConfig = cellConfig;
@@ -866,6 +875,10 @@ public class HTMGraphicInterface extends JPanel {
 
     public TemporalPooler.Config getTemporalPoolerConfig() {
       return temporalPoolerConfig;
+    }
+
+    public SpatialPooler.Config getSpatialPoolerConfig() {
+      return spatialPoolerConfig;
     }
   }
 

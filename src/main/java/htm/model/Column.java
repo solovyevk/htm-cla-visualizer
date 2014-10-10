@@ -13,25 +13,32 @@ import java.awt.*;
 import java.util.*;
 import java.util.List;
 
-public class Column extends Element<Layer, Cell>{
+public class Column extends Element<Layer, Cell> {
   private static final Log LOG = LogFactory.getLog(Column.class);
   public static int AMOUNT_OF_PROXIMAL_SYNAPSES = 30;
-  /**
-   * The amount that is added to a Column's Boost value in a single time step, when it is being boosted.
-   */
-  public static double BOOST_RATE = 0.01;
-  /**
-   * WP
-   * A minimum number of inputs that must be active for a
-   * column to be considered during the inhibition step.
-   */
-  public static int MIN_OVERLAP = 2;
-  /**
-   * WP
-   * desiredLocalActivity A parameter controlling the number of columns that
-   * will be winners after the inhibition step.
-   */
-  public static int DESIRED_LOCAL_ACTIVITY = 2;
+
+  private static final CollectionUtils.Predicate<Synapse.ProximalSynapse> ACTIVE_CONNECTED_PROXIMAL_SYNAPSES_PREDICATE = new CollectionUtils.Predicate<Synapse.ProximalSynapse>() {
+    @Override
+    public boolean apply(Synapse.ProximalSynapse synapse) {
+      return synapse.isConnected(
+              Synapse.ProximalSynapse.CONNECTED_PERMANENCE) && synapse.getConnectedSensoryInput().getValue();
+    }
+  };
+
+  private static final CollectionUtils.Predicate<Synapse.ProximalSynapse> CONNECTED_PROXIMAL_SYNAPSES_PREDICATE = new CollectionUtils.Predicate<Synapse.ProximalSynapse>() {
+    @Override
+    public boolean apply(Synapse.ProximalSynapse synapse) {
+      return synapse.isConnected(Synapse.ProximalSynapse.CONNECTED_PERMANENCE);
+    }
+  };
+
+  private static final Comparator<Column> ACTIVE_DUTY_CYCLE_COMPARATOR = new Comparator<Column>() {
+    @Override public int compare(Column column1, Column column2) {
+      Double activeDutyCycle1 = column1.getActiveDutyCycle(), activeDutyCycle2 = column2.getActiveDutyCycle();
+      return activeDutyCycle2.compareTo(activeDutyCycle1);
+    }
+  };
+
 
   @Override
   public boolean addAll(List<Cell> all) {
@@ -55,54 +62,17 @@ public class Column extends Element<Layer, Cell>{
    */
   private static final int COLUMN_CYCLE_BUFFER_SIZE = 1000;
 
-  private static final CollectionUtils.Predicate<Synapse.ProximalSynapse> ACTIVE_CONNECTED_PROXIMAL_SYNAPSES_PREDICATE = new CollectionUtils.Predicate<Synapse.ProximalSynapse>() {
-    @Override
-    public boolean apply(Synapse.ProximalSynapse synapse) {
-      return synapse.isConnected(
-              Synapse.ProximalSynapse.CONNECTED_PERMANENCE) && synapse.getConnectedSensoryInput().getValue();
-    }
-  };
-
-  private static final CollectionUtils.Predicate<Synapse.ProximalSynapse> CONNECTED_PROXIMAL_SYNAPSES_PREDICATE = new CollectionUtils.Predicate<Synapse.ProximalSynapse>() {
-    @Override
-    public boolean apply(Synapse.ProximalSynapse synapse) {
-      return synapse.isConnected(Synapse.ProximalSynapse.CONNECTED_PERMANENCE);
-    }
-  };
-
-  private static final Comparator<Column> OVERLAP_COMPARATOR = new Comparator<Column>() {
-    @Override public int compare(Column column1, Column column2) {
-      Double overlap1 = column1.getOverlap(), overlap2 = column2.getOverlap();
-      return overlap2.compareTo(overlap1);
-    }
-  };
-
-  private static final Comparator<Column> ACTIVE_DUTY_CYCLE_COMPARATOR = new Comparator<Column>() {
-    @Override public int compare(Column column1, Column column2) {
-      Double activeDutyCycle1 = column1.getActiveDutyCycle(), activeDutyCycle2 = column2.getActiveDutyCycle();
-      return activeDutyCycle2.compareTo(activeDutyCycle1);
-    }
-  };
 
   public static void updateFromConfig(Config columnCfg) {
     Column.AMOUNT_OF_PROXIMAL_SYNAPSES = columnCfg.getAmountOfProximalSynapses();
-    Column.MIN_OVERLAP = columnCfg.getMinOverlap();
-    Column.DESIRED_LOCAL_ACTIVITY = columnCfg.getDesiredLocalActivity();
-    Column.BOOST_RATE = columnCfg.getBoostRate();
   }
 
 
-
   private final List<Synapse.ProximalSynapse> proximalSynapses = new ArrayList<Synapse.ProximalSynapse>();
-  private int minimalOverlap = MIN_OVERLAP;
   private double boost = 1.0;
 
 
-  private ColumnBufferedState<Double> overlap = new ColumnBufferedState<Double>(0.0) {
-    @Override protected boolean positiveCondition(Double overlap) {
-      return overlap >= minimalOverlap;
-    }
-  };
+  private ColumnBufferedState<Double> overlap; //Need to create it later in constructor to access Column instance
 
   private ColumnBufferedState<Boolean> active = new ColumnBufferedState<Boolean>(false) {
     @Override protected boolean positiveCondition(Boolean active) {
@@ -112,13 +82,29 @@ public class Column extends Element<Layer, Cell>{
 
   private Map<Double, List<Column>> neighbors_cache = new HashMap<Double, List<Column>>();
 
-  public Column(Layer layer, int columnIndex, Point columnGridPosition) {
+  public Column(final Layer layer, int columnIndex, Point columnGridPosition) {
     super(layer, columnGridPosition, columnIndex);
     for (int i = 0; i < layer.getCellsInColumn(); i++) {
       this.elementList.add(new Cell(this, i));
     }
+
+
+    overlap = new ColumnBufferedState<Double>(0.0) {
+
+      @Override protected boolean positiveCondition(Double overlap) {
+         //TODO not sure if Column should directly reference algorithmic classes: Temporal/Spatial Pooler,
+         //TODO but having TP properties in column as static prop even worse
+        if(layer.getSpatialPooler() == null){
+          throw new RuntimeException("Spatial Pooler should be defined");
+        }
+        return overlap >= layer.getSpatialPooler().getMinimalOverlap();
+      }
+    };
   }
 
+  public void updateOverlap(double currentOverLap) {
+    overlap.addState(currentOverLap);
+  }
 
 
   /*
@@ -177,97 +163,12 @@ public class Column extends Element<Layer, Cell>{
 
   /**
    * WP
-   * SPATIAL POOLING
-   * <p/>
-   * Phase 1: Overlap
-   * Given an input vector, the first phase calculates the overlap of each column with that vector.
-   * The overlap for each column is simply the number of connected synapses with active inputs,
-   * multiplied by its boost. If this value is below minOverlap, we set the overlap score to zero.
-   *
-   * @return
-   */
-  public double computeOverlap() {
-    double currentOverLap = getActiveConnectedSynapses().size();
-    if (currentOverLap < minimalOverlap) {
-      currentOverLap = 0;
-    } else {
-      currentOverLap = currentOverLap * getBoost();
-    }
-    overlap.addState(currentOverLap);
-    return currentOverLap;
-  }
-
-  /**
-   * WP
-   * SPATIAL POOLING
-   * <p/>
-   * Phase 2: Inhibition
-   * The second phase calculates which columns remain as winners after the inhibition step.
-   * desiredLocalActivity is a parameter that controls the number of columns that end up winning.
-   * For example, if desiredLocalActivity is 10, a column will be a winner if its overlap score is
-   * greater than the score of the 10'th highest column within its inhibition radius.
-   *
-   * @param inhibitionRadius
-   * @return
-   */
-
-  public boolean computeActiveDoInhibition(double inhibitionRadius) {
-    double minLocalActivity = kthScore(getNeighbors(inhibitionRadius), DESIRED_LOCAL_ACTIVITY);
-    this.setActive(this.getOverlap() > 0 && this.getOverlap() >= minLocalActivity);
-    return this.isActive();
-  }
-
-  /**
-   * WP
-   * SPATIAL POOLING
-   * <p/>
-   * Phase 3: Learning
-   * The third phase performs learning; it updates the permanence values of all synapses as necessary, as well as the boost and inhibition radius.
-   * <p/>
-   * First part
-   * The main learning rule is implemented in lines 20-26. For winning columns, if a synapse is active, its permanence value is incremented, otherwise it is decremented. Permanence values are constrained to be between 0 and 1.
-   *
-   * @param inhibitionRadius
-   */
-
-  public void learnSpatialForActive(double inhibitionRadius) {
-    if (isActive()) {
-      List<Synapse.ProximalSynapse> potentialSynapses = getPotentialSynapses();
-      for (Synapse.ProximalSynapse potentialSynapse : potentialSynapses) {
-        if (potentialSynapse.getConnectedSensoryInput().getValue()) {
-          potentialSynapse.setPermanence(
-                  potentialSynapse.getPermanence() + Synapse.ProximalSynapse.PERMANENCE_INCREASE);
-        } else {
-          potentialSynapse.setPermanence(
-                  potentialSynapse.getPermanence() - Synapse.ProximalSynapse.PERMANENCE_DECREASE);
-        }
-      }
-    }
-  }
-
-  /**
-   * Second part
-   * Lines 28-36 implement boosting. There are two separate boosting mechanisms in place to help a column learn connections. If a column does not win often enough (as measured by activeDutyCycle), its overall boost value is increased (line 30-32). Alternatively, if a column's connected synapses do not overlap well with any inputs often enough (as measured by overlapDutyCycle), its permanence values are boosted (line 34-36). Note: once learning is turned off, boost(c) is frozen.
-   * Finally, at the end of Phase 3 the inhibition radius is recomputed (line 38).
-   *
-   * @param inhibitionRadius
-   */
-  public void boostWeak(double inhibitionRadius) {
-    double minDutyCycle = 0.01 * getMaxDutyCycle(inhibitionRadius);
-    updateBoost(minDutyCycle);
-    if (this.getOverlapDutyCycle() < minDutyCycle) {
-      increasePermanence(0.1 * Synapse.ProximalSynapse.CONNECTED_PERMANENCE);
-    }
-  }
-
-  /**
-   * WP
    * increasePermanence(c, s)
    * Increase the permanence value of every synapse in column c by a scale factor s.
    *
    * @param increaseBy
    */
-  private void increasePermanence(double increaseBy) {
+  public void increasePermanence(double increaseBy) {
     //List<Synapse.ProximalSynapse> proximalSynapses = this.getPotentialSynapses();
     for (Synapse.ProximalSynapse proximalSynapse : proximalSynapses) {
       proximalSynapse.setPermanence(proximalSynapse.getPermanence() + increaseBy);
@@ -275,37 +176,6 @@ public class Column extends Element<Layer, Cell>{
 
   }
 
-  /**
-   * WP
-   * boostFunction(c)
-   * Returns the boost value of a column. The boost value is a scalar >= 1.
-   * If activeDutyCycle(c) is above minDutyCycle(c), the boost value is 1.
-   * The boost increases linearly once the column's activeDutyCyle starts falling below its minDutyCycle.
-   *
-   * @param minDutyCycle
-   * @return
-   */
-  private void updateBoost(double minDutyCycle) {
-    if (this.getActiveDutyCycle() > minDutyCycle) {
-      this.boost = 1.0;
-    } else {
-      this.boost += BOOST_RATE;
-    }
-  }
-
-  /**
-   * WP
-   * kthScore(cols, k)
-   * Given the list of columns, return the k'th highest overlap value.
-   */
-  private double kthScore(List<Column> neighbors, int desiredLocalActivity) {
-    Collections.sort(neighbors, OVERLAP_COMPARATOR);
-    if (desiredLocalActivity > neighbors.size()) {
-      desiredLocalActivity = neighbors.size();
-    }
-    return neighbors.get(desiredLocalActivity - 1).getOverlap();
-
-  }
 
   /**
    * overlap(c) The spatial pooler overlap of column c with a particular
@@ -350,7 +220,7 @@ public class Column extends Element<Layer, Cell>{
   }
 
 
-  void setActive(boolean active) {
+  public void setActive(boolean active) {
     this.active.addState(active);
   }
 
@@ -383,6 +253,25 @@ public class Column extends Element<Layer, Cell>{
   */
   public double getBoost() {
     return boost;
+  }
+
+
+  /**
+   * WP
+   * boostFunction(c)
+   * Returns the boost value of a column. The boost value is a scalar >= 1.
+   * If activeDutyCycle(c) is above minDutyCycle(c), the boost value is 1.
+   * The boost increases linearly once the column's activeDutyCyle starts falling below its minDutyCycle.
+   *
+   * @param minDutyCycle
+   * @return
+   */
+  public void updateBoost(double minDutyCycle, double boostRate) {
+    if (this.getActiveDutyCycle() > minDutyCycle) {
+      this.boost = 1.0;
+    } else {
+      this.boost += boostRate;
+    }
   }
 
   /*
@@ -436,7 +325,6 @@ public class Column extends Element<Layer, Cell>{
   }
 
 
-
   public void nextTimeStep() {
     for (Cell cell : this.getElementsList()) {
       cell.nextTimeStep();
@@ -480,33 +368,12 @@ public class Column extends Element<Layer, Cell>{
 
   public static class Config {
     private final int amountOfProximalSynapses;
-    private final int minOverlap;
-    private final int desiredLocalActivity;
-    private final double boostRate;
-
-    public Config(int amountOfProximalSynapses, int minOverlap, int desiredLocalActivity,
-                  double boostRate) {
+    public Config(int amountOfProximalSynapses) {
       this.amountOfProximalSynapses = amountOfProximalSynapses;
-      this.minOverlap = minOverlap;
-      this.desiredLocalActivity = desiredLocalActivity;
-      this.boostRate = boostRate;
     }
-
 
     public int getAmountOfProximalSynapses() {
       return amountOfProximalSynapses;
-    }
-
-    public int getMinOverlap() {
-      return minOverlap;
-    }
-
-    public int getDesiredLocalActivity() {
-      return desiredLocalActivity;
-    }
-
-    public double getBoostRate() {
-      return boostRate;
     }
   }
 }

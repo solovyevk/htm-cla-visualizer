@@ -1,5 +1,6 @@
 package htm.model;
 
+import htm.model.algorithms.spatial.SpatialPooler;
 import htm.model.algorithms.temporal.TemporalPooler;
 import htm.model.space.BaseSpace;
 import htm.model.space.InputSpace;
@@ -8,7 +9,6 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import java.awt.*;
-import java.util.ArrayList;
 import java.util.List;
 
 
@@ -47,6 +47,7 @@ public class Layer extends BaseSpace<Region, Column> {
 
   //TODO not sure if Layer should directly reference algorithmic classes: Temporal/Spatial Pooler
   private TemporalPooler temporalPooler;
+  private SpatialPooler spatialPooler;
 
   public TemporalPooler getTemporalPooler() {
     return temporalPooler;
@@ -56,7 +57,14 @@ public class Layer extends BaseSpace<Region, Column> {
     this.temporalPooler = temporalPooler;
   }
 
-  private boolean spatialLearning = true;
+  public SpatialPooler getSpatialPooler() {
+    return spatialPooler;
+  }
+
+  public void setSpatialPooler(SpatialPooler spatialPooler) {
+    this.spatialPooler = spatialPooler;
+  }
+
 
   public Layer(Config layerCfg) {
     super(layerCfg.getRegionDimension().width, layerCfg.getRegionDimension().height);
@@ -98,14 +106,6 @@ public class Layer extends BaseSpace<Region, Column> {
 
   public Point convertInputPositionToColumnSpace(Point inputPosition) {
     return convertPositionToOtherSpace(inputPosition, inputSpace.getDimension(), this.getDimension());
-  }
-
-  public boolean getSpatialLearning() {
-    return spatialLearning;
-  }
-
-  public void setSpatialLearning(boolean value) {
-    this.spatialLearning = value;
   }
 
 
@@ -163,76 +163,6 @@ public class Layer extends BaseSpace<Region, Column> {
     }
     return sum / getColumns().size();
   }
-
-  /**
-   * Performs spatial pooling for the current input in this Region.
-   * The result will be a subset of Columns being set as active as well
-   * as (proximal) synapses in all Columns having updated permanences and boosts, and
-   * the Region will update inhibitionRadius.
-   * <p/>
-   * WP
-   * Phase 1:
-   * Compute the overlap with the current input for each column. Given an input
-   * vector, the first phase calculates the overlap of each column with that
-   * vector. The overlap for each column is simply the number of connected
-   * synapses with active inputs, multiplied by its boost. If this value is
-   * below minOverlap, we set the overlap score to zero.
-   * <p/>
-   * Phase 2:
-   * Compute the winning columns after inhibition. The second phase calculates
-   * which columns remain as winners after the inhibition step.
-   * desiredLocalActivity is a parameter that controls the number of columns
-   * that end up winning. For example, if desiredLocalActivity is 10, a column
-   * will be a winner if its overlap score is greater than the score of the
-   * 10'th highest column within its inhibition radius.
-   * <p/>
-   * Phase 3:
-   * Update synapse permanence and internal variables.The third phase performs
-   * learning; it updates the permanence values of all synapses as necessary,
-   * as well as the boost and inhibition radius. The main learning rule is
-   * implemented in lines 20-26. For winning columns, if a synapse is active,
-   * its permanence value is incremented, otherwise it is decremented. Permanence
-   * values are constrained to be between 0 and 1.
-   * Lines 28-36 implement boosting. There are two separate boosting mechanisms
-   * in place to help a column learn connections. If a column does not win often
-   * enough (as measured by activeDutyCycle), its overall boost value is
-   * increased (line 30-32). Alternatively, if a column's connected synapses do
-   * not overlap well with any inputs often enough (as measured by
-   * overlapDutyCycle), its permanence values are boosted (line 34-36).
-   */
-
-
-  public void performSpatialPooling() {
-    double inhibitionRadius = getAverageReceptiveFieldSize();
-    List<Column> regionColumns = getColumns();
-    if (skipSpatial) {
-      for (Column regionColumn : regionColumns) {
-        regionColumn.setActive(inputSpace.getInputValue(regionColumn.getIndex()));
-      }
-    } else {
-      List<Column> activeColumns = new ArrayList<Column>();
-      //Phase 1: Compute the overlap
-      for (Column column : regionColumns) {
-        column.computeOverlap();
-      }
-      //Phase 2:Compute the winning columns after inhibition
-      for (Column column : regionColumns) {
-        if (column.computeActiveDoInhibition(inhibitionRadius)) {
-          activeColumns.add(column);
-        }
-      }
-      // Phase 3: Update synapse permanence and internal variables
-      if (getSpatialLearning()) {
-        for (Column activeColumn : activeColumns) {
-          activeColumn.learnSpatialForActive(inhibitionRadius);
-        }
-        for (Column column : regionColumns) {
-          column.boostWeak(inhibitionRadius);
-        }
-      }
-    }
-  }
-
 
   public Dimension getInputSpaceDimension() {
     return inputSpace.getDimension();

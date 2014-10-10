@@ -99,6 +99,7 @@ public class Viewer extends JFrame {
           HTMGraphicInterface.Config newCfg = new HTMGraphicInterface.Config(
                   oldCfg.getPatterns(),
                   modCfg.getTemporalPoolerConfig(),
+                  modCfg.getSpatialPoolerConfig(),
                   new Layer.Config(
                           modRegionCfg.getRegionDimension(),
                           modRegionCfg.getSensoryInputDimension(),
@@ -128,6 +129,7 @@ public class Viewer extends JFrame {
         Layer.Config oldRegionCfg = oldCfg.getRegionConfig();
         HTMGraphicInterface.Config newCfg = new HTMGraphicInterface.Config(oldCfg.getPatterns(),
                                                                            oldCfg.getTemporalPoolerConfig(),
+                                                                           oldCfg.getSpatialPoolerConfig(),
                                                                            new Layer.Config(
                                                                                    oldRegionCfg.getRegionDimension(),
                                                                                    oldRegionCfg.getSensoryInputDimension(),
@@ -218,7 +220,7 @@ public class Viewer extends JFrame {
   }
 
   private void initUI() {
-    setTitle("CLA Visualiser");
+    setTitle("CLA Visualizer");
     HTMGraphicInterface.Config cfg;
     InputStream in = getClass().getResourceAsStream("/config.xml");
     try {

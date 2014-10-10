@@ -64,6 +64,7 @@ public class ParametersEditor extends JComponent {
   }
 
   private Parameters.TemporalPoolerParameters temporalPoolerParameters;
+  private Parameters.SpatialPoolerParameters spatialPoolerParameters;
   private Parameters.RegionParameters regionParameters;
   private Parameters.ColumnParameters columnParameters;
   private Parameters.CellParameters cellParameters;
@@ -72,6 +73,7 @@ public class ParametersEditor extends JComponent {
 
   public void setParameters(HTMGraphicInterface.Config params) {
     temporalPoolerParameters.setParameters(params.getTemporalPoolerConfig());
+    spatialPoolerParameters.setParameters(params.getSpatialPoolerConfig());
     regionParameters.setParameters(params.getRegionConfig());
     columnParameters.setParameters(params.getColumnConfig());
     proximalSynapsesParameters.setParameters(params.getProximalSynapseConfig());
@@ -80,7 +82,9 @@ public class ParametersEditor extends JComponent {
   }
 
   public HTMGraphicInterface.Config getParameters() {
-    return new HTMGraphicInterface.Config(null, temporalPoolerParameters.getParameters(),
+    return new HTMGraphicInterface.Config(null,
+                                          temporalPoolerParameters.getParameters(),
+                                          spatialPoolerParameters.getParameters(),
                                           regionParameters.getParameters(),
                                           columnParameters.getParameters(),
                                           cellParameters.getParameters(),
@@ -92,6 +96,7 @@ public class ParametersEditor extends JComponent {
     regionParameters = new Parameters.RegionParameters(params.getRegionConfig());
     columnParameters = new Parameters.ColumnParameters(params.getColumnConfig());
     cellParameters = new Parameters.CellParameters(params.getCellConfig());
+    spatialPoolerParameters = new Parameters.SpatialPoolerParameters(params.getSpatialPoolerConfig());
     temporalPoolerParameters = new Parameters.TemporalPoolerParameters(params.getTemporalPoolerConfig());
     proximalSynapsesParameters = new Parameters.SynapseParameters(params.getProximalSynapseConfig());
     distalSynapsesParameters = new Parameters.SynapseParameters(params.getDistalSynapseConfig());
@@ -112,9 +117,12 @@ public class ParametersEditor extends JComponent {
         c.fill = GridBagConstraints.BOTH;
         c.gridx = 0;
         c.gridy = 0;
-        c.weighty = 5.0;
-        this.add(decorateWithBorder(columnParameters, "Column Parameters"), c);
+        c.weighty = 3.0;
+        this.add(decorateWithBorder(spatialPoolerParameters, "Spatial Pooler"), c);
         c.gridy = 1;
+        c.weighty = 1.0;
+        this.add(decorateWithBorder(columnParameters, "Column Parameters"), c);
+        c.gridy = 2;
         c.weighty = 3.0;
         this.add(decorateWithBorder(proximalSynapsesParameters, "Proximal Synapses"), c);
         return this;

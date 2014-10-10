@@ -12,7 +12,8 @@ import htm.model.Cell;
 import htm.model.Column;
 import htm.model.Layer;
 import htm.model.Synapse;
-import htm.model.algorithms.temporal.WhitePaperTemporalPooler;
+import htm.model.algorithms.spatial.SpatialPooler;
+import htm.model.algorithms.temporal.TemporalPooler;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
@@ -279,17 +280,18 @@ public enum Serializer {
       throw new IllegalArgumentException("Can't find HTM necessary parameters in input file");
     }
     return new HTMGraphicInterface.Config(patterns,
-                                          new WhitePaperTemporalPooler.Config(newSynapseCount,
+                                          new TemporalPooler.Config(newSynapseCount,
                                                                     activationThreshold,
                                                                     minThreshold),
+                                          new SpatialPooler.Config( minOverlap,
+                                                                    desiredLocalActivity,
+                                                                    boostRate),
                                           new Layer.Config(regionDimension, inputSpaceDimension, inputRadius,
                                                            learningRadius,
                                                            skipSpatialPooling, cellsInColumn),
                                           new Column.Config(
-                                                  amountOfProximalSynapses,
-                                                  minOverlap,
-                                                  desiredLocalActivity,
-                                                  boostRate),
+                                                  amountOfProximalSynapses
+                                                 ),
                                           new Cell.Config(
                                                   amountOfDistalSynapses,
                                                   timeSteps
@@ -311,7 +313,8 @@ public enum Serializer {
   }
 
   public void saveHTMParameters(OutputStream out, HTMGraphicInterface.Config parameters) throws Exception {
-    WhitePaperTemporalPooler.Config temporalPoolerCfg = parameters.getTemporalPoolerConfig();
+    TemporalPooler.Config temporalPoolerCfg = parameters.getTemporalPoolerConfig();
+    SpatialPooler.Config spacialPoolerCfg = parameters.getSpatialPoolerConfig();
     Layer.Config regionCfg = parameters.getRegionConfig();
     Column.Config columnCfg = parameters.getColumnConfig();
     Cell.Config cellCfg = parameters.getCellConfig();
@@ -351,11 +354,11 @@ public enum Serializer {
     eventWriter.add(end);
     createNode(eventWriter, AMOUNT_OF_PROXIMAL_SYNAPSES_ELEMENT,
                columnCfg.getAmountOfProximalSynapses() + "");
-    createNode(eventWriter, MIN_OVERLAP_ELEMENT, columnCfg.getMinOverlap() + "");
+    createNode(eventWriter, MIN_OVERLAP_ELEMENT, spacialPoolerCfg.getMinOverlap() + "");
     createNode(eventWriter, DESIRED_LOCAL_ACTIVITY_ELEMENT,
-               columnCfg.getDesiredLocalActivity() + "");
+               spacialPoolerCfg.getDesiredLocalActivity() + "");
     createNode(eventWriter, BOOST_RATE_ELEMENT,
-               columnCfg.getBoostRate() + "");
+               spacialPoolerCfg.getBoostRate() + "");
     eventWriter.add(eventFactory.createEndElement("", "", COLUMN_ELEMENT));
     eventWriter.add(end);
 

@@ -12,6 +12,7 @@ import htm.model.Cell;
 import htm.model.Column;
 import htm.model.Layer;
 import htm.model.Synapse;
+import htm.model.algorithms.spatial.SpatialPooler;
 import htm.model.algorithms.temporal.TemporalPooler;
 import htm.utils.MathUtils;
 import htm.utils.UIUtils;
@@ -236,24 +237,17 @@ public class Parameters {
     }
   }
 
-  static class ColumnParameters extends JPanel {
-    private final Column.Config cfg;
-    private Parameters.IntegerParameter amountOfProximalSynapsesParam;
+  static class SpatialPoolerParameters extends JPanel {
     private Parameters.IntegerParameter minOverlapParam;
     private Parameters.IntegerParameter desiredLocalActivityParam;
     private Parameters.DoubleParameter boostRateParam;
 
-    ColumnParameters(Column.Config cfg) {
-      this.cfg = cfg;
-      setLayout(new SpringLayout());
-      amountOfProximalSynapsesParam = new IntegerParameter(2, 60, cfg.getAmountOfProximalSynapses());
+    SpatialPoolerParameters(SpatialPooler.Config cfg) {
       minOverlapParam = new IntegerParameter(1, 10, cfg.getMinOverlap());
       desiredLocalActivityParam = new IntegerParameter(1, 10, cfg.getDesiredLocalActivity());
       boostRateParam = new Parameters.DoubleParameter(0.005, 0.2, cfg.getBoostRate(), 200);
-      JLabel l = new FixedWidthLabel("N of Proximal Synapses");
-      this.add(l);
-      this.add(amountOfProximalSynapsesParam);
-      l = new FixedWidthLabel("Min Overlap");
+      setLayout(new SpringLayout());
+      JLabel l = new FixedWidthLabel("Min Overlap");
       this.add(l);
       this.add(minOverlapParam);
       l = new FixedWidthLabel("Desired Local Activity");
@@ -263,23 +257,46 @@ public class Parameters {
       this.add(l);
       this.add(boostRateParam);
       UIUtils.makeSpringCompactGrid(this,
-                                    4, 2, //rows, cols
+                                    3, 2, //rows, cols
+                                    6, 6,        //initX, initY
+                                    6, 6);       //xPad, yPad
+    }
+
+    SpatialPooler.Config getParameters() {
+      return new SpatialPooler.Config(minOverlapParam.getValue(),
+                                      desiredLocalActivityParam.getValue(),
+                                      boostRateParam.getValue());
+    }
+
+    void setParameters(SpatialPooler.Config cfg) {
+      minOverlapParam.setValue(cfg.getMinOverlap());
+      desiredLocalActivityParam.setValue(cfg.getDesiredLocalActivity());
+      boostRateParam.setValue(cfg.getBoostRate());
+    }
+  }
+
+  static class ColumnParameters extends JPanel {
+    private Parameters.IntegerParameter amountOfProximalSynapsesParam;
+
+
+    ColumnParameters(Column.Config cfg) {
+      setLayout(new SpringLayout());
+      amountOfProximalSynapsesParam = new IntegerParameter(2, 60, cfg.getAmountOfProximalSynapses());
+      JLabel l = new FixedWidthLabel("N of Proximal Synapses");
+      this.add(l);
+      this.add(amountOfProximalSynapsesParam);
+      UIUtils.makeSpringCompactGrid(this,
+                                    1, 2, //rows, cols
                                     6, 6,        //initX, initY
                                     6, 6);       //xPad, yPad
     }
 
     Column.Config getParameters() {
-      return new Column.Config(amountOfProximalSynapsesParam.getValue(),
-                               minOverlapParam.getValue(),
-                               desiredLocalActivityParam.getValue(),
-                               boostRateParam.getValue());
+      return new Column.Config(amountOfProximalSynapsesParam.getValue());
     }
 
     void setParameters(Column.Config cfg) {
       amountOfProximalSynapsesParam.setValue(cfg.getAmountOfProximalSynapses());
-      minOverlapParam.setValue(cfg.getMinOverlap());
-      desiredLocalActivityParam.setValue(cfg.getDesiredLocalActivity());
-      boostRateParam.setValue(cfg.getBoostRate());
     }
   }
 
@@ -311,8 +328,8 @@ public class Parameters {
 
     TemporalPooler.Config getParameters() {
       return new TemporalPooler.Config(newSynapseCountParam.getValue(),
-                                                 activationThresholdParam.getValue(),
-                                                 minThresholdParam.getValue());
+                                       activationThresholdParam.getValue(),
+                                       minThresholdParam.getValue());
     }
 
     void setParameters(TemporalPooler.Config temporalPoolerCfg) {
