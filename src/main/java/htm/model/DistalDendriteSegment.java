@@ -8,77 +8,66 @@
 
 package htm.model;
 
+import htm.model.fractal.Composite;
 import htm.utils.CollectionUtils;
 
-import java.util.ArrayList;
 import java.util.List;
 
-public class DistalDendriteSegment extends ArrayList<Synapse.DistalSynapse> {
+public class DistalDendriteSegment extends Composite<Cell, Synapse.DistalSynapse> {
 
-  protected final Cell belongsToCell;
   protected final DistalDendriteSegment predictedBy;
 
 
   //We need to check if synapse connected to this cell is already exist before adding new one
-  @Override public boolean add(Synapse.DistalSynapse distalSynapse) {
+  @Override public boolean addElement(Synapse.DistalSynapse distalSynapse) {
     Cell newSynapseCell = distalSynapse.getFromCell();
-    for (Synapse.DistalSynapse existingSynapse : this) {
+    for (Synapse.DistalSynapse existingSynapse : elementList) {
       if (existingSynapse.getFromCell() == newSynapseCell) {
         return false;
       }
     }
     distalSynapse.setSegment(this);
-    return super.add(distalSynapse);
+    return super.addElement(distalSynapse);
   }
 
   @Override public String toString() {
-    StringBuilder result = new StringBuilder().append("Synapses Number:").append(this.size());
+    StringBuilder result = new StringBuilder().append("Synapses Number:").append(this.elementList.size());
     result = result.append("; sequence Segment:").append(this.isSequenceSegment());
-    result.append("; Belongs to Cell:").append(this.belongsToCell);
+    result.append("; Belongs to Cell:").append(this.owner);
     return result.toString();
   }
 
 
   public DistalDendriteSegment(Cell belongsToCell, DistalDendriteSegment predictedBy) {
-    super(Cell.AMOUNT_OF_SYNAPSES);
-    this.belongsToCell = belongsToCell;
+    this.owner = belongsToCell;
     this.predictedBy = predictedBy;
     attachToCell();
   }
 
   protected void attachToCell() {
-    belongsToCell.segments.add(this);
+    owner.addElement(this);
   }
 
   public boolean isSequenceSegment() {
     return predictedBy == null;
   }
 
-  /**
-   * WP
-   * segmentActive(s, t, state)
-   * <p/>
-   * This routine returns true if the number of connected synapses on segment s that are active due to the given
-   * state at time t is greater than activationThreshold. The parameter state can be activeState, or learnState.
-   */
-  public boolean segmentActive(int time, Cell.State state) {
-    List<Synapse.DistalSynapse> res = getConnectedWithStateCell(time, state);
-    return getConnectedWithStateCell(time, state).size() > Cell.ACTIVATION_THRESHOLD;
+  public int size(){return elementList.size();}
+
+  public boolean contains(Synapse.DistalSynapse synapse){
+   return elementList.contains(synapse);
   }
 
+
+
   public List<Synapse.DistalSynapse> getConnectedWithStateCell(int time, Cell.State state) {
-    return CollectionUtils.filter(this, new ConnectedCellStateByTimePredicate(time, state));
+    return CollectionUtils.filter(this.elementList, new ConnectedCellStateByTimePredicate(time, state));
   }
 
   public List<Synapse.DistalSynapse> getActiveCellSynapses(int time) {
-    /*FOR DEBUG*/
-    List<Synapse.DistalSynapse> result = CollectionUtils.filter(this, new ActiveCellByTimePredicate(time));
-    return result;
+    return CollectionUtils.filter(this.elementList, new ActiveCellByTimePredicate(time));
   }
 
-  public Cell getBelongsToCell() {
-    return belongsToCell;
-  }
 
 
   public int predictedInStep() {
@@ -164,7 +153,7 @@ public class DistalDendriteSegment extends ArrayList<Synapse.DistalSynapse> {
 
     @Override
     protected void attachToCell() {
-      this.belongsToCell.getSegmentUpdates().add(this);
+      this.owner.getSegmentUpdates().add(this);
     }
 
     public boolean isNewSegment() {

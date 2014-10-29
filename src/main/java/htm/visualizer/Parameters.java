@@ -10,8 +10,10 @@ package htm.visualizer;
 
 import htm.model.Cell;
 import htm.model.Column;
-import htm.model.Region;
+import htm.model.Layer;
 import htm.model.Synapse;
+import htm.model.algorithms.spatial.SpatialPooler;
+import htm.model.algorithms.temporal.TemporalPooler;
 import htm.utils.MathUtils;
 import htm.utils.UIUtils;
 
@@ -164,7 +166,6 @@ public class Parameters {
   }
 
   static class RegionParameters extends JPanel {
-    private final Region.Config cfg;
     private Parameters.IntegerParameter regionWidthParam;
     private Parameters.IntegerParameter regionHeightParam;
     private Parameters.IntegerParameter inputSpaceWidthParam;
@@ -174,8 +175,7 @@ public class Parameters {
     private Parameters.IntegerParameter cellsInColumnParam;
     private JCheckBox skipSpatialCb;
 
-    RegionParameters(Region.Config cfg) {
-      this.cfg = cfg;
+    RegionParameters(Layer.Config cfg) {
       setLayout(new SpringLayout());
       regionWidthParam = new IntegerParameter(1, 50, cfg.getRegionDimension().width);
       regionHeightParam = new IntegerParameter(1, 50, cfg.getRegionDimension().height);
@@ -215,18 +215,18 @@ public class Parameters {
                                     6, 6);       //xPad, yPad
     }
 
-    Region.Config getParameters() {
-      return new Region.Config(new Dimension(regionWidthParam.getValue(),
-                                             regionHeightParam.getValue()),
-                               new Dimension(inputSpaceWidthParam.getValue(),
-                                             inputSpaceHeightParam.getValue()),
-                               inputRadiusParam.getValue(),
-                               learningRadiusParam.getValue(),
-                               skipSpatialCb.isSelected(),
-                               cellsInColumnParam.getValue());
+    Layer.Config getParameters() {
+      return new Layer.Config(new Dimension(regionWidthParam.getValue(),
+                                            regionHeightParam.getValue()),
+                              new Dimension(inputSpaceWidthParam.getValue(),
+                                            inputSpaceHeightParam.getValue()),
+                              inputRadiusParam.getValue(),
+                              learningRadiusParam.getValue(),
+                              skipSpatialCb.isSelected(),
+                              cellsInColumnParam.getValue());
     }
 
-    void setParameters(Region.Config cfg) {
+    void setParameters(Layer.Config cfg) {
       regionWidthParam.setValue(cfg.getRegionDimension().width);
       regionHeightParam.setValue(cfg.getRegionDimension().height);
       inputSpaceWidthParam.setValue(cfg.getSensoryInputDimension().width);
@@ -237,24 +237,17 @@ public class Parameters {
     }
   }
 
-  static class ColumnParameters extends JPanel {
-    private final Column.Config cfg;
-    private Parameters.IntegerParameter amountOfProximalSynapsesParam;
+  static class SpatialPoolerParameters extends JPanel {
     private Parameters.IntegerParameter minOverlapParam;
     private Parameters.IntegerParameter desiredLocalActivityParam;
     private Parameters.DoubleParameter boostRateParam;
 
-    ColumnParameters(Column.Config cfg) {
-      this.cfg = cfg;
-      setLayout(new SpringLayout());
-      amountOfProximalSynapsesParam = new IntegerParameter(2, 60, cfg.getAmountOfProximalSynapses());
+    SpatialPoolerParameters(SpatialPooler.Config cfg) {
       minOverlapParam = new IntegerParameter(1, 10, cfg.getMinOverlap());
       desiredLocalActivityParam = new IntegerParameter(1, 10, cfg.getDesiredLocalActivity());
       boostRateParam = new Parameters.DoubleParameter(0.005, 0.2, cfg.getBoostRate(), 200);
-      JLabel l = new FixedWidthLabel("N of Proximal Synapses");
-      this.add(l);
-      this.add(amountOfProximalSynapsesParam);
-      l = new FixedWidthLabel("Min Overlap");
+      setLayout(new SpringLayout());
+      JLabel l = new FixedWidthLabel("Min Overlap");
       this.add(l);
       this.add(minOverlapParam);
       l = new FixedWidthLabel("Desired Local Activity");
@@ -264,43 +257,59 @@ public class Parameters {
       this.add(l);
       this.add(boostRateParam);
       UIUtils.makeSpringCompactGrid(this,
-                                    4, 2, //rows, cols
+                                    3, 2, //rows, cols
                                     6, 6,        //initX, initY
                                     6, 6);       //xPad, yPad
     }
 
-    Column.Config getParameters() {
-      return new Column.Config(amountOfProximalSynapsesParam.getValue(),
-                               minOverlapParam.getValue(),
-                               desiredLocalActivityParam.getValue(),
-                               boostRateParam.getValue());
+    SpatialPooler.Config getParameters() {
+      return new SpatialPooler.Config(minOverlapParam.getValue(),
+                                      desiredLocalActivityParam.getValue(),
+                                      boostRateParam.getValue());
     }
 
-    void setParameters(Column.Config cfg) {
-      amountOfProximalSynapsesParam.setValue(cfg.getAmountOfProximalSynapses());
+    void setParameters(SpatialPooler.Config cfg) {
       minOverlapParam.setValue(cfg.getMinOverlap());
       desiredLocalActivityParam.setValue(cfg.getDesiredLocalActivity());
       boostRateParam.setValue(cfg.getBoostRate());
     }
   }
 
-  static class CellParameters extends JPanel {
-    private final Cell.Config cfg;
+  static class ColumnParameters extends JPanel {
+    private Parameters.IntegerParameter amountOfProximalSynapsesParam;
+
+
+    ColumnParameters(Column.Config cfg) {
+      setLayout(new SpringLayout());
+      amountOfProximalSynapsesParam = new IntegerParameter(2, 60, cfg.getAmountOfProximalSynapses());
+      JLabel l = new FixedWidthLabel("N of Proximal Synapses");
+      this.add(l);
+      this.add(amountOfProximalSynapsesParam);
+      UIUtils.makeSpringCompactGrid(this,
+                                    1, 2, //rows, cols
+                                    6, 6,        //initX, initY
+                                    6, 6);       //xPad, yPad
+    }
+
+    Column.Config getParameters() {
+      return new Column.Config(amountOfProximalSynapsesParam.getValue());
+    }
+
+    void setParameters(Column.Config cfg) {
+      amountOfProximalSynapsesParam.setValue(cfg.getAmountOfProximalSynapses());
+    }
+  }
+
+  static class TemporalPoolerParameters extends JPanel {
     private Parameters.IntegerParameter newSynapseCountParam;
     private Parameters.IntegerParameter activationThresholdParam;
     private Parameters.IntegerParameter minThresholdParam;
-    private Parameters.IntegerParameter amountOfSynapsesParam;
-    private Parameters.IntegerParameter timeStepsParam;
 
-    CellParameters(Cell.Config cfg) {
-      this.cfg = cfg;
+    TemporalPoolerParameters(TemporalPooler.Config temporalPoolerCfg) {
       setLayout(new SpringLayout());
-      newSynapseCountParam = new IntegerParameter(1, 10, cfg.getNewSynapseCount());
-      activationThresholdParam = new IntegerParameter(0, 15, cfg.getActivationThreshold());
-      minThresholdParam = new IntegerParameter(0, 5, cfg.getMinThreshold());
-      amountOfSynapsesParam = new IntegerParameter(5, 60, cfg.getAmountOfSynapses());
-      timeStepsParam = new IntegerParameter(2, 30, cfg.getTimeSteps());
-
+      newSynapseCountParam = new IntegerParameter(1, 10, temporalPoolerCfg.getNewSynapseCount());
+      activationThresholdParam = new IntegerParameter(0, 15, temporalPoolerCfg.getActivationThreshold());
+      minThresholdParam = new IntegerParameter(0, 5, temporalPoolerCfg.getMinThreshold());
       JLabel l = new FixedWidthLabel("N of New Synapses");
       this.add(l);
       this.add(newSynapseCountParam);
@@ -310,30 +319,54 @@ public class Parameters {
       l = new FixedWidthLabel("Minimum Threshold");
       this.add(l);
       this.add(minThresholdParam);
-      l = new FixedWidthLabel("Amount of Synapses");
+      UIUtils.makeSpringCompactGrid(this,
+                                    3, 2, //rows, cols
+                                    6, 6,        //initX, initY
+                                    6, 6);       //xPad, yPad
+    }
+
+
+    TemporalPooler.Config getParameters() {
+      return new TemporalPooler.Config(newSynapseCountParam.getValue(),
+                                       activationThresholdParam.getValue(),
+                                       minThresholdParam.getValue());
+    }
+
+    void setParameters(TemporalPooler.Config temporalPoolerCfg) {
+      newSynapseCountParam.setValue(temporalPoolerCfg.getNewSynapseCount());
+      activationThresholdParam.setValue(temporalPoolerCfg.getActivationThreshold());
+      minThresholdParam.setValue(temporalPoolerCfg.getMinThreshold());
+    }
+  }
+
+  static class CellParameters extends JPanel {
+
+    private Parameters.IntegerParameter amountOfSynapsesParam;
+    private Parameters.IntegerParameter timeStepsParam;
+
+    CellParameters(Cell.Config cellCfg) {
+      setLayout(new SpringLayout());
+      amountOfSynapsesParam = new IntegerParameter(5, 60, cellCfg.getAmountOfSynapses());
+      timeStepsParam = new IntegerParameter(2, 30, cellCfg.getTimeSteps());
+      JLabel l = new FixedWidthLabel("Amount of Synapses");
       this.add(l);
       this.add(amountOfSynapsesParam);
       l = new FixedWidthLabel("Time Buffer");
       this.add(l);
       this.add(timeStepsParam);
       UIUtils.makeSpringCompactGrid(this,
-                                    5, 2, //rows, cols
+                                    2, 2, //rows, cols
                                     6, 6,        //initX, initY
                                     6, 6);       //xPad, yPad
     }
 
     Cell.Config getParameters() {
-      return new Cell.Config(newSynapseCountParam.getValue(),
-                             activationThresholdParam.getValue(),
-                             minThresholdParam.getValue(),
-                             amountOfSynapsesParam.getValue(),
+      return new Cell.Config(amountOfSynapsesParam.getValue(),
                              timeStepsParam.getValue());
     }
 
+
     void setParameters(Cell.Config cfg) {
-      newSynapseCountParam.setValue(cfg.getNewSynapseCount());
-      activationThresholdParam.setValue(cfg.getActivationThreshold());
-      minThresholdParam.setValue(cfg.getMinThreshold());
       amountOfSynapsesParam.setValue(cfg.getAmountOfSynapses());
       timeStepsParam.setValue(cfg.getTimeSteps());
     }
@@ -341,13 +374,11 @@ public class Parameters {
 
 
   static class SynapseParameters extends JPanel {
-    private final Synapse.Config cfg;
     private Parameters.DoubleParameter connectedPermanenceParam;
     private Parameters.DoubleParameter incPermanenceParam;
     private Parameters.DoubleParameter decPermanenceParam;
 
     SynapseParameters(Synapse.Config cfg) {
-      this.cfg = cfg;
       setLayout(new SpringLayout());
       connectedPermanenceParam = new Parameters.DoubleParameter(0.0, 1.0, cfg.getConnectedPerm());
       incPermanenceParam = new Parameters.DoubleParameter(0.005, 0.2, cfg.getPermanenceInc(), 200);

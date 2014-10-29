@@ -10,11 +10,12 @@ package htm.visualizer;
 
 import htm.model.Cell;
 import htm.model.DistalDendriteSegment;
-import htm.model.Region;
+import htm.model.Layer;
 import htm.model.Synapse;
+import htm.model.algorithms.temporal.TemporalPooler;
 import htm.utils.UIUtils;
 import htm.visualizer.surface.CellSurface;
-import htm.visualizer.surface.RegionColumnsVerticalView;
+import htm.visualizer.surface.LayerColumnsVerticalView;
 
 import javax.swing.*;
 import javax.swing.border.TitledBorder;
@@ -35,9 +36,9 @@ public class TemporalInfo extends JPanel {
   private JTable segmentDistalSynapsesTable;
   private JTable distalDendriteSegmentUpdatesTable;
   private JTable segmentUpdateDistalSynapsesTable;
-  private RegionColumnsVerticalView regionColumnsVerticalView;
+  private LayerColumnsVerticalView regionColumnsVerticalView;
 
-  public TemporalInfo(Region region) {
+  public TemporalInfo(final Layer layer) {
     this.setLayout(new GridBagLayout());
     GridBagConstraints c = new GridBagConstraints();
     c.fill = GridBagConstraints.BOTH;
@@ -126,7 +127,7 @@ public class TemporalInfo extends JPanel {
     this.add(center_right, c);
     c.gridx = 3;
     c.weightx = 2.0;
-    regionColumnsVerticalView = new RegionColumnsVerticalView(region);
+    regionColumnsVerticalView = new LayerColumnsVerticalView(layer);
     final JScrollPane right = new JScrollPane(regionColumnsVerticalView);
     right.setBackground(Color.WHITE);
     right.setBorder(BorderFactory.createTitledBorder(BorderFactory.createEtchedBorder(),
@@ -243,7 +244,7 @@ public class TemporalInfo extends JPanel {
     return distalDendriteSegmentUpdatesTable;
   }
 
-  public RegionColumnsVerticalView getRegionColumnsVerticalView() {
+  public LayerColumnsVerticalView getRegionColumnsVerticalView() {
     return regionColumnsVerticalView;
   }
 
@@ -279,10 +280,10 @@ public class TemporalInfo extends JPanel {
       Cell cell = currentCell;
       Map<String, String> result = new LinkedHashMap<String, String>();
       if (cell != null) {
-        result.put("Column Inx", cell.getBelongsToColumn().getIndex() + "");
+        result.put("Column Inx", cell.getOwner().getIndex() + "");
         result.put("Cell Inx", cell.getCellIndex() + "");
         result.put("Position",
-                   "X:" + (cell.getBelongsToColumn().getPosition().x) + ", Y:" + cell.getBelongsToColumn().getPosition().y);
+                   "X:" + (cell.getOwner().getPosition().x) + ", Y:" + cell.getOwner().getPosition().y);
         /*result.put("Active", cell.getActiveState(Cell.NOW) ? "Yes" : "No");
         result.put("Predictive", cell.getPredictiveState(Cell.NOW) ? "Yes" : "No");
         result.put("Learn", cell.getLearnState(Cell.NOW) ? "Yes" : "No"); */
@@ -355,6 +356,10 @@ public class TemporalInfo extends JPanel {
 
   class DistalDendriteSegmentsModel extends SegmentsModel {
 
+    private Layer getLayer(){
+      return currentCell.getOwner().getOwner();
+    }
+
     @Override
     public void setCell(Cell cell) {
       segments = cell != null ? cell.getSegments() : null;
@@ -367,6 +372,7 @@ public class TemporalInfo extends JPanel {
     }
 
     @Override public Object getValueAt(int rowIndex, int columnIndex) {
+      TemporalPooler currentLayerTemporalPooler =  getLayer().getTemporalPooler();
       Object value = null;
       if (segments != null) {
         DistalDendriteSegment row = segments.get(rowIndex);
@@ -379,10 +385,10 @@ public class TemporalInfo extends JPanel {
               value = row.isSequenceSegment();
               break;
             case 2:
-              value = row.segmentActive(Cell.NOW, Cell.State.ACTIVE);
+              value = currentLayerTemporalPooler.segmentActive(row, Cell.NOW, Cell.State.ACTIVE);
               break;
             case 3:
-              value = row.segmentActive(Cell.NOW, Cell.State.LEARN);
+              value = currentLayerTemporalPooler.segmentActive(row, Cell.NOW, Cell.State.LEARN);
               break;
             case 4:
               value = row.getPredictedBy() == null ? "R" : segments.indexOf(row.getPredictedBy()) + "";
@@ -402,7 +408,7 @@ public class TemporalInfo extends JPanel {
     }
 
     @Override public Class<?> getColumnClass(int columnIndex) {
-      Class result;
+      Class<?> result;
       switch (columnIndex) {
         case 0:
           result = Integer.class;
@@ -496,7 +502,7 @@ public class TemporalInfo extends JPanel {
     }
 
     @Override public Class<?> getColumnClass(int columnIndex) {
-      Class result;
+      Class<?> result;
       switch (columnIndex) {
         case 0:
           result = String.class;
@@ -523,7 +529,7 @@ public class TemporalInfo extends JPanel {
 
 
   abstract class BaseSegmentDistalSynapsesModel extends AbstractTableModel {
-    protected java.util.List<Synapse.DistalSynapse> synapses = null;
+    protected DistalDendriteSegment synapses = null;
     protected String[] columnNames = {
             "Perm",
             "Cell",
@@ -552,7 +558,7 @@ public class TemporalInfo extends JPanel {
     @Override public Object getValueAt(int rowIndex, int columnIndex) {
       Object value = null;
       if (synapses != null) {
-        Synapse.DistalSynapse row = synapses.get(rowIndex);
+        Synapse.DistalSynapse row = synapses.getElementByIndex(rowIndex);
         if (row != null) {
           switch (columnIndex) {
             case 0:
@@ -565,7 +571,7 @@ public class TemporalInfo extends JPanel {
               value = row.getFromCell().getCellIndex();
               break;
             case 3:
-              value = new UIUtils.SortablePoint(row.getFromCell().getBelongsToColumn().getPosition());
+              value = new UIUtils.SortablePoint(row.getFromCell().getOwner().getPosition());
               break;
             default:
               value = null;
@@ -576,7 +582,7 @@ public class TemporalInfo extends JPanel {
     }
 
     @Override public Class<?> getColumnClass(int columnIndex) {
-      Class result;
+      Class<?> result;
       switch (columnIndex) {
         case 0:
           result = Double.class;
@@ -600,7 +606,7 @@ public class TemporalInfo extends JPanel {
     public Synapse.DistalSynapse getSynapse(int rowIndex) {
       Synapse.DistalSynapse synapse = null;
       if (synapses != null) {
-        synapse = synapses.get(rowIndex);
+        synapse = synapses.getElementByIndex(rowIndex);
       }
       return synapse;
     }
@@ -620,7 +626,7 @@ public class TemporalInfo extends JPanel {
 
     @Override
     public Object getValueAt(int rowIndex, int columnIndex) {
-      Synapse.DistalSynapse row = synapses.get(rowIndex);
+      Synapse.DistalSynapse row = synapses.getElementByIndex(rowIndex);
       if(row != null){
       if (columnIndex == 4) {
         return row.getPermanenceRangeChangeForActive();
@@ -651,7 +657,7 @@ public class TemporalInfo extends JPanel {
 
     @Override
     public Object getValueAt(int rowIndex, int columnIndex) {
-      Synapse.DistalSynapse row = synapses.get(rowIndex);
+      Synapse.DistalSynapse row = synapses.getElementByIndex(rowIndex);
       if(row != null){
       if (columnIndex == 4) {
         return row.getSegment() instanceof DistalDendriteSegment.Update;

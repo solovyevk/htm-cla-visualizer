@@ -10,7 +10,7 @@ package htm.visualizer.surface;
 
 import htm.model.Cell;
 import htm.model.Column;
-import htm.model.Region;
+import htm.model.Layer;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
@@ -20,14 +20,14 @@ import java.awt.font.FontRenderContext;
 import java.awt.font.TextLayout;
 import java.util.List;
 
-public class RegionColumnsVerticalView extends CellSurface implements Scrollable {
+public class LayerColumnsVerticalView extends CellSurface implements Scrollable {
   private int selectedCellIndex = -1;
-  private static final Log LOG = LogFactory.getLog(RegionColumnsVerticalView.class);
+  private static final Log LOG = LogFactory.getLog(LayerColumnsVerticalView.class);
   protected List<Column> columns;
   private static final int MIN_CELL_SIZE = 28;
   private int columnIndexHeight = 12;
 
-  public RegionColumnsVerticalView(Region region) {
+  public LayerColumnsVerticalView(Layer region) {
     super(1, region.getCellsInColumn(), region);
     this.updateColumns();
    /* this.addElementMouseEnterListener(new ElementMouseEnterListener() {
@@ -89,8 +89,8 @@ public class RegionColumnsVerticalView extends CellSurface implements Scrollable
       g2d.setColor(Color.RED);
       Rectangle aroundRec = getElementAreaWithScale(selectedCellIndex, 1 / (Math.PI / 4) * 0.9);
       g2d.drawOval(aroundRec.x, aroundRec.y, aroundRec.width, aroundRec.height);
-      Column column = getCell(selectedCellIndex).getBelongsToColumn();
-      List<Cell> columnCells = column.getCells();
+      Column column = getCell(selectedCellIndex).getOwner();
+      List<Cell> columnCells = column.getElements();
       for (Cell columnCell : columnCells) {
         int cellInx = indexOf(columnCell);
         if (cellInx != selectedCellIndex) {
@@ -119,7 +119,7 @@ public class RegionColumnsVerticalView extends CellSurface implements Scrollable
   @Override
   public Cell getCell(int index) {
     int cellIndex = index / dimension.width, columnIndex = index % dimension.width;
-    return columns.get(columnIndex).getCellByIndex(cellIndex);
+    return columns.get(columnIndex).getElementByIndex(cellIndex);
   }
 
   public int indexOf(Cell cell) {

@@ -14,23 +14,18 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import java.awt.*;
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 
-
-public abstract class BaseSpace<E extends BaseSpace.Element> {
+public abstract class BaseSpace<P, E extends Element<?, ?>> extends htm.model.fractal.Composite<P, E> {
   private static final Log LOG = LogFactory.getLog(
           BaseSpace.class);
 
-  protected final java.util.List<E> elementList;
   private final Dimension dimension;
 
 
   public BaseSpace(int xSize, int ySize) {
     this.dimension = new Dimension(xSize, ySize);
-    elementList = new ArrayList<E>(xSize * ySize);
   }
   /*Have to call it after construction and param initialization*/
   protected void initElementSpace() {
@@ -38,7 +33,7 @@ public abstract class BaseSpace<E extends BaseSpace.Element> {
     int index = 0;
     for (int y = 0; y < ySize; y++) {
       for (int x = 0; x < xSize; x++) {
-        elementList.add(index, createElement(this, index, new Point(x, y)));
+        elementList.add(index, createElement(index, new Point(x, y)));
         index++;
       }
     }
@@ -56,7 +51,7 @@ public abstract class BaseSpace<E extends BaseSpace.Element> {
     return Math.min(dimension.width, dimension.height);
   }
 
-  protected abstract E createElement(BaseSpace<E> space, int index, Point position);
+  protected abstract E createElement(int index, Point position);
 
   public E getElementByPosition(Point position) {
     for (E element : elementList) {
@@ -65,14 +60,6 @@ public abstract class BaseSpace<E extends BaseSpace.Element> {
       }
     }
     throw new IllegalArgumentException("There in no element by this position" + position);
-  }
-
-  public E getElementByIndex(int index) {
-    return elementList.get(index);
-  }
-
-  public List<E> getElements() {
-    return Collections.unmodifiableList(elementList);
   }
 
 
@@ -116,36 +103,6 @@ public abstract class BaseSpace<E extends BaseSpace.Element> {
     return Math.sqrt(Math.pow(dX, 2) + Math.pow(dY, 2));
   }
 
-
-  public static class Element {
-    protected final Point position;
-    private final int index;
-
-    public Element(Point position, int index) {
-      this.position = position;
-      this.index = index;
-    }
-
-    public Point getPosition() {
-      return position;
-    }
-
-    public int getIndex() {
-      return index;
-    }
-
-    /**
-     * Kind unique identifier for position
-     */
-    public int getLocationSeed() {
-      int length = position.y == 0 ? 1 : (int)(Math.log10(position.y) + 1);
-      return (position.x + 1) * (int)Math.pow(10, length) + position.y;
-    }
-
-    @Override public String toString() {
-      return "locationSeed:" + getLocationSeed() + ", X:" + getPosition().x + ", Y:" + getPosition().y + ", index:" + getIndex();
-    }
-  }
 
 }
 

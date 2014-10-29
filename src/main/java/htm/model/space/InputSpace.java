@@ -9,10 +9,11 @@
 package htm.model.space;
 
 
-import java.awt.Dimension;
-import java.awt.Point;
+import java.awt.*;
+import java.util.List;
+import java.util.NoSuchElementException;
 
-public class InputSpace extends BaseSpace<InputSpace.Input> {
+public class InputSpace extends BaseSpace<InputSpace, InputSpace.Input> {
   public InputSpace(int xSize, int ySize) {
     super(xSize, ySize);
     initElementSpace();
@@ -24,33 +25,51 @@ public class InputSpace extends BaseSpace<InputSpace.Input> {
   }
 
   @Override
-  protected Input createElement(BaseSpace<InputSpace.Input> space, int index, Point position) {
-    return new Input(position, index, false);
+  protected Input createElement(int index,
+                                Point position) {
+    return new Input(this, position, index, false);
   }
 
-  public void setInputValue(int index, boolean value){
+
+  public void setInputValue(int index, boolean value) {
     this.getElementByIndex(index).setValue(value);
   }
 
-  public boolean getInputValue(int index){
+  public boolean getInputValue(int index) {
     return this.getElementByIndex(index).getValue();
   }
 
 
-  public static class Input extends BaseSpace.Element{
-     private boolean value;
+  public static class Input extends Element<InputSpace, Input> {
+    private boolean value;
 
-    public Input(Point position, int index, boolean value) {
-      super(position, index);
+    public Input(InputSpace space, Point position, int index, boolean value) {
+      super(space, position, index);
       this.value = value;
     }
 
     public boolean getValue() {
-       return value;
-     }
+      return value;
+    }
 
-     public void setValue(boolean sourceInput) {
-       this.value = sourceInput;
-     }
-   }
+    @Override public boolean addAll(List<Input> all) {
+      throw new NoSuchElementException("Not supported for Input. It is a Leaf Elemet");
+    }
+
+    @Override public Input getElementByIndex(int index) {
+      throw new NoSuchElementException("Not supported for Input. It is a Leaf Elemet");
+    }
+
+    @Override public boolean addElement(Input element) {
+      throw new NoSuchElementException("Not supported for Input. It is a Leaf Elemet");
+    }
+
+    @Override public void removeElement(Input element) {
+      throw new NoSuchElementException("Not supported for Input. It is a Leaf Elemet");
+    }
+
+    public void setValue(boolean sourceInput) {
+      this.value = sourceInput;
+    }
+  }
 }

@@ -66,7 +66,7 @@ public class Synapse {
       super(initPermanence);
       this.connectedSensoryInput = connectedSensoryInput;
       this.belongsTo = belongsTo;
-      this.distanceToColumn = BaseSpace.getDistance(belongsTo.getRegion().convertInputPositionToColumnSpace(
+      this.distanceToColumn = BaseSpace.getDistance(belongsTo.getOwner().convertInputPositionToColumnSpace(
               connectedSensoryInput.getPosition()),
                                                     belongsTo.getPosition());
     }

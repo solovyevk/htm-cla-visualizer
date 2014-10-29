@@ -11,7 +11,7 @@ package htm.visualizer.surface;
 
 import htm.model.Cell;
 import htm.model.Column;
-import htm.model.Region;
+import htm.model.Layer;
 import htm.utils.UIUtils;
 
 import java.awt.*;
@@ -21,11 +21,11 @@ import java.util.Set;
 public class ColumnSDRSurface extends BaseSurface.CircleElementsSurface {
 
 
-  protected final Region region;
+  protected final Layer region;
   private Column currentColumn; //clicked on
   private Integer selectedColumnIndex; //selected from neighbours  table
 
-  public ColumnSDRSurface(Region region) {
+  public ColumnSDRSurface(Layer region) {
     super(region.getDimension().width, region.getDimension().height);
     this.region = region;
   }
@@ -34,7 +34,7 @@ public class ColumnSDRSurface extends BaseSurface.CircleElementsSurface {
   protected void drawElement(Graphics2D g2d, int index, int x, int y, int width, int height) {
     Column column = getColumn(index);
     Set<Color> cellStates = new HashSet<Color>();
-    for (Cell cell : column.getCells()) {
+    for (Cell cell : column.getElements()) {
       int predictInStep = cell.getPredictInStepState(Cell.NOW);
       if (predictInStep == 1) {
         cellStates.add(CellSurface.PREDICTED_COLOR);

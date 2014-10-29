@@ -4,7 +4,7 @@
 	<skipSpatial>true</skipSpatial>
 	<inputRadius>5.0</inputRadius>
 	<learningRadius>17.5</learningRadius>
-	<cellsInColumn>3</cellsInColumn>
+	<cellsInColumn>2</cellsInColumn>
 	<sizeX>12</sizeX>
 	<sizeY>12</sizeY>
 </region>

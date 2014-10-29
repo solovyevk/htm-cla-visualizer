@@ -44,7 +44,7 @@ public class SensoryInputSurface extends BaseSurface.SquareElementsSurface {
     List<Synapse.ProximalSynapse> synapsesToDraw = column.getPotentialSynapses();
     Point center = column.getInputSpacePosition();
     Rectangle aroundRec = getElementAreaWithScale(center,
-                                                  1 / (Math.PI / 4) * (sensoryInput.getShortSide() / column.getRegion().getShortSide()) * 1.1);
+                                                  1 / (Math.PI / 4) * (sensoryInput.getShortSide() / column.getOwner().getShortSide()) * 1.1);
     g2d.setColor(Color.ORANGE);
     Composite original = g2d.getComposite();
     g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER,
