@@ -17,26 +17,26 @@ import htm.utils.UIUtils;
 import htm.visualizer.surface.CellSurface;
 import htm.visualizer.surface.LayerColumnsVerticalView;
 
-import javax.swing.*;
-import javax.swing.border.TitledBorder;
-import javax.swing.event.ListSelectionEvent;
-import javax.swing.event.ListSelectionListener;
-import javax.swing.table.AbstractTableModel;
-import javax.swing.table.DefaultTableCellRenderer;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.font.FontRenderContext;
 import java.awt.font.TextLayout;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import javax.swing.*;
+import javax.swing.border.TitledBorder;
+import javax.swing.event.ListSelectionEvent;
+import javax.swing.event.ListSelectionListener;
+import javax.swing.table.AbstractTableModel;
+import javax.swing.table.DefaultTableCellRenderer;
 
 public class TemporalInfo extends JPanel {
   private Cell currentCell;
-  private JTable distalDendriteSegmentsTable;
-  private JTable segmentDistalSynapsesTable;
-  private JTable distalDendriteSegmentUpdatesTable;
-  private JTable segmentUpdateDistalSynapsesTable;
-  private LayerColumnsVerticalView regionColumnsVerticalView;
+  private final JTable distalDendriteSegmentsTable;
+  private final JTable segmentDistalSynapsesTable;
+  private final JTable distalDendriteSegmentUpdatesTable;
+  private final JTable segmentUpdateDistalSynapsesTable;
+  private final LayerColumnsVerticalView regionColumnsVerticalView;
 
   public TemporalInfo(final Layer layer) {
     this.setLayout(new GridBagLayout());
@@ -298,7 +298,7 @@ public class TemporalInfo extends JPanel {
   abstract class SegmentsModel extends AbstractTableModel {
     protected java.util.List<? extends DistalDendriteSegment> segments = null;
 
-    private Cell.SegmentsChangeEventListener segmentsUpdatesChangeEventListener = new Cell.SegmentsChangeEventListener() {
+    private final Cell.SegmentsChangeEventListener segmentsUpdatesChangeEventListener = new Cell.SegmentsChangeEventListener() {
       @Override public void onSegmentsChange(Cell.SegmentsChangeEvent e) {
         segmentsChange();
       }

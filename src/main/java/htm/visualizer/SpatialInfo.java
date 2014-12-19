@@ -5,18 +5,18 @@ import htm.model.Synapse;
 import htm.model.space.BaseSpace;
 import htm.utils.UIUtils;
 
-import javax.swing.*;
-import javax.swing.border.TitledBorder;
-import javax.swing.table.AbstractTableModel;
 import java.awt.*;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import javax.swing.*;
+import javax.swing.border.TitledBorder;
+import javax.swing.table.AbstractTableModel;
 
 
 public class SpatialInfo extends JPanel {
   private Column currentColumn;
-  private JTable proximalSynapsesTable;
-  private JTable neighborColumnsTable;
+  private final JTable proximalSynapsesTable;
+  private final JTable neighborColumnsTable;
 
 
   public SpatialInfo() {
@@ -149,7 +149,7 @@ public class SpatialInfo extends JPanel {
   class NeighborColumnsModel extends AbstractTableModel {
     private Column column = null;
     private java.util.List<Column> neighbors = null;
-    private String[] columnNames = {
+    private final String[] columnNames = {
             "Overlap",
             "Dist",
             "ADC",
@@ -252,7 +252,7 @@ public class SpatialInfo extends JPanel {
 
   class ProximalSynapsesModel extends AbstractTableModel {
     private java.util.List<Synapse.ProximalSynapse> synapses = null;
-    private String[] columnNames = {
+    private final String[] columnNames = {
             "Perm",
             "Dist",
             "I-Act",
@@ -305,7 +305,7 @@ public class SpatialInfo extends JPanel {
     }
 
     @Override public Class<?> getColumnClass(int columnIndex) {
-      Class result;
+      Class<?> result;
       switch (columnIndex) {
         case 0:
           result = Double.class;

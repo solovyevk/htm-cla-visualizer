@@ -55,11 +55,7 @@ public class Column extends Element<Layer, Cell> {
     throw new NoSuchElementException("Not supported for Column, fixed number of cells");
   }
 
-  /**
-   * WP
-   * overlap(c) The spatial pooler overlap of column c with a particular
-   * input pattern.
-   */
+
   private static final int COLUMN_CYCLE_BUFFER_SIZE = 1000;
 
 
@@ -71,16 +67,20 @@ public class Column extends Element<Layer, Cell> {
   private final List<Synapse.ProximalSynapse> proximalSynapses = new ArrayList<Synapse.ProximalSynapse>();
   private double boost = 1.0;
 
+  /**
+   * WP
+   * overlap(c) The spatial pooler overlap of column c with a particular
+   * input pattern.
+   */
+  private final ColumnBufferedState<Double> overlap; //Need to create it later in constructor to access Column instance
 
-  private ColumnBufferedState<Double> overlap; //Need to create it later in constructor to access Column instance
-
-  private ColumnBufferedState<Boolean> active = new ColumnBufferedState<Boolean>(false) {
+  private final ColumnBufferedState<Boolean> active = new ColumnBufferedState<Boolean>(false) {
     @Override protected boolean positiveCondition(Boolean active) {
       return active;
     }
   };
 
-  private Map<Double, List<Column>> neighbors_cache = new HashMap<Double, List<Column>>();
+  private final Map<Double, List<Column>> neighbors_cache = new HashMap<Double, List<Column>>();
 
   public Column(final Layer layer, int columnIndex, Point columnGridPosition) {
     super(layer, columnGridPosition, columnIndex);
@@ -261,7 +261,7 @@ public class Column extends Element<Layer, Cell> {
    * boostFunction(c)
    * Returns the boost value of a column. The boost value is a scalar >= 1.
    * If activeDutyCycle(c) is above minDutyCycle(c), the boost value is 1.
-   * The boost increases linearly once the column's activeDutyCyle starts falling below its minDutyCycle.
+   * The boost increases linearly once the column's activeDutyCycle starts falling below its minDutyCycle.
    *
    * @param minDutyCycle
    * @return

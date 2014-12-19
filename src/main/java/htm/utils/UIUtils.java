@@ -12,15 +12,15 @@ import htm.visualizer.surface.SensoryInputSurface;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-import javax.swing.*;
-import javax.swing.border.Border;
-import javax.swing.table.DefaultTableCellRenderer;
 import java.awt.*;
 import java.awt.font.FontRenderContext;
 import java.awt.font.TextLayout;
 import java.text.DecimalFormat;
 import java.util.Map;
 import java.util.Set;
+import javax.swing.*;
+import javax.swing.border.Border;
+import javax.swing.table.DefaultTableCellRenderer;
 
 public enum UIUtils {
   INSTANCE;
@@ -32,9 +32,9 @@ public enum UIUtils {
   private static final Log LOG = LogFactory.getLog(UIUtils.class);
   public final static Color LIGHT_BLUE = new Color(153, 204, 255);
 
-  public static Border DEFAULT_BORDER = BorderFactory.createEmptyBorder(0, 4, 0, 4);
-  public static Border LIGHT_GRAY_BORDER = BorderFactory.createLineBorder(Color.lightGray);
-  private static Font sanSerifFont = new Font("SanSerif", Font.BOLD, 11);
+  public static final Border DEFAULT_BORDER = BorderFactory.createEmptyBorder(0, 4, 0, 4);
+  public static final Border LIGHT_GRAY_BORDER = BorderFactory.createLineBorder(Color.lightGray);
+  private static final Font sanSerifFont = new Font("SanSerif", Font.BOLD, 11);
 
   private UIUtils() {
   }
@@ -246,13 +246,14 @@ public enum UIUtils {
         lastRowCons = lastCons;
         cons.setX(initialXSpring);
       } else { //x position depends on previous component
-        cons.setX(Spring.sum(lastCons.getConstraint(SpringLayout.EAST),
+        cons.setX(Spring.sum(lastCons != null ? lastCons.getConstraint(SpringLayout.EAST) : null,
                              xPadSpring));
       }
 
       if (i / cols == 0) { //first row
         cons.setY(initialYSpring);
       } else { //y position depends on previous row
+        assert lastRowCons != null;
         cons.setY(Spring.sum(lastRowCons.getConstraint(SpringLayout.SOUTH),
                              yPadSpring));
       }
@@ -261,6 +262,7 @@ public enum UIUtils {
 
     //Set the parent's size.
     SpringLayout.Constraints pCons = layout.getConstraints(parent);
+    assert lastCons != null;
     pCons.setConstraint(SpringLayout.SOUTH,
                         Spring.sum(
                                 Spring.constant(yPad),
@@ -313,12 +315,12 @@ public enum UIUtils {
         TextLayout valueLayout = new TextLayout(value, valueFont, frc);
         // Set position to the index of the first character in the paragraph.
         float drawPosX;
-        drawPosX = (float)x + width - nameLayout.getAdvance();
+        drawPosX = x + width - nameLayout.getAdvance();
         // Move y-coordinate by the ascent of the layout.
         drawPosY += nameLayout.getAscent();
         // Draw the TextLayout at (drawPosX, drawPosY).
         nameLayout.draw(g2, drawPosX, drawPosY);
-        double newX = (float)x + width + 4;
+        double newX = x + width + 4;
         valueLayout.draw(g2, (float)newX, drawPosY);
         // Move y-coordinate in preparation for next layout.
         drawPosY += nameLayout.getDescent() + nameLayout.getLeading();
@@ -333,7 +335,8 @@ public enum UIUtils {
       super(p);
     }
 
-    @Override public int compareTo(SortablePoint point) {
+    @Override
+    public int compareTo(SortablePoint point) {
       return this.getSquare() - point.getSquare();
     }
 

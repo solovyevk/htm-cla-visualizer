@@ -8,18 +8,24 @@
 
 package htm.visualizer;
 
+import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.ComponentAdapter;
+import java.awt.event.ComponentEvent;
+import java.awt.event.KeyEvent;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
+import java.io.Serializable;
 import javax.swing.*;
 import javax.swing.border.Border;
 import javax.swing.border.TitledBorder;
-import java.awt.*;
-import java.awt.event.*;
-import java.io.Serializable;
 
 public class ParametersEditor extends JComponent {
   private final static Color LIGHT_BLUE = new Color(150, 150, 255);
-  private static Border DEFAULT_BORDER = BorderFactory.createEmptyBorder(4, 4, 4, 4);
-  private static Font LABEL_FONT = UIManager.getFont("JLabel.font");
-  private static Color TITLE_COLOR = UIManager.getColor("Slider.foreground");
+  private static final Border DEFAULT_BORDER = BorderFactory.createEmptyBorder(4, 4, 4, 4);
+  private static final Font LABEL_FONT = UIManager.getFont("JLabel.font");
+  private static final Color TITLE_COLOR = UIManager.getColor("Slider.foreground");
 
 
   public static HTMGraphicInterface.Config showDialog(Component component,
@@ -31,7 +37,7 @@ public class ParametersEditor extends JComponent {
     ParametersTracker ok = new ParametersTracker(pane);
     JDialog dialog = createDialog(component, title, true, pane, ok, null);
 
-    dialog.show(); // blocks until user brings dialog down...
+    dialog.setVisible(true); // blocks until user brings dialog down...
 
     return ok.getParameters();
   }
@@ -63,13 +69,13 @@ public class ParametersEditor extends JComponent {
     return getWindowForComponent(parentComponent.getParent());
   }
 
-  private Parameters.TemporalPoolerParameters temporalPoolerParameters;
-  private Parameters.SpatialPoolerParameters spatialPoolerParameters;
-  private Parameters.RegionParameters regionParameters;
-  private Parameters.ColumnParameters columnParameters;
-  private Parameters.CellParameters cellParameters;
-  private Parameters.SynapseParameters proximalSynapsesParameters;
-  private Parameters.SynapseParameters distalSynapsesParameters;
+  private final Parameters.TemporalPoolerParameters temporalPoolerParameters;
+  private final Parameters.SpatialPoolerParameters spatialPoolerParameters;
+  private final Parameters.RegionParameters regionParameters;
+  private final Parameters.ColumnParameters columnParameters;
+  private final Parameters.CellParameters cellParameters;
+  private final Parameters.SynapseParameters proximalSynapsesParameters;
+  private final Parameters.SynapseParameters distalSynapsesParameters;
 
   public void setParameters(HTMGraphicInterface.Config params) {
     temporalPoolerParameters.setParameters(params.getTemporalPoolerConfig());
@@ -147,23 +153,6 @@ public class ParametersEditor extends JComponent {
       }
     }.init());
     this.add(tabs);
-
-   /* this.setLayout(new GridBagLayout());
-    GridBagConstraints c = new GridBagConstraints();
-    c.fill = GridBagConstraints.BOTH;
-    c.gridx = 0;
-    c.gridy = 0;
-    c.weighty = 6.0;
-    c.weightx = 1.0;
-    this.add(decorateWithBorder(regionParameters,"Region Parameters"), c);
-    c.gridy = 1;
-    c.weighty = 5.0;
-    this.add(decorateWithBorder(columnParameters, "Column Parameters"), c);
-    c.gridy = 2;
-    c.weighty = 3.0;
-    this.add(decorateWithBorder(proximalSynapsesParameters,"Proximal Synapses"), c);
-    c.gridy = 3;
-    this.add(decorateWithBorder(distalSynapsesParameters, "Distal Synapses"), c); */
   }
 
   private JComponent decorateWithBorder(JComponent component, String title) {
@@ -222,7 +211,7 @@ class ParametersEditorDialog extends JDialog {
     okButton.addActionListener(new ActionListener() {
       @Override
       public void actionPerformed(ActionEvent e) {
-        hide();
+        setVisible(false);
       }
     });
     if (okListener != null) {
@@ -241,7 +230,7 @@ class ParametersEditorDialog extends JDialog {
         }
       }
     };
-    KeyStroke cancelKeyStroke = KeyStroke.getKeyStroke((char)KeyEvent.VK_ESCAPE, false);
+    KeyStroke cancelKeyStroke = KeyStroke.getKeyStroke((char)KeyEvent.VK_ESCAPE);
     InputMap inputMap = cancelButton.getInputMap(JComponent.
                                                          WHEN_IN_FOCUSED_WINDOW);
     ActionMap actionMap = cancelButton.getActionMap();
@@ -255,7 +244,7 @@ class ParametersEditorDialog extends JDialog {
     cancelButton.addActionListener(new ActionListener() {
       @Override
       public void actionPerformed(ActionEvent e) {
-        hide();
+        setVisible(false);
       }
     });
     if (cancelListener != null) {
@@ -265,6 +254,7 @@ class ParametersEditorDialog extends JDialog {
 
     JButton resetButton = new JButton(resetString);
     resetButton.addActionListener(new ActionListener() {
+      @Override
       public void actionPerformed(ActionEvent e) {
         reset();
       }
@@ -287,10 +277,9 @@ class ParametersEditorDialog extends JDialog {
     this.addComponentListener(new DisposeOnClose());
   }
 
-  @Override
-  public void show() {
+  @Override public void setVisible(boolean b) {
     initialCfg = chooserPane.getParameters();
-    super.show();
+    super.setVisible(b);
   }
 
   public void reset() {
@@ -302,7 +291,7 @@ class ParametersEditorDialog extends JDialog {
     public void windowClosing(WindowEvent e) {
       cancelButton.doClick(0);
       Window w = e.getWindow();
-      w.hide();
+      w.setVisible(false);
     }
   }
 
@@ -316,7 +305,7 @@ class ParametersEditorDialog extends JDialog {
 }
 
 class ParametersTracker implements ActionListener, Serializable {
-  ParametersEditor chooser;
+  final ParametersEditor chooser;
   HTMGraphicInterface.Config cfg;
 
   public ParametersTracker(ParametersEditor c) {

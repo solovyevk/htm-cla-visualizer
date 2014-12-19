@@ -1,6 +1,10 @@
 package htm.visualizer;
 
-import htm.model.*;
+import htm.model.Cell;
+import htm.model.Column;
+import htm.model.DistalDendriteSegment;
+import htm.model.Layer;
+import htm.model.Synapse;
 import htm.model.algorithms.spatial.SpatialPooler;
 import htm.model.algorithms.spatial.WhitePaperSpatialPooler;
 import htm.model.algorithms.temporal.TemporalPooler;
@@ -13,16 +17,21 @@ import htm.visualizer.surface.SensoryInputSurface;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-import javax.swing.*;
-import javax.swing.event.ListSelectionEvent;
-import javax.swing.event.ListSelectionListener;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Observable;
 import java.util.Observer;
-import java.util.concurrent.*;
+import java.util.concurrent.Callable;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import javax.swing.*;
+import javax.swing.event.ListSelectionEvent;
+import javax.swing.event.ListSelectionListener;
 
 public class HTMGraphicInterface extends JPanel {
   private static final Log LOG = LogFactory.getLog(HTMGraphicInterface.class);
@@ -64,17 +73,17 @@ public class HTMGraphicInterface extends JPanel {
   Default Proximal Synapse Parameters
   */
 
-  public static double PROXIMAL_SYNAPSE_CONNECTED_PERMANENCE = 0.2;
-  public static double PROXIMAL_SYNAPSE_PERMANENCE_INCREASE = 0.005;
-  public static double PROXIMAL_SYNAPSE_PERMANENCE_DECREASE = 0.005;
+  public static final double PROXIMAL_SYNAPSE_CONNECTED_PERMANENCE = 0.2;
+  public static final double PROXIMAL_SYNAPSE_PERMANENCE_INCREASE = 0.005;
+  public static final double PROXIMAL_SYNAPSE_PERMANENCE_DECREASE = 0.005;
 
   /*
   Default Distal Synapse Parameters
   */
 
-  public static double DISTAL_SYNAPSE_CONNECTED_PERMANENCE = 0.2;
-  public static double DISTAL_SYNAPSE_PERMANENCE_INCREASE = 0.005;
-  public static double DISTAL_SYNAPSE_PERMANENCE_DECREASE = 0.005;
+  public static final double DISTAL_SYNAPSE_CONNECTED_PERMANENCE = 0.2;
+  public static final double DISTAL_SYNAPSE_PERMANENCE_INCREASE = 0.005;
+  public static final double DISTAL_SYNAPSE_PERMANENCE_DECREASE = 0.005;
 
 
 
@@ -84,17 +93,17 @@ public class HTMGraphicInterface extends JPanel {
 
   private HTMProcess process;
 
-  private WhitePaperTemporalPooler temporalPooler;
-  private SpatialPooler spatialPooler;
-  private Layer layer;
+  private final WhitePaperTemporalPooler temporalPooler;
+  private final SpatialPooler spatialPooler;
+  private final Layer layer;
   private final LayerSlicedHorizontalView slicedView;
   private final ControlPanel control;
   private final SensoryInputSurface sensoryInputSurface;
   private final ColumnSDRSurface sdrInput;
   private SpatialInfo spatialInfo;
 
-  private TemporalInfo temporalInfo;
-  private SelectedDetails detailsInfo;
+  private final TemporalInfo temporalInfo;
+  private final SelectedDetails detailsInfo;
   //Need this to ensure sliced view update before layer cells reset for next step
   private volatile CountDownLatch viewsUpdateLatch = new CountDownLatch(0);
 
@@ -307,7 +316,7 @@ public class HTMGraphicInterface extends JPanel {
     private void selectFromSynapse() {
       int rowViewInx = sourceTable.getSelectedRow();
       if (rowViewInx == -1) {
-        slicedView.setSelectedSynapseCellPosition(null);
+        slicedView.resetSelectedSynapseCellPosition();
       } else {
         int rowColumnModelInx = sourceTable.convertRowIndexToModel(
                 rowViewInx);
@@ -415,7 +424,7 @@ public class HTMGraphicInterface extends JPanel {
 
 
   private static class SelectedDetails extends JPanel {
-    private JTabbedPane tabs;
+    private final JTabbedPane tabs;
 
     public JTabbedPane getTabs() {
       return tabs;
@@ -481,9 +490,9 @@ public class HTMGraphicInterface extends JPanel {
 
     final JToolBar toolBar = new JToolBar();
     final Container infoPane = new Container();
-    private JLabel pattersStepInfo = new ToolLabel();
-    private JLabel cycleInfo = new ToolLabel();
-    private JLabel tempInfo = new ToolLabel();
+    private final JLabel pattersStepInfo = new ToolLabel();
+    private final JLabel cycleInfo = new ToolLabel();
+    private final JLabel tempInfo = new ToolLabel();
 
 
     @Override
@@ -683,8 +692,8 @@ public class HTMGraphicInterface extends JPanel {
     public final static boolean TEMPORAL_SPLIT_DEFAULT = false;
     private volatile int currentPatternIndex = 0;
     private volatile int cycleCounter = 0;
-    private ExecutorService es = Executors.newSingleThreadExecutor();
-    private ExecutorService esUpdate = Executors.newSingleThreadExecutor();
+    private final ExecutorService es = Executors.newSingleThreadExecutor();
+    private final ExecutorService esUpdate = Executors.newSingleThreadExecutor();
     private Future<Boolean> processFuture;
     private volatile boolean fullSpeed = FULL_SPEED_DEFAULT;
     /*DEBUG Option - We need this mode to brake point temporal polling between phases to see formation of new segments and segments updates from phase to phase
@@ -798,11 +807,7 @@ public class HTMGraphicInterface extends JPanel {
     }
 
     public boolean isRunning() {
-      if (processFuture != null) {
-        return !processFuture.isDone();
-      } else {
-        return false;
-      }
+        return processFuture != null && !processFuture.isDone();
     }
 
     public int getCurrentPatternIndex() {

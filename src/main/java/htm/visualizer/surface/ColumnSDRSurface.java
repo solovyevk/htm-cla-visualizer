@@ -87,7 +87,6 @@ public class ColumnSDRSurface extends BaseSurface.CircleElementsSurface {
       Rectangle aroundRec = getElementAreaWithScale(center,
                                                     1 / (Math.PI / 4) * 1.1);
       g2d.setColor(Color.ORANGE);
-      Composite original = g2d.getComposite();
       g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER,
                                                   0.2f));
       g2d.fillOval(aroundRec.x, aroundRec.y, aroundRec.width, aroundRec.height);

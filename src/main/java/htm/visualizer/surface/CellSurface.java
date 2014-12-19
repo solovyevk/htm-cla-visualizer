@@ -18,8 +18,7 @@ public abstract class CellSurface extends BaseSurface.CircleElementsSurface {
   public static final Color PREDICTED_COLOR = Color.BLUE;
   public static final Color PREDICTED_IN_STEP_COLOR = UIUtils.LIGHT_BLUE;
   public static final Color LEARNING_COLOR = Color.RED;
-  private int time = Cell.NOW;
-  protected Layer region;
+  protected final Layer region;
 
   public CellSurface(int xSize, int ySize, Layer region) {
     super(xSize, ySize);
@@ -66,9 +65,5 @@ public abstract class CellSurface extends BaseSurface.CircleElementsSurface {
 
   public abstract Cell getCell(int index);
 
-  public void setTime(int time) {
-    this.time = time;
-    repaint();
-  }
 
 }

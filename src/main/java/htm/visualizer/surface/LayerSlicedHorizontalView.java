@@ -8,23 +8,27 @@
 
 package htm.visualizer.surface;
 
-import htm.model.*;
+import htm.model.Cell;
+import htm.model.Column;
+import htm.model.DistalDendriteSegment;
+import htm.model.Layer;
+import htm.model.Synapse;
 import htm.utils.UIUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-import javax.swing.*;
 import java.awt.*;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import javax.swing.*;
 
 public class LayerSlicedHorizontalView extends JPanel {
   private static final Log LOG = LogFactory.getLog(LayerSlicedHorizontalView.class);
-  private List<ColumnCellsByIndexSurface> layers = new ArrayList<ColumnCellsByIndexSurface>();
+  private final List<ColumnCellsByIndexSurface> layers = new ArrayList<ColumnCellsByIndexSurface>();
   private CellPosition clickedOnCellPosition = null;
   private CellPosition selectedSynapseCellPosition = null;
-  private List<CellPosition> selectedSegmentSynapsesCellPositionList = new ArrayList<CellPosition>();
+  private final List<CellPosition> selectedSegmentSynapsesCellPositionList = new ArrayList<CellPosition>();
 
 
   public List<ColumnCellsByIndexSurface> getLayers() {
@@ -82,8 +86,8 @@ public class LayerSlicedHorizontalView extends JPanel {
   }
 
 
-  public void setSelectedSynapseCellPosition(CellPosition selectedSynapseCellPosition) {
-    this.selectedSynapseCellPosition = selectedSynapseCellPosition;
+  public void resetSelectedSynapseCellPosition() {
+    this.selectedSynapseCellPosition = null;
   }
 
   public void setSelectedSynapse(Synapse.DistalSynapse selectedSynapse) {
@@ -136,7 +140,6 @@ public class LayerSlicedHorizontalView extends JPanel {
   }
 
   public static class ColumnCellsByIndexSurface extends CellSurface {
-    private static final Log LOG = LogFactory.getLog(ColumnCellsByIndexSurface.class);
 
 
     public ColumnCellsByIndexSurface(LayerSlicedHorizontalView view, Layer region, int sliceIndex) {
@@ -158,7 +161,7 @@ public class LayerSlicedHorizontalView extends JPanel {
     }
 
 
-    private LayerSlicedHorizontalView parentView;
+    private final LayerSlicedHorizontalView parentView;
     private final int layerIndex;
 
 
@@ -209,7 +212,7 @@ public class LayerSlicedHorizontalView extends JPanel {
       super.doDrawing(g2d);
       //LOG.debug("Draw Sliced Region");
       CellPosition clickedOn = getClickedOnCellPosition(), selectedSynapse = getSelectedSynapseCellPosition();
-      List<CellPosition> selectedSegmentSynapsesCellPositionList = getSelectedSegmentSynapsesCellPositionList();
+      List<CellPosition> selectedSegmentSynapsesCellPositionListCol = getSelectedSegmentSynapsesCellPositionList();
       if (clickedOn != null) {
         Stroke originalStroke = g2d.getStroke();
         g2d.setStroke(new BasicStroke(1.5f));
@@ -239,7 +242,7 @@ public class LayerSlicedHorizontalView extends JPanel {
         g2d.fillOval(aroundRec.x, aroundRec.y, aroundRec.width, aroundRec.height);
         g2d.setComposite(original);
       }
-      for (CellPosition cellPosition : selectedSegmentSynapsesCellPositionList) {
+      for (CellPosition cellPosition : selectedSegmentSynapsesCellPositionListCol) {
         if (cellPosition.getCellIndex() == this.layerIndex) {
           Color originalColor = g2d.getColor();
           g2d.setColor(Color.DARK_GRAY);

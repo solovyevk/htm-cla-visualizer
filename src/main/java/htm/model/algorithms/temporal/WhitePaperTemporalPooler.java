@@ -116,10 +116,10 @@ public class WhitePaperTemporalPooler extends TemporalPooler {
         DistalDendriteSegment segment = getActiveSegment(cell, Cell.BEFORE, Cell.State.ACTIVE);
         if (segment != null && segment.isSequenceSegment()) {
           buPredicted = true;
-          cell.setActiveState(true);
+          cell.setActiveState();
           if (segmentActive(segment, Cell.BEFORE, Cell.State.LEARN)) {
             lcChosen = true;
-            cell.setLearnState(true);
+            cell.setLearnState();
             break;
           }
         }
@@ -127,7 +127,7 @@ public class WhitePaperTemporalPooler extends TemporalPooler {
     }
     if (!buPredicted) {
       for (Cell cell : currentColumn.getElementsList()) {
-        cell.setActiveState(true);
+        cell.setActiveState();
       }
     }
     if (!lcChosen && this.isLearningMode()) {
@@ -135,7 +135,7 @@ public class WhitePaperTemporalPooler extends TemporalPooler {
       BestMatchingCellAndSegment bestMatchingCellAndSegment = getBestMatchingCell(currentColumn, Cell.BEFORE);
       Cell bestCell = bestMatchingCellAndSegment.getCell();
       DistalDendriteSegment learningCellBestSegment = bestMatchingCellAndSegment.getSegment();
-      bestCell.setLearnState(true);
+      bestCell.setLearnState();
       // segmentUpdate is added internally to the bestCell's update list.
       DistalDendriteSegment.Update segmentUpdate = getSegmentActiveSynapses(bestCell, learningCellBestSegment,
                                                                             Cell.BEFORE, true, null);
@@ -223,7 +223,6 @@ public class WhitePaperTemporalPooler extends TemporalPooler {
    */
 
   public DistalDendriteSegment getActiveSegment(Cell cell, final int time, final Cell.State state) {
-    final TemporalPooler self = this;
     List<DistalDendriteSegment> activeSegments =
             CollectionUtils.filter(cell.getElementsList(), new CollectionUtils.Predicate<DistalDendriteSegment>() {
               @Override
@@ -266,10 +265,8 @@ public class WhitePaperTemporalPooler extends TemporalPooler {
 
   protected BestMatchingCellAndSegment getBestMatchingCell(Column currentColumn, int time) {
     List<DistalDendriteSegment> bestMatchingSegmentsFromCells = new ArrayList<DistalDendriteSegment>();
-    boolean allSegmentsCreated = true;
     for (Cell cell : currentColumn.getElementsList()) {
       if (cell.getSegments().size() == 0) {
-        allSegmentsCreated = false;
         break;
       }
     }

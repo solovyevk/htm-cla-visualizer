@@ -24,7 +24,7 @@ public abstract class BaseSpace<P, E extends Element<?, ?>> extends htm.model.fr
   private final Dimension dimension;
 
 
-  public BaseSpace(int xSize, int ySize) {
+  protected BaseSpace(int xSize, int ySize) {
     this.dimension = new Dimension(xSize, ySize);
   }
   /*Have to call it after construction and param initialization*/
@@ -39,7 +39,7 @@ public abstract class BaseSpace<P, E extends Element<?, ?>> extends htm.model.fr
     }
   }
 
-  public BaseSpace(Dimension dimension) {
+  BaseSpace(Dimension dimension) {
     this(dimension.width, dimension.height);
   }
 

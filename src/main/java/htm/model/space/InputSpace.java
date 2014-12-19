@@ -53,19 +53,19 @@ public class InputSpace extends BaseSpace<InputSpace, InputSpace.Input> {
     }
 
     @Override public boolean addAll(List<Input> all) {
-      throw new NoSuchElementException("Not supported for Input. It is a Leaf Elemet");
+      throw new NoSuchElementException("Not supported for Input. It is a Leaf Element");
     }
 
     @Override public Input getElementByIndex(int index) {
-      throw new NoSuchElementException("Not supported for Input. It is a Leaf Elemet");
+      throw new NoSuchElementException("Not supported for Input. It is a Leaf Element");
     }
 
     @Override public boolean addElement(Input element) {
-      throw new NoSuchElementException("Not supported for Input. It is a Leaf Elemet");
+      throw new NoSuchElementException("Not supported for Input. It is a Leaf Element");
     }
 
     @Override public void removeElement(Input element) {
-      throw new NoSuchElementException("Not supported for Input. It is a Leaf Elemet");
+      throw new NoSuchElementException("Not supported for Input. It is a Leaf Element");
     }
 
     public void setValue(boolean sourceInput) {

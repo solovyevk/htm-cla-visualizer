@@ -49,19 +49,19 @@ public class Cell extends Composite<Column, DistalDendriteSegment>{
   /**
    * Boolean vector of Cell's active state in time t-n, ..., t-1, t
    */
-  private CellStateBuffer activeState = new CellStateBuffer();
+  private final CellStateBuffer activeState = new CellStateBuffer();
   /**
    * learnState(c, i, t) A boolean indicating whether cell i in column c is
    * chosen as the cell to learn on.
    */
-  private CellStateBuffer learnState = new CellStateBuffer();
+  private final CellStateBuffer learnState = new CellStateBuffer();
 
   /**
    * Boolean vector of Cell's predictive state in time t-n, ..., t-1, t
    */
   //private CellStateBuffer predictiveState = new CellStateBuffer();
 
-  private PredictInStepBuffer predictedInStepState = new PredictInStepBuffer();
+  private final PredictInStepBuffer predictedInStepState = new PredictInStepBuffer();
 
 
   private final List<DistalDendriteSegment.Update> segmentUpdates = new ArrayList<DistalDendriteSegment.Update>();
@@ -83,11 +83,11 @@ public class Cell extends Composite<Column, DistalDendriteSegment>{
   /*
  *Set Learn State in current time Cell.NOW
   */
-  public void setLearnState(boolean learnState) {
+  public void setLearnState() {
     if(!this.getActiveState(Cell.NOW)){
       LOG.warn("Setting non active cell as learning:" + this);
     }
-    this.learnState.setState(learnState);
+    this.learnState.setState();
   }
 
   /**
@@ -102,8 +102,8 @@ public class Cell extends Composite<Column, DistalDendriteSegment>{
   /**
    * Set active state
    */
-  public void setActiveState(boolean activeState) {
-    this.activeState.setState(activeState);
+  public void setActiveState() {
+    this.activeState.setState();
      /*Added by Kirill to track speed of permanence changes for active cells*/
     for (DistalDendriteSegment segment : this.elementList) {
       for (Synapse.DistalSynapse distalSynapse : segment.getElementsList()) {
@@ -201,7 +201,7 @@ public class Cell extends Composite<Column, DistalDendriteSegment>{
 
 
   /*Custom events implementation*/
-  private Collection<SegmentsChangeEventListener> _segmentsChangeEventListeners = new HashSet<SegmentsChangeEventListener>();
+  private final Collection<SegmentsChangeEventListener> _segmentsChangeEventListeners = new HashSet<SegmentsChangeEventListener>();
 
   public synchronized void addSegmentsChangeListener(SegmentsChangeEventListener listener) {
     _segmentsChangeEventListeners.add(listener);
@@ -265,10 +265,9 @@ public class Cell extends Composite<Column, DistalDendriteSegment>{
     /**
      * Set the current state(time NOW)
      *
-     * @param state
      */
-    void setState(boolean state) {
-      this.set(NOW, state);
+    void setState() {
+      this.set(NOW, true);
     }
   }
 

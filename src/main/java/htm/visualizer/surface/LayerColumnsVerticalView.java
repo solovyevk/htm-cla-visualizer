@@ -14,18 +14,18 @@ import htm.model.Layer;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-import javax.swing.*;
 import java.awt.*;
 import java.awt.font.FontRenderContext;
 import java.awt.font.TextLayout;
 import java.util.List;
+import javax.swing.*;
 
 public class LayerColumnsVerticalView extends CellSurface implements Scrollable {
   private int selectedCellIndex = -1;
   private static final Log LOG = LogFactory.getLog(LayerColumnsVerticalView.class);
   protected List<Column> columns;
   private static final int MIN_CELL_SIZE = 28;
-  private int columnIndexHeight = 12;
+  private final int columnIndexHeight = 12;
 
   public LayerColumnsVerticalView(Layer region) {
     super(1, region.getCellsInColumn(), region);

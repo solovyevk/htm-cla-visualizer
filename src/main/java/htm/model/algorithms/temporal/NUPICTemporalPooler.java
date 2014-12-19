@@ -16,7 +16,8 @@ public class NUPICTemporalPooler extends WhitePaperTemporalPooler {
     super(cfg);
   }
 
-  @Override public DistalDendriteSegment getActiveSegment(Cell cell, int time, Cell.State state) {
+  @Override
+  public DistalDendriteSegment getActiveSegment(Cell cell, int time, Cell.State state) {
     return super.getActiveSegment(cell, time, state);
   }
 }

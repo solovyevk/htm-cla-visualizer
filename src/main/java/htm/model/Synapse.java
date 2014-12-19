@@ -136,7 +136,7 @@ public class Synapse {
     /*Added by Kirill to track speed of permanence changes for active cells*/
 
     public static final int PERMANENCE_RANGE_BUFFER_SIZE = 20;
-    private PermanenceBufferedState<Double> permanenceRangeForActiveCell = new PermanenceBufferedState<Double>();
+    private final PermanenceBufferedState<Double> permanenceRangeForActiveCell = new PermanenceBufferedState<Double>();
 
     public void updatePermanenceRangeForActiveCell() {
       permanenceRangeForActiveCell.addState(this.getPermanence());

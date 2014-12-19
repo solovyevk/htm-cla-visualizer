@@ -2,17 +2,16 @@ package htm.visualizer.surface;
 
 import htm.utils.MathUtils;
 
-import javax.swing.*;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseMotionAdapter;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Iterator;
+import javax.swing.*;
 
 public abstract class BaseSurface extends JPanel {
-  protected static int SPACE_BETWEEN_ELEMENTS = 4;
+  protected static final int SPACE_BETWEEN_ELEMENTS = 4;
   public static final Color BACKGROUND_COLOR = Color.WHITE;
   public static final Color ACTIVE_COLOR = Color.BLACK;
 
@@ -23,7 +22,7 @@ public abstract class BaseSurface extends JPanel {
   private int lastVisitedInputIndex = -1;
   private boolean mouseDragged = false;
 
-  protected BaseSurface(int xSize, int ySize) {
+  public BaseSurface(int xSize, int ySize) {
     this.dimension = new Dimension(xSize, ySize);
     setBackground(BACKGROUND_COLOR);
     addMouseListener(new MouseAdapter() {
@@ -158,7 +157,7 @@ public abstract class BaseSurface extends JPanel {
   }
 
   /*Custom events implementation*/
-  private Collection<ElementMouseEnterListener> _listeners = new ArrayList<ElementMouseEnterListener>();
+  private final Collection<ElementMouseEnterListener> _listeners = new ArrayList<ElementMouseEnterListener>();
 
   public synchronized void addElementMouseEnterListener(ElementMouseEnterListener listener) {
     _listeners.add(listener);
@@ -170,9 +169,8 @@ public abstract class BaseSurface extends JPanel {
 
   private synchronized void fireElementMouseEnterEvent(int index) {
     ElementMouseEnterEvent event = new ElementMouseEnterEvent(this, index);
-    Iterator i = _listeners.iterator();
-    while (i.hasNext()) {
-      ((ElementMouseEnterListener)i.next()).onElementMouseEnter(event);
+    for (ElementMouseEnterListener _listener : _listeners) {
+      (_listener).onElementMouseEnter(event);
     }
   }
 
